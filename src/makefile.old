@@ -1,0 +1,15 @@
+SRCS = sevensDriver.cpp stackUtil.cpp dataStructureOperations.cpp  setThresholds.cpp   gotMultiple.cpp   evaluateTutte.cpp preSevenFindDeg2.cpp  findDegOne.cpp detectAndDeleteLoop.cpp eliminateTriangle.cpp removeMultEdge.cpp multiplyByFactors.cpp multiplyByYPowers.cpp  multEdgeSmallGraphElimination.cpp smallMultipleEliminations.cpp contractAfterDelete.cpp   printRoutine.cpp hashIsoRtns.cpp recapStats.cpp isoTests.cpp  evaluateFives.cpp  evaluateFivesA.cpp evaluateFivesa1.cpp  evaluateFivesb.cpp evaluateFivesc.cpp evaluateFivesd.cpp evaluateFivese.cpp sixOrFewer.cpp identifySixes.cpp identifySixesA1.cpp identifySixesA2.cpp identifySixesB1.cpp identifySixesB2.cpp  sevenpart2dra.cpp sevenpart2drb.cpp sevenpart3drb1.cpp sevenpart3drb2.cpp sevenpart3drb3.cpp sevenpart2drc.cpp sevenpart2drd.cpp sevenpart2dre.cpp sevenpart2drf.cpp sevenpart2drg.cpp sevenpart2drh.cpp sevenpart2driver.cpp treeRoutines.cpp  sevenpart3dr.cpp sevenpart3dra.cpp sevenpart3drb.cpp sevenpart3drc.cpp sevenpart3drc1.cpp sevenpart3drc2.cpp sevenpart3drc3.cpp  sevenpart3drd.cpp sevenpart3drd1.cpp sevenpart3drd2.cpp sevenpart3drd3.cpp  sevenpart3dre.cpp sevenpart3dre1.cpp sevenpart3dre2.cpp sevenpart3dre3.cpp  sevenpart3drf.cpp  sevenpart3drf1.cpp sevenpart3drf2.cpp sevenpart3drf3.cpp  evaluateFoursDriver.cpp evaluateFours.cpp identifyFives.cpp  evaluateThrees.cpp evaluateSmallGraphs.cpp  sevenpart1.cpp sevenpart11.cpp sevenpart12.cpp sevenpart13.cpp  sevenpart4.cpp sevenpart4a.cpp sevenpart4b.cpp sevenpart41.cpp sevenpart42.cpp sevenpart43.cpp sevenpart44.cpp sevenpart45.cpp operationsOnGraphs.cpp newOps.cpp  startRoutine.cpp   permEdges.cpp buildGraph.cpp   findInvariant.cpp deleteContract.cpp enterEdgesBuildGraph.cpp  buildGrapha.cpp nauty.c nautil.c naututil.c tutte.cpp
+
+CFLAGS = -O2   
+CXX = g++        
+CC = gcc
+
+OBJS=$(patsubst %.c,%.o,$(patsubst %.cpp,%.o,$(SRCS)))
+
+testor: $(OBJS)
+	$(CXX) -o testor $(OBJS) 
+ 
+clean:
+	rm -f $(OBJS)
+
+
