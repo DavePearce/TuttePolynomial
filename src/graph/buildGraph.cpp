@@ -21,35 +21,30 @@ A set of utility functions that initialize, build, and
 /*                                            */
 
 /*
-Precondition: graph data structure instantiated
-
-Postcondition: the graph structure is defined to be the empty graph
-
-Modifies: graph is initialized 
+  Precondition: graph data structure instantiated
+  Postcondition: the graph structure is defined to be the empty graph
+  Modifies: graph is initialized 
 */
 
-void 
-initGraph(struct Graph *g)
-     
-{
-
-/* initialization */
-(*g).v = 0;
-(*g).multCount[0]=0;
-(*g).minustwo = 0;
-(*g).minusone = 0;
-(*g).yPower = 0;
-(*g).vnew=0;
-(*g).e = LIST_END; /* LIST_END indicates an empty graph */
-/* initialize header on vertex list */
-(*g).vrtx[0].vname = -3;
-(*g).vrtx[0].degree = 0;
-(*g).vrtx[0].nvert = LIST_END;
-(*g).vrtx[0].visit = 0;
-(*g).vrtx[0].pvert = -3;
-(*g).vrtx[0].fedge = -3;
- }/* end of inittGraph */
+void initGraph(struct Graph *g) {
   
+  /* initialization */
+  (*g).v = 0;
+  (*g).multCount[0]=0;
+  (*g).minustwo = 0;
+  (*g).minusone = 0;
+  (*g).yPower = 0;
+  (*g).vnew=0;
+  (*g).e = LIST_END; /* LIST_END indicates an empty graph */
+  /* initialize header on vertex list */
+  (*g).vrtx[0].vname = -3;
+  (*g).vrtx[0].degree = 0;
+  (*g).vrtx[0].nvert = LIST_END;
+  (*g).vrtx[0].visit = 0;
+  (*g).vrtx[0].pvert = -3;
+  (*g).vrtx[0].fedge = -3;
+} /* end of inittGraph */
+
 /*                                            */
 /*           end of initGraph                 */
 /*                                            */
@@ -79,15 +74,9 @@ Modifies: the graph data structure now includes all the graph
             information needed to start processing 
 */
 
-void 
-buildGraphStruct(
-                 int edges[][2], 
-                 int numberEdges,
-                 struct Graph *g
-                )
-
-{
-int k1,                           /* for parameters                          */ 
+void buildGraphStruct(int edges[][2], int numberEdges, struct Graph *g) {
+  
+  int k1,                           /* for parameters                          */ 
     k2,  
     e1,                           /* names for ends of edge                  */
     e2,
