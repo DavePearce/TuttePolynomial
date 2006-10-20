@@ -36,8 +36,12 @@ public:
   }
 
   void add_edge(int from, int to) {
-    edges[from].push_back(to);
-    edges[to].push_back(from);
+    if(from == to) {
+      edges[to].push_back(from);
+    } else {
+      edges[from].push_back(to);
+      edges[to].push_back(from);
+    }
   }
 
   void remove_edge(int from, int to) {
@@ -50,11 +54,14 @@ public:
       }
     }
 
-    for(vector<int>::iterator i(edges[to].begin());i!=edges[to].end();++i) {
-      if(*i == from) {
-	// first match!
-	edges[to].erase(i);
-	break;
+    if(from != to) {
+      // only if not loop!
+      for(vector<int>::iterator i(edges[to].begin());i!=edges[to].end();++i) {
+	if(*i == from) {
+	  // first match!
+	  edges[to].erase(i);
+	  break;
+	}
       }
     }
   }
@@ -62,10 +69,10 @@ public:
   // Ok, this implementation is seriously inefficient! 
   // could use an indirection trick here as one solution?  
   void contract_edge(int from, int to) { 
+    // MAJOR BUGS IN HERE!!!!!
     remove_edge(from,to);
     for(edge_iterator i(begin_edges(to));i!=end_edges(to);++i) {
-      
-      add_edge(from,*i);
+      add_edge(from,*i); // BUG HERE?
       if(*i != to) {
 	std::remove(edges[*i].begin(),edges[*i].end(),to);
       }

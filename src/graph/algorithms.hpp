@@ -16,7 +16,7 @@ void print_graph(ostream &ostr, T const &graph) {
 
   for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     for(typename T::edge_iterator j(graph.begin_edges(*i));j!=graph.end_edges(*i);++j) {
-      if(*i < *j) {
+      if(*i <= *j) {
 	cout << *i << "--" << *j << " ";
       } 
     }
