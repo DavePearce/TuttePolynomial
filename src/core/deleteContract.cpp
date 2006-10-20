@@ -5,6 +5,8 @@
 
 stack<Graph> worklist; // the worklist!
 
+void solve(
+
 /*
  * deleteContract is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
