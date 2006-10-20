@@ -33,16 +33,22 @@ void deleteContract(Poly &tutte) {
   int start_size = worklist.size(); // size of stack on entry
   
   // keep going until all branches from entry point are explored
-  
-  while(worklist.size() > start_size) { 
+
+  cout << "PROCESSING: " << endl;
+  print_graph(cout,worklist.top());
+    
+  while(!worklist.empty() && worklist.size() >= start_size) { 
     Graph &g = worklist.top();  // take reference to avoid copying!
+
 
     // if the graph is a tree, then we're done.
     if(g.is_tree()) {
       // This isn't quite right.  Need to multiply by the number of edges?
-      tutte.mulByX();      
+      tutte.mulByX();     
+      worklist.pop();
     } else if (g.is_loop()) {
       tutte.mulByY();
+      worklist.pop();
     } else {
 
       // at this point, there are several things we can do:
@@ -60,10 +66,10 @@ void deleteContract(Poly &tutte) {
       int f, t;
       // this is a real simple algorithm for now!
       for(Graph::vertex_iterator i(g.begin_verts());i!=g.end_verts();++i) {
-	for(Graph::edge_iterator j(g.begin_edges(*i));j!=g.end_edges(*j);++j) {
+	for(Graph::edge_iterator j(g.begin_edges(*i));j!=g.end_edges(*i);++j) {
 	  f = *i;
 	  t = *j;
-	  goto loop_exit; // YUK
+	  goto loop_exit; // Yuk, really don't like this :(
 	}
       }
       
