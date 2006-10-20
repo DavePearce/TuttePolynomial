@@ -134,8 +134,8 @@ int main(int argc, char *argv[]) {
   
     cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
     
-    //  worklist.push(start_graph);
-    //  deleteContract(tuttePolynomial);
+    worklist.push(start_graph);
+    deleteContract(tuttePolynomial);
         
     print_graph(cout,start_graph);
 
