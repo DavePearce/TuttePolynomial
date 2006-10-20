@@ -22,12 +22,7 @@ Postcondition: The Tutte polynomial of g[C] has been added to the final result.
 */
 
 
-void
-evaluateTutte (
-               int C,  
-               TUTTE tutteMat,
-               TUTTEO tutteMatX
-              )
+void evaluateTutte (int C,  TUTTE tutteMat, TUTTEO tutteMatX)
 {
 int startused, /* location of top of graph stack on entry to evaluateTutte 
                   obviates the need of a separate stack for use
@@ -272,9 +267,4 @@ while( ! ( C < ZERO ) )
   }  /* 1 while ! ( C < 0 ) */
 
 } /* end evaluateTutte */
-
-
-
-
-
 

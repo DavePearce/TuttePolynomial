@@ -1,8 +1,6 @@
 #ifndef GRAPH_HPP
 #define GRAPH_HPP
 
-#define VERTEXSIZE 70 	  /* change MAX_INTS_PER_ENTRY if this increases */
-#define EDGE_IN_GRAPH 700 
 #define LIST_END -1 /* YUK */
 #define MINUSONE -1 /* YUK */
 

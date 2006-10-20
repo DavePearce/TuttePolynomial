@@ -1,4 +1,4 @@
-include ../makefile.config
+include ../../makefile.config
 
 SUBDIRS=
 

@@ -23,6 +23,11 @@ public:
     }
   }
 
+  int num_vertices() { return vertices.size(); }
+  int num_edges() { return 0; }
+
+  bool is_multi_graph() { return false; }
+
   // there is no add vertex!
   bool remove(int v) { vertices.remove(v); }
 
@@ -52,13 +57,13 @@ public:
 
   // These do nothing yet!!!
   int remove_loops() { return 0; }
-  void constract_edge(int from, int to) { }
+  void contract_edge(int from, int to) { }
 
-  vertex_iterator vert_begin() const { return vertices.begin(); }
-  vertex_iterator vert_end() const { return vertices.end(); }
+  vertex_iterator begin_verts() const { return vertices.begin(); }
+  vertex_iterator end_verts() const { return vertices.end(); }
   
-  edge_iterator edges_begin(int f) const { return edges[f].begin(); }
-  edge_iterator edges_end(int f) const { return edges[f].end(); }
+  edge_iterator begin_edges(int f) const { return edges[f].begin(); }
+  edge_iterator end_edges(int f) const { return edges[f].end(); }
 };
 
 #endif

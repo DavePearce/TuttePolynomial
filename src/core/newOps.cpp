@@ -37,17 +37,14 @@ return(C);
 /*                                             */
 /*                                             */
 
-int
-pushAndPopGraphIndex(int C, int startused)
-{
-pushavail(C, &avail);
-if( startused != topused(&used) )
-  C = popused(&used);
-else
-  C = MINUSTHREE;
-
-return(C);
-
+int pushAndPopGraphIndex(int C, int startused) {
+  pushavail(C, &avail);
+  if( startused != topused(&used) )
+    C = popused(&used);
+  else
+    C = MINUSTHREE;
+  
+  return C;  
 } /* end push and pop new graph index */
 
 /*                                             */

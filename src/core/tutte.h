@@ -1,6 +1,9 @@
-#include <cstdio>
+#ifndef TUTTE_H
+#define TUTTE_H
 
-#include "graph/graph.h"
+
+#define VERTEXSIZE 70 	  /* change MAX_INTS_PER_ENTRY if this increases */
+#define EDGE_IN_GRAPH 700 
 
 #define PROFILING_MODE ZERO 
 
@@ -89,7 +92,7 @@ int noBytes;
 extern struct hashinfo NEWHash[HASHTABLESIZE];
 
 
-extern struct Graph g[GRAPHSIZE];
+extern Graph g[GRAPHSIZE];
 #define CHARZERO '0'
 #define MINUSONE -1
 #define MINUSTWO -2
@@ -169,7 +172,7 @@ extern struct stack used, avail;
 
 
 void
-initGraph(struct Graph *g);
+initGraph(Graph *g);
 
 int
 getFileType (FILE *inFile);
@@ -187,32 +190,32 @@ readGraphEdges();
 
 
 void
-buildGraphStruct(int edges[][TWO], int numberEdges,struct Graph *g);
+buildGraphStruct(int edges[][TWO], int numberEdges,Graph *g);
 
 int contractAfterDelete (int t1,int t2,int D1,int sendback,
                 TUTTE tutteMat,
                 TUTTEO tutteMatX
                );
 int
-degOneDels( struct Graph *g);
+degOneDels( Graph *g);
 int
-triangleDels( struct Graph *g);
+triangleDels( Graph *g);
 int
-getYPower( struct Graph *g);
+getYPower( Graph *g);
 int
-getMultCount(struct Graph *g,int  location);
+getMultCount(Graph *g,int  location);
 void
-removeMultCountValue( struct Graph *g);
+removeMultCountValue( Graph *g);
 void
-copyAndZeroMultCount(struct Graph *g, short int newMC[]);
+copyAndZeroMultCount(Graph *g, short int newMC[]);
 void
-setMultCount(struct Graph *g,short int  newMC[]);
+setMultCount(Graph *g,short int  newMC[]);
 void
-setNewMultCount(struct Graph *g,int  value);
+setNewMultCount(Graph *g,int  value);
 void
-incrTriangleDels(struct Graph *g,int  amt);
+incrTriangleDels(Graph *g,int  amt);
 int
-incrDegOneDels(struct Graph *g,int  amt);
+incrDegOneDels(Graph *g,int  amt);
 
 void
 deleteContract(
@@ -225,13 +228,13 @@ deleteContract(
               );
 
 int
-identifyTriangle(struct Graph *g, int *vertex1,int *vertex2,int *vertex3, int *edge12,int *edge13,
+identifyTriangle(Graph *g, int *vertex1,int *vertex2,int *vertex3, int *edge12,int *edge13,
 int *edge23,int *switch5);
 int
-deleteAndContractTriangle(struct Graph *g,struct Graph * k,int vertex1,int vertex2,int vertex3,
+deleteAndContractTriangle(Graph *g,Graph * k,int vertex1,int vertex2,int vertex3,
 int edge12,int edge13,int edge23);
 int
-eliminateTriangle( struct Graph *g,struct Graph *k);
+eliminateTriangle( Graph *g,Graph *k);
 void
 enterEdgesBuildGraph(int *C,int *threshcount,int threshtable[],int newthreshold[]);
 int fiveTreesnew(
@@ -356,9 +359,9 @@ evaluateTutte (
                TUTTEO tutteMatX
               );
 
-void findDegOne( struct Graph *g);
+void findDegOne( Graph *g);
 void
-findInvariant(struct Graph *g2,int *m1,int canong[]);
+findInvariant(Graph *g2,int *m1,int canong[]);
 void
 mywrite(Graph *g,int m,int n);
 int
@@ -373,7 +376,7 @@ hashinsert(unsigned int *p,unsigned long int hash, int gv,int  gvnew,int noByte)
 int
 * hashlookup(int gv, int gvnew, int canong[],unsigned long int hash,int w);
 int
-isolookup(struct Graph *h,int canong[], unsigned long int *hash,TUTTE  tutteMat,TUTTEO tutteMat1);
+isolookup(Graph *h,int canong[], unsigned long int *hash,TUTTE  tutteMat,TUTTEO tutteMat1);
 int
 isoadd(int gv,int gvnew,int  canong[],unsigned long int hash,TUTTE  tutteMat,TUTTEO tutteMatX);
 void
@@ -385,43 +388,43 @@ isoreset();
 int printT1(TUTTEO t);
 int printT(TUTTE t);
 void
-identifyFives (struct Graph *g,
+identifyFives (Graph *g,
        TUTTE tutteMat,
        TUTTEO tutteMatX
       );
 void
-identifySixes  (struct Graph *g,
+identifySixes  (Graph *g,
                 TUTTE tutteMat1,
                 TUTTEO tutteMat1X
                );
 void
-identifySixesA1 (struct Graph *g,int  degseq,TUTTE  tutteMat1,TUTTEO tutteMat1X);
+identifySixesA1 (Graph *g,int  degseq,TUTTE  tutteMat1,TUTTEO tutteMat1X);
 void
-identifySixesA2 (struct Graph *g,int  degseq,TUTTE  tutteMat1,TUTTEO tutteMat1X);
+identifySixesA2 (Graph *g,int  degseq,TUTTE  tutteMat1,TUTTEO tutteMat1X);
 void
-identifySixesB1 (struct Graph *g,int  degseq,TUTTE  tutteMat1,TUTTEO tutteMat1X);
+identifySixesB1 (Graph *g,int  degseq,TUTTE  tutteMat1,TUTTEO tutteMat1X);
 void
-identifySixesB2 (struct Graph *g,int  degseq,TUTTE  tutteMat1,TUTTEO tutteMat1X);
+identifySixesB2 (Graph *g,int  degseq,TUTTE  tutteMat1,TUTTEO tutteMat1X);
 int
-degreesofnhbrs(struct Graph *g, int vt);
+degreesofnhbrs(Graph *g, int vt);
 int
-nextofdegree(struct Graph *g, int *vt, int degree);
+nextofdegree(Graph *g, int *vt, int degree);
 int
-nextcommonadj(struct Graph *g,int v1, int v2);
+nextcommonadj(Graph *g,int v1, int v2);
 int
-commonadj(struct Graph *g,int v1,int v2);
+commonadj(Graph *g,int v1,int v2);
 int
-nextdegnadjtov(struct Graph *g,int *ne1,int degree);
+nextdegnadjtov(Graph *g,int *ne1,int degree);
 int
-nodegnadjtov(struct Graph *g,int vt, int n);
+nodegnadjtov(Graph *g,int vt, int n);
 int
-isadj(int vt1,int vt2, struct Graph *g);
+isadj(int vt1,int vt2, Graph *g);
 int
-isadjedgename(int vt1, int vt2, struct Graph *g);
+isadjedgename(int vt1, int vt2, Graph *g);
 int
-nodegn(struct Graph *g, int n);
+nodegn(Graph *g, int n);
 void
-deletevrtx( struct Graph *g, int vt);
+deletevrtx( Graph *g, int vt);
 void
 multEdgeSmallGraphElimination(
                int *C,
@@ -430,7 +433,7 @@ multEdgeSmallGraphElimination(
                TUTTEO tutteMatX
               );
 void
-multiplyByFactors(struct Graph *g, TUTTE tutteMat,TUTTEO tutteMatX,TUTTE tutteMat1,TUTTEO tutteMat1X,
+multiplyByFactors(Graph *g, TUTTE tutteMat,TUTTEO tutteMatX,TUTTE tutteMat1,TUTTEO tutteMat1X,
                    int  gminusone, int gminustwo);
 int
 matrixspecial(short int n13,TUTTE tutteMat1,TUTTEO tutteMat1X);
@@ -471,125 +474,125 @@ graphIsoTestHash(int *C,int startused,int thresholdValueOnEntry,int canong[],
 
 
 
-void contract(int t1,int t2,struct Graph *g);
-int areMultiple( struct Graph *g);
-void printGraph( struct Graph *g);
-int loop(int t1,struct Graph *g);
-void copyGraph(struct Graph *g,struct Graph *k);
+void contract(int t1,int t2,Graph *g);
+int areMultiple( Graph *g);
+void printGraph( Graph *g);
+int loop(int t1,Graph *g);
+void copyGraph(Graph *g,Graph *k);
 
 void permEdges(int NCARDS,int cards[]);
 short int nfrom ( short int low, short int high );
 int shuffl(int deck[], int NCARDS);
-int preSevenFindDeg2 (struct Graph * g,TUTTE  tutteMat,TUTTEO tutteMatX);
+int preSevenFindDeg2 (Graph * g,TUTTE  tutteMat,TUTTEO tutteMatX);
 void printTutte(TUTTE tutteMat,TUTTEO tutteMatX);
-int recapStats(struct Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
+int recapStats(Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
 
 void deleteAndContractMultEdge (int C, TUTTE tutteMat, TUTTEO tutteMatX);
 
-int recordMultiples(struct Graph *h, int NoMultEdges, int vert1, int edgFIXED,
+int recordMultiples(Graph *h, int NoMultEdges, int vert1, int edgFIXED,
 TUTTE tutteMat, TUTTEO tutteMatX);
-int deleteMultEdges(struct Graph *g, int *NoMultEdges, int edgFIXED);
+int deleteMultEdges(Graph *g, int *NoMultEdges, int edgFIXED);
 
 
 
-void detreeForContract(int e2,int t1,struct Graph *g);
+void detreeForContract(int e2,int t1,Graph *g);
 
-int detectAndComputeTrees(struct Graph *g,TUTTE tutteMat, TUTTEO tutteMatX);
-void sevenpart11(struct Graph *g,int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void sevenpart12(struct Graph *g,int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void sevenpart13(struct Graph *g,int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void sevenpart1(struct Graph *g, TUTTE tutteMat, TUTTEO tutteMatX);
+int detectAndComputeTrees(Graph *g,TUTTE tutteMat, TUTTEO tutteMatX);
+void sevenpart11(Graph *g,int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void sevenpart12(Graph *g,int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void sevenpart13(Graph *g,int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void sevenpart1(Graph *g, TUTTE tutteMat, TUTTEO tutteMatX);
 
-
-void
-sevenpart2dra(struct Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart2drb(struct Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart2drc(struct Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart2drd(struct Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart2dre(struct Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart2drf(struct Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart2drg(struct Graph *g, TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart2drh(struct Graph *g,  TUTTE tutteMat,TUTTEO tutteMatX);
 
 void
-sevenpart2driver(struct Graph *g, TUTTE tutteMat, TUTTEO tutteMatX);
+sevenpart2dra(Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart2drb(Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart2drc(Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart2drd(Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart2dre(Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart2drf(Graph *g, int degseq, TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart2drg(Graph *g, TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart2drh(Graph *g,  TUTTE tutteMat,TUTTEO tutteMatX);
 
 void
-sevenpart3dra(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drb(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drb1(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drb2(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drb3(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drc(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drc1(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drc2(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drc3(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drd(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drd1(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drd2(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drd3(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3dre(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3dre1(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3dre2(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3dre3(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drf(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drf1(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drf2(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart3drf3(struct Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
-void sevenpart3dr(struct Graph *g, TUTTE tutteMat, TUTTEO tutteMatX);
-void
-sevenpart4(struct Graph *g, TUTTE tutteMat, TUTTEO tutteMatX);
-void
-sevenpart41(struct Graph *g, TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart42(struct Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
-void
-sevenpart43(struct Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
+sevenpart2driver(Graph *g, TUTTE tutteMat, TUTTEO tutteMatX);
 
 void
-sevenpart44(struct Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
+sevenpart3dra(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drb(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drb1(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drb2(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drb3(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drc(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drc1(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drc2(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drc3(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drd(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drd1(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drd2(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drd3(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3dre(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3dre1(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3dre2(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3dre3(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drf(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drf1(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drf2(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart3drf3(Graph *g, int degseq,TUTTE tutteMat,TUTTEO tutteMatX);
+void sevenpart3dr(Graph *g, TUTTE tutteMat, TUTTEO tutteMatX);
+void
+sevenpart4(Graph *g, TUTTE tutteMat, TUTTEO tutteMatX);
+void
+sevenpart41(Graph *g, TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart42(Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
+void
+sevenpart43(Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
 
 void
-sevenpart45(struct Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
+sevenpart44(Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
 
 void
-sevenpart4a(struct Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
+sevenpart45(Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
 
 void
-sevenpart4b(struct Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
+sevenpart4a(Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
 
 void
-sevensDriver(struct Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
+sevenpart4b(Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
 
 void
-sixOrFewer(struct Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
+sevensDriver(Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
+
+void
+sixOrFewer(Graph *g,TUTTE tutteMat,TUTTEO tutteMatX);
 void
 twoMultipleEliminate(int *C, int startused,TUTTE  tutteMat,TUTTEO tutteMatX);
 
@@ -639,8 +642,7 @@ FRONTQ( struct queue *Q1);
 int
 main(int argc, char   argv []);
 
-void threshinit(struct Graph *g, int *threshcount, int threshtable[], int newthreshold[]);
-void threshinitb(struct Graph *g, int *threshcount, int threshtable[], int newthreshold[]);
+void threshinit(Graph *g, int *threshcount, int threshtable[], int newthreshold[]);
+void threshinitb(Graph *g, int *threshcount, int threshtable[], int newthreshold[]);
 
-
-
+#endif

@@ -13,28 +13,42 @@ public:
   typedef typename G::edge_iterator edge_iterator;
 private:
   G graph;
-  int xpower; // powers of x
-  int ypower; // powers of y
-  int xp1power; // powers of x+1
+  int _xpower; // powers of x
+  int _ypower; // powers of y
+  int _xp1power; // powers of x+1
 public:
-  spanning_graph(int n) : graph(n)  {  }
+  tutte_graph(int n) : graph(n)  {  }
+
+  int num_vertices() { return graph.num_vertices(); }
+  int num_edges() { return graph.num_edges(); }
+  bool is_multi_graph() { return graph.is_multi_graph(); }
+  bool is_loop() { return false; }
+  bool is_tree() { return false; }
 
   // there is no add vertex!
   bool remove(int v) { graph.remove(v); }
+
+  void remove_degree1_vertices() { /* replaces core/findDegOne */ }
+
   void add_edge(int from, int to) { graph.add_edge(from,to); }
   void remove_edge(int from, int to) { graph.remove_edge(from,to);  }  
-  int remove_loops() { return g.remove_loops(); }
-  void constract_edge(int from, int to) { g.contract_edge(from,to); }
+  int remove_loops() { return graph.remove_loops(); }
+  void contract_edge(int from, int to) { graph.contract_edge(from,to); }
 
-  int xpower() { return xpower; }
-  int xp1power() { return xp1power; }
-  int ypower() { return ypower; }
+  // these functions shouldn't be here !
+  void set_xpower(int p) { _xpower = p; }
+  void set_ypower(int p) { _ypower = p; }
+  void set_xp1power(int p) { _xp1power = p; }
 
-  vertex_iterator vert_begin() const { return graph.vert_begin(); }
-  vertex_iterator vert_end() const { return graph.vert_end(); }
+  int xpower() { return _xpower; }
+  int xp1power() { return _xp1power; }
+  int ypower() { return _ypower; }
+
+  vertex_iterator begin_verts() const { return graph.begin_verts(); }
+  vertex_iterator end_verts() const { return graph.end_verts(); }
   
-  edge_iterator edges_begin(int f) const { return graph.edges_begin(f); }
-  edge_iterator edges_end(int f) const { return graph.edges_end(f); }
+  edge_iterator begin_edges(int f) const { return graph.begin_edges(f); }
+  edge_iterator end_edges(int f) const { return graph.end_edges(f); }
 };
 
 #endif

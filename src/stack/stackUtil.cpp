@@ -139,16 +139,15 @@ Postcondition: top of stack moved down one
 */
 
 
-void 
-pushavail(int C, struct stack *avail)
+void pushavail(int C, struct stack *avail)
 {
-
-if((*avail).Top>STACKSIZE - 1)
-  printf("Problems with avail (*avail).Top=%d\n",(*avail).Top);
-
-++(*avail).Top;
-(*avail).places[(*avail).Top]=C;
-
+  
+  if((*avail).Top>STACKSIZE - 1)
+    printf("Problems with avail (*avail).Top=%d\n",(*avail).Top);
+  
+  ++(*avail).Top;
+  (*avail).places[(*avail).Top]=C;
+  
 }/* end pushavail */
   
 /*                                            */

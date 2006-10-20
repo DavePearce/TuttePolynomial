@@ -16,20 +16,24 @@ private:
 public:
   spanning_graph(int n) : graph(n)  {  }
 
+  int num_vertices() { return graph.num_vertices(); }
+  int num_edges() { return graph.num_edges(); }
+  bool is_multi_graph() { return graph.is_multi_graph(); }
+
   // there is no add vertex!
   bool remove(int v) { graph.remove(v); }
   void add_edge(int from, int to) { graph.add_edge(from,to); }
   void remove_edge(int from, int to) { graph.remove_edge(from,to);  }
-  int remove_loops() { return g.remove_loops(); }
-  void constract_edge(int from, int to) { g.contract_edge(from,to); }
+  int remove_loops() { return graph.remove_loops(); }
+  void contract_edge(int from, int to) { graph.contract_edge(from,to); }
 
   bool in_spanning_tree(int from, int to) { return false; } // to be completed
 
-  vertex_iterator vert_begin() const { return graph.vert_begin(); }
-  vertex_iterator vert_end() const { return graph.vert_end(); }
+  vertex_iterator begin_verts() const { return graph.begin_verts(); }
+  vertex_iterator end_verts() const { return graph.end_verts(); }
   
-  edge_iterator edges_begin(int f) const { return graph.edges_begin(f); }
-  edge_iterator edges_end(int f) const { return graph.edges_end(f); }
+  edge_iterator begin_edges(int f) const { return graph.begin_edges(f); }
+  edge_iterator end_edges(int f) const { return graph.end_edges(f); }
 };
 
 #endif
