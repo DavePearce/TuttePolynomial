@@ -34,18 +34,18 @@ void deleteContract(Poly &tutte) {
   
   // keep going until all branches from entry point are explored
 
-  cout << "PROCESSING: " << endl;
-  print_graph(cout,worklist.top());
-    
   while(!worklist.empty() && worklist.size() >= start_size) { 
     Graph &g = worklist.top();  // take reference to avoid copying!
 
-
+    cout << "PROCESSING: " << endl;
+    print_graph(cout,worklist.top());
+    
     // if the graph is a tree, then we're done.
     if(g.is_tree()) {
       // This isn't quite right.  Need to multiply by the number of edges?
       tutte.mulByX();     
       worklist.pop();
+      cout << "=== END BRANCH ===" << endl;
     } else if (g.is_loop()) {
       tutte.mulByY();
       worklist.pop();
@@ -63,23 +63,15 @@ void deleteContract(Poly &tutte) {
       // simplicity ...
       
       // now, select the edge to remove
-      int f, t;
-      // this is a real simple algorithm for now!
-      for(Graph::vertex_iterator i(g.begin_verts());i!=g.end_verts();++i) {
-	for(Graph::edge_iterator j(g.begin_edges(*i));j!=g.end_edges(*i);++j) {
-	  f = *i;
-	  t = *j;
-	  goto loop_exit; // Yuk, really don't like this :(
-	}
-      }
-      
-    loop_exit:
+      pair<int,int> e = g.select_nontree_edge();
+      cout << "SELECTED: " << e.first << "--" << e.second << endl;
       // copy the graph
       worklist.push(g);
-      Graph &g2 = worklist.top();
-      g.contract_edge(f,t);
-      g2.remove_edge(f,t);  
-      
+      g.contract_edge(e.first,e.second);
+      {
+	Graph &g2 = worklist.top();
+	g2.remove_edge(e.first,e.second);        
+      }
       deleteContract(tutte);
     }    
   }  

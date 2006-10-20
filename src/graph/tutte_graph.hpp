@@ -42,25 +42,6 @@ public:
     return false;
   }
 
-  // this method returns true if the graph is a tree
-  // for the moment, the method actually only catches the case
-  // when it's a single edge ...
-  bool is_tree() { 
-    if(graph.num_vertices() == 2) {
-      int v1 = *graph.begin_verts();
-      int v2 = *(++graph.begin_verts());
-      int c = 0;
-      for(typename G::edge_iterator i(graph.begin_edges(v1));
-	  i!=graph.end_edges(v1);++i) {
-	if(*i == v1) { return false; }
-	else if(*i != v2) { throw std::runtime_error("Graph with two vertices and > 1 edges has impossible edge ???"); }
-	++c;
-      }     
-      return c != 0;
-    }
-    return false;
-  }
-
   // there is no add vertex!
   bool remove(int v) { graph.remove(v); }
 
@@ -70,6 +51,14 @@ public:
   void remove_edge(int from, int to) { graph.remove_edge(from,to);  }  
   int remove_loops() { return graph.remove_loops(); }
   void contract_edge(int from, int to) { graph.contract_edge(from,to); }
+
+
+  // spanning tree stuff
+  bool is_tree() { return graph.is_tree(); }
+
+  pair<int,int> const &select_nontree_edge() {
+    return graph.select_nontree_edge();
+  }
 
   // these functions shouldn't be here !
   void set_xpower(int p) { _xpower = p; }

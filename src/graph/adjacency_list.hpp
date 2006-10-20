@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <list>
+#include <algorithm>
 
 using namespace std;
 
@@ -29,7 +30,10 @@ public:
   bool is_multi_graph() { return false; }
 
   // there is no add vertex!
-  bool remove(int v) { vertices.remove(v); }
+  bool remove(int v) { 
+    vertices.remove(v); 
+    edges[v] = vector<int>(); // save memory
+  }
 
   void add_edge(int from, int to) {
     edges[from].push_back(to);
@@ -55,9 +59,22 @@ public:
     }
   }
 
+  // Ok, this implementation is seriously inefficient! 
+  // could use an indirection trick here as one solution?  
+  void contract_edge(int from, int to) { 
+    remove_edge(from,to);
+    for(edge_iterator i(begin_edges(to));i!=end_edges(to);++i) {
+      
+      add_edge(from,*i);
+      if(*i != to) {
+	std::remove(edges[*i].begin(),edges[*i].end(),to);
+      }
+    }
+    remove(to);
+  }  
+
   // These do nothing yet!!!
   int remove_loops() { return 0; }
-  void contract_edge(int from, int to) { }
 
   vertex_iterator begin_verts() const { return vertices.begin(); }
   vertex_iterator end_verts() const { return vertices.end(); }
