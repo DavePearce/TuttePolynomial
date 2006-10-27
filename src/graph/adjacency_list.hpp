@@ -32,6 +32,14 @@ public:
   // there is no add vertex!
   bool remove(int v) { 
     vertices.remove(v); 
+    // remove all edges involving v
+    for(edge_iterator i(begin_edges(v));i!=end_edges(v);++i) {
+      if(*i != v) {
+	cout << "REMOVING EDGE: " << v << "--" << *i << endl;
+	std::vector<int>::iterator ne = std::remove(edges[*i].begin(),edges[*i].end(),v);
+	edges[*i].erase(ne,edges[*i].end());
+      }
+    }
     edges[v] = vector<int>(); // save memory
   }
 
@@ -69,12 +77,13 @@ public:
   // Ok, this implementation is seriously inefficient! 
   // could use an indirection trick here as one solution?  
   void contract_edge(int from, int to) { 
-    // MAJOR BUGS IN HERE!!!!!
-    remove_edge(from,to);
     for(edge_iterator i(begin_edges(to));i!=end_edges(to);++i) {
-      add_edge(from,*i); // BUG HERE?
-      if(*i != to) {
-	std::remove(edges[*i].begin(),edges[*i].end(),to);
+      cout << "ADDING EDGE: " << from << "--" << *i << endl;      
+      if(*i == to) { 
+	// is self loop
+	add_edge(from,from);
+      } else {
+	add_edge(from,*i); 
       }
     }
     remove(to);

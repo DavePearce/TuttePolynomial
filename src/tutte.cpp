@@ -66,12 +66,14 @@ void deleteContract(Poly &tutte) {
       pair<int,int> e = g.select_nontree_edge();
       cout << "SELECTED: " << e.first << "--" << e.second << endl;
       // copy the graph
-      worklist.push(g);
+      //      worklist.push(g);
       g.contract_edge(e.first,e.second);
+      /*
       {
 	Graph &g2 = worklist.top();
 	g2.remove_edge(e.first,e.second);        
       }
+      */
       deleteContract(tutte);
     }    
   }  
