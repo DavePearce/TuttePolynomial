@@ -37,7 +37,7 @@ void deleteContract(Poly &tutte) {
   while(!worklist.empty() && worklist.size() >= start_size) { 
     Graph &g = worklist.top();  // take reference to avoid copying!
 
-    cout << "PROCESSING: " << endl;
+    cout << "PROCESSING (#" << worklist.size() << "):" << endl;
     print_graph(cout,worklist.top());
     
     // if the graph is a tree, then we're done.
@@ -64,16 +64,14 @@ void deleteContract(Poly &tutte) {
       
       // now, select the edge to remove
       pair<int,int> e = g.select_nontree_edge();
-      cout << "SELECTED: " << e.first << "--" << e.second << endl;
+      cout << "SELECTED: " << e.first << "--" << e.second << " (contract => #" << worklist.size() << ")" << endl;
       // copy the graph
-      //      worklist.push(g);
-      g.contract_edge(e.first,e.second);
-      /*
+      worklist.push(g);
+      g.contract_edge(e.first,e.second);      
       {
 	Graph &g2 = worklist.top();
 	g2.remove_edge(e.first,e.second);        
       }
-      */
       deleteContract(tutte);
     }    
   }  

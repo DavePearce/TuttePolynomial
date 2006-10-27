@@ -35,7 +35,6 @@ public:
     // remove all edges involving v
     for(edge_iterator i(begin_edges(v));i!=end_edges(v);++i) {
       if(*i != v) {
-	cout << "REMOVING EDGE: " << v << "--" << *i << endl;
 	std::vector<int>::iterator ne = std::remove(edges[*i].begin(),edges[*i].end(),v);
 	edges[*i].erase(ne,edges[*i].end());
       }
@@ -77,8 +76,8 @@ public:
   // Ok, this implementation is seriously inefficient! 
   // could use an indirection trick here as one solution?  
   void contract_edge(int from, int to) { 
+    if(from == to) { throw std::runtime_error("cannot contract a loop!"); } 
     for(edge_iterator i(begin_edges(to));i!=end_edges(to);++i) {
-      cout << "ADDING EDGE: " << from << "--" << *i << endl;      
       if(*i == to) { 
 	// is self loop
 	add_edge(from,from);

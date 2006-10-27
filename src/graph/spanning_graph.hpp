@@ -111,7 +111,9 @@ private:
       if(!visited[next]) { traverse(head,next); }
       else if(tail != next || backlink_count == 0) {
 	// this is a nontree edge
-	nontree_edges.push_back(make_pair(head,next));
+	if(head < next) { // to prevent adding same edge twice
+	  nontree_edges.push_back(make_pair(head,next));
+	}
       } else {
 	// we're allows to ignore visiting the same edge
 	// just once, since other multiedges may exist ...
