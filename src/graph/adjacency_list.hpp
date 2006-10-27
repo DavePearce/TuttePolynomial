@@ -15,6 +15,7 @@ public:
   typedef list<int>::const_iterator vertex_iterator;
   typedef vector<int>::const_iterator edge_iterator;
 private:
+  int numedges; // useful cache
   list<int> vertices;
   vector<vector<int> > edges;  
 public:
@@ -25,7 +26,7 @@ public:
   }
 
   int num_vertices() { return vertices.size(); }
-  int num_edges() { return 0; }
+  int num_edges() { return numedges; }
 
   bool is_multi_graph() { return false; }
 
@@ -36,6 +37,7 @@ public:
     for(edge_iterator i(begin_edges(v));i!=end_edges(v);++i) {
       if(*i != v) {
 	std::vector<int>::iterator ne = std::remove(edges[*i].begin(),edges[*i].end(),v);
+	numedges -= edges[*i].end() - ne;
 	edges[*i].erase(ne,edges[*i].end());
       }
     }
@@ -43,6 +45,7 @@ public:
   }
 
   void add_edge(int from, int to) {
+    numedges++;
     if(from == to) {
       edges[to].push_back(from);
     } else {
@@ -51,12 +54,15 @@ public:
     }
   }
 
-  void remove_edge(int from, int to) {
+  bool remove_edge(int from, int to) {
+    bool r=false;
     // this is horribly inefficient
     for(vector<int>::iterator i(edges[from].begin());i!=edges[from].end();++i) {
       if(*i == to) {
 	// first match!
 	edges[from].erase(i);
+	numedges--;
+	r = true;
 	break;
       }
     }
@@ -71,10 +77,13 @@ public:
 	}
       }
     }
+    return r;
   }
 
   // Ok, this implementation is seriously inefficient! 
   // could use an indirection trick here as one solution?  
+  //
+  // POST: vertex 'from' remains, whilst vertex 'to' is removed
   void contract_edge(int from, int to) { 
     if(from == to) { throw std::runtime_error("cannot contract a loop!"); } 
     for(edge_iterator i(begin_edges(to));i!=end_edges(to);++i) {
@@ -87,9 +96,6 @@ public:
     }
     remove(to);
   }  
-
-  // These do nothing yet!!!
-  int remove_loops() { return 0; }
 
   vertex_iterator begin_verts() const { return vertices.begin(); }
   vertex_iterator end_verts() const { return vertices.end(); }

@@ -6,7 +6,7 @@
 #include <utility>
 
 // this is a simple implementation of a dynamic algorithm for maintaining 
-// a spanning tree [ACTUALLY IT DOESN'T EVEN WORK YET!]
+// a spanning tree
 
 template<class G>
 class spanning_graph {
@@ -32,33 +32,35 @@ public:
     build_tree(); // WOAH, rather inefficient!
   }
 
-  void remove_edge(int from, int to) {     
+  bool remove_edge(int from, int to) {     
 
-    graph.remove_edge(from,to);  
-
-    // if we've removed a tree edge then we'd
-    // need to rebuild the tree.
-    //
-    // but, given the way the overall tutte 
-    // algorithm works, this is unlikely...
-    // 
-    // I use the reverse iterator, since I know
-    // the most likely edge to be removed is
-    // the nontree edge on the top of the stack
-
-    for(std::vector<pair<int,int> >::reverse_iterator i(nontree_edges.rbegin());
-	i!=nontree_edges.rend();++i) {
-      if((i->first == from && i->second == to) ||
-	 (i->first == to && i->second == from)) {
-	// yes, this is a nontree edge, so no big deal
-	nontree_edges.erase(i.base());
-	return;
+    if(graph.remove_edge(from,to)) {    
+      // if we've removed a tree edge then we'd
+      // need to rebuild the tree.
+      //
+      // but, given the way the overall tutte 
+      // algorithm works, this is unlikely...
+      // 
+      // I use the reverse iterator, since I know
+      // the most likely edge to be removed is
+      // the nontree edge on the top of the stack
+      
+      for(std::vector<pair<int,int> >::reverse_iterator i(nontree_edges.rbegin());
+	  i!=nontree_edges.rend();++i) {
+	if((i->first == from && i->second == to) ||
+	   (i->first == to && i->second == from)) {
+	  // yes, this is a nontree edge, so no big deal
+	  nontree_edges.erase(i.base());
+	  return true;
+	}
       }
+      
+      // oh dear, we removed a tree edge.  must recompute
+      // the tree then ...
+      build_tree();
+      return true;
     }
-    
-    // oh dear, we removed a tree edge.  must recompute
-    // the tree then ...
-    build_tree();
+    return false;
   }
 
   // pretty simple ... if there are no nontree edges,
@@ -69,8 +71,6 @@ public:
   pair<int,int> const &select_nontree_edge() {
     return nontree_edges.back();
   }
-
-  int remove_loops() { return graph.remove_loops(); }
 
   void contract_edge(int from, int to) { 
     graph.contract_edge(from,to); 
@@ -115,7 +115,7 @@ private:
 	  nontree_edges.push_back(make_pair(head,next));
 	}
       } else {
-	// we're allows to ignore visiting the same edge
+	// we're allowed to ignore visiting the same edge
 	// just once, since other multiedges may exist ...
 	backlink_count=0;
       }

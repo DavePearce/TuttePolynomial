@@ -44,14 +44,16 @@ public:
 
   // there is no add vertex!
   bool remove(int v) { graph.remove(v); }
-
   void remove_degree1_vertices() { /* replaces core/findDegOne */ }
 
   void add_edge(int from, int to) { graph.add_edge(from,to); }
   void remove_edge(int from, int to) { graph.remove_edge(from,to);  }  
-  int remove_loops() { return graph.remove_loops(); }
-  void contract_edge(int from, int to) { graph.contract_edge(from,to); }
 
+  void remove_loops(int from) { 
+    while(graph.remove_edge(from,from)) { _ypower ++; }
+  }
+  void contract_edge(int from, int to) { graph.contract_edge(from,to); }  
+  
 
   // spanning tree stuff
   bool is_tree() { return graph.is_tree(); }

@@ -26,13 +26,14 @@ stack<Graph> worklist; // the worklist!
  * The algorithm also uses a number of tricks to prune the computation
  * space.  These include: eliminating small graphs using optimised, 
  * hand-coded decision procedures; storing previously seen graphs
- * in a cache; and, monitoring the "treeness" of the graph.
+ * in a cache; and, dynamically monitoring the "treeness" of the graph.
  */
 
-void deleteContract(Poly &tutte) { 
+Poly deleteContract() { 
   int start_size = worklist.size(); // size of stack on entry
   
   // keep going until all branches from entry point are explored
+  Poly result;
 
   while(!worklist.empty() && worklist.size() >= start_size) { 
     Graph &g = worklist.top();  // take reference to avoid copying!
@@ -41,14 +42,15 @@ void deleteContract(Poly &tutte) {
     print_graph(cout,worklist.top());
     
     // if the graph is a tree, then we're done.
-    if(g.is_tree()) {
-      // This isn't quite right.  Need to multiply by the number of edges?
-      tutte.mulByX();     
+    if(g.is_tree()) {      
       worklist.pop();
       cout << "=== END BRANCH ===" << endl;
-    } else if (g.is_loop()) {
-      tutte.mulByY();
+      // MISSING STUFF HERE?
+      result.mulByX(g.num_edges());
+    } else if (g.is_loop()) {      
       worklist.pop();
+      // MISSING STUFF HERE?
+      result.mulByY(1);
     } else {
 
       // at this point, there are several things we can do:
@@ -68,13 +70,17 @@ void deleteContract(Poly &tutte) {
       // copy the graph
       worklist.push(g);
       g.contract_edge(e.first,e.second);      
+      // remove all loops and account for them      
+      g.remove_loops(e.first);
       {
 	Graph &g2 = worklist.top();
 	g2.remove_edge(e.first,e.second);        
       }
-      deleteContract(tutte);
+      deleteContract(); // what to do with this?
     }    
   }  
+
+  return result;
 }
 
 // the following is a really simple file parser
@@ -124,7 +130,6 @@ Graph read_graph(std::istream &input) {
 
 int main(int argc, char *argv[]) {
 
-  Poly tuttePolynomial;   // the solution will be built into this
   Graph start_graph(0);
   try {
     ifstream input(argv[1]);
@@ -133,7 +138,7 @@ int main(int argc, char *argv[]) {
     cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
     
     worklist.push(start_graph);
-    deleteContract(tuttePolynomial);
+    Poly tuttePolynomial = deleteContract();
         
     print_graph(cout,start_graph);
 
