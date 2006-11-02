@@ -34,12 +34,14 @@ Poly deleteContract(Graph &g) {
   print_graph(cout,g);
   
   // if the graph is a tree, then we're done.
-  if(g.is_tree()) {              
-    cout << "=== END BRANCH ===" << endl;
-    return Poly(g.num_edges(),0);
-  } else if (g.is_loop()) {      
+  if (g.is_loop()) {      
+    cout << "POLY: "  << Poly(0,1).str() << endl;
     cout << "=== END BRANCH ===" << endl;
     return Poly(0,1);
+  } else if(g.is_tree()) {              
+    cout << "POLY: "  << Poly(g.num_edges(),0).str() << endl;
+    cout << "=== END BRANCH ===" << endl;
+    return Poly(g.num_edges(),0);
   } else {
     
     // at this point, there are several things we can do:
@@ -59,7 +61,9 @@ Poly deleteContract(Graph &g) {
     g.remove_edge(e.first,e.second);        
     Graph cg = g; // copy graph
     cg.contract_edge(e.first,e.second); // contract edge
-    return deleteContract(g) + deleteContract(cg); // perform the recursion
+    Poly r = deleteContract(g) + deleteContract(cg); // perform the recursion
+    cout << "POLY: "  << r.str() << endl;
+    return r;
   }    
 }
 
@@ -116,10 +120,12 @@ int main(int argc, char *argv[]) {
     start_graph = read_graph(input);
   
     cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
-    
-    Poly tuttePolynomial = deleteContract(start_graph);
-        
-    print_graph(cout,start_graph);
+
+    print_graph(cout,start_graph);    
+
+    Poly tuttePoly = deleteContract(start_graph);        
+
+    cout << "Tutte Polynomial is " << tuttePoly.str() << endl;
 
     // printPoly(tuttePolynomial);
   } catch(exception const &e) {

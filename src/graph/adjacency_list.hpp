@@ -19,7 +19,7 @@ private:
   list<int> vertices;
   vector<vector<int> > edges;  
 public:
-  adjacency_list(int n) : edges(n)  { 
+  adjacency_list(int n) : edges(n), numedges(0)  { 
     for(int i=0;i!=n;++i) {
       vertices.push_back(i);
     }
