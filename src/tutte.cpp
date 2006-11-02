@@ -13,7 +13,6 @@ using namespace std;
 // Global Variables
 // ---------------------------------------------------------------
 
-stack<Graph> worklist; // the worklist!
 
 // ---------------------------------------------------------------
 // Method Bodies
@@ -29,58 +28,39 @@ stack<Graph> worklist; // the worklist!
  * in a cache; and, dynamically monitoring the "treeness" of the graph.
  */
 
-Poly deleteContract() { 
-  int start_size = worklist.size(); // size of stack on entry
+Poly deleteContract(Graph &g) { 
   
-  // keep going until all branches from entry point are explored
-  Poly result;
-
-  while(!worklist.empty() && worklist.size() >= start_size) { 
-    Graph &g = worklist.top();  // take reference to avoid copying!
-
-    cout << "PROCESSING (#" << worklist.size() << "):" << endl;
-    print_graph(cout,worklist.top());
+  cout << "PROCESSING:" << endl;
+  print_graph(cout,g);
+  
+  // if the graph is a tree, then we're done.
+  if(g.is_tree()) {              
+    cout << "=== END BRANCH ===" << endl;
+    return Poly(g.num_edges(),0);
+  } else if (g.is_loop()) {      
+    cout << "=== END BRANCH ===" << endl;
+    return Poly(0,1);
+  } else {
     
-    // if the graph is a tree, then we're done.
-    if(g.is_tree()) {      
-      worklist.pop();
-      cout << "=== END BRANCH ===" << endl;
-      // MISSING STUFF HERE?
-      result.mulByX(g.num_edges());
-    } else if (g.is_loop()) {      
-      worklist.pop();
-      // MISSING STUFF HERE?
-      result.mulByY(1);
-    } else {
-
-      // at this point, there are several things we can do:
-      // 
-      // 1) eliminate small graphs using Gary's hard-coded
-      //    algorithms.
-      //
-      // 2) lookup this graph in the cache to see if we've
-      //    solved it before.
-      //
-      // At this stage, I'm not going to do either for 
-      // simplicity ...
-      
-      // now, select the edge to remove
-      pair<int,int> e = g.select_nontree_edge();
-      cout << "SELECTED: " << e.first << "--" << e.second << " (contract => #" << worklist.size() << ")" << endl;
-      // copy the graph
-      worklist.push(g);
-      g.contract_edge(e.first,e.second);      
-      // remove all loops and account for them      
-      g.remove_loops(e.first);
-      {
-	Graph &g2 = worklist.top();
-	g2.remove_edge(e.first,e.second);        
-      }
-      deleteContract(); // what to do with this?
-    }    
-  }  
-
-  return result;
+    // at this point, there are several things we can do:
+    // 
+    // 1) eliminate small graphs using Gary's hard-coded
+    //    algorithms.
+    //
+    // 2) lookup this graph in the cache to see if we've
+    //    solved it before.
+    //
+    // At this stage, I'm not going to do either for 
+    // simplicity ...
+    
+    // now, select the edge to remove
+    pair<int,int> e = g.select_nontree_edge();
+    cout << "SELECTED: " << e.first << "--" << e.second << endl;
+    g.remove_edge(e.first,e.second);        
+    Graph cg = g; // copy graph
+    cg.contract_edge(e.first,e.second); // contract edge
+    return deleteContract(g) + deleteContract(cg); // perform the recursion
+  }    
 }
 
 // the following is a really simple file parser
@@ -137,8 +117,7 @@ int main(int argc, char *argv[]) {
   
     cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
     
-    worklist.push(start_graph);
-    Poly tuttePolynomial = deleteContract();
+    Poly tuttePolynomial = deleteContract(start_graph);
         
     print_graph(cout,start_graph);
 

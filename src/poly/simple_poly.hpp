@@ -2,6 +2,7 @@
 #define SIMPLE_POLY_HPP
 
 class simple_poly {
+  friend simple_poly operator+(simple_poly const&, simple_poly const&);
 private:
   int _xpower;
   int _ypower;
@@ -12,9 +13,10 @@ public:
     _xpower = xs;
     _ypower = ys;
   }
-  
-  void mulByX(int x) { _xpower++; }
-  void mulByY(int y) { _ypower++; }
 };
+
+// useful methods
+
+simple_poly operator+(simple_poly const &p1, simple_poly const &p2);
 
 #endif
