@@ -6,7 +6,9 @@
 #include <utility>
 
 // this is a simple implementation of a dynamic algorithm for maintaining 
-// a spanning tree
+// a spanning tree.  The notion we use of a spanning tree is slightly
+// different from normal in that we permit loops to be part of the tree.  I call
+// this a spanning "loop tree" !
 
 template<class G>
 class spanning_graph {
@@ -15,13 +17,16 @@ public:
   typedef typename G::edge_iterator edge_iterator;
 private:
   G graph;
-  std::vector<std::pair<int,int> > nontree_edges;
+  std::vector<std::pair<int,int> > nontree_edges; // all non-tree edges *except* loop edges
+  std::vector<int> loop_edges;
   std::vector<bool> visited;
 public:
   spanning_graph(int n) : graph(n), visited(n)  {  }
 
   int num_vertices() { return graph.num_vertices(); }
   int num_edges() { return graph.num_edges(); }
+  int num_loops() { return loop_edges.size(); }
+
   bool is_multi_graph() { return graph.is_multi_graph(); }
 
   // there is no add vertex!
@@ -44,14 +49,25 @@ public:
       // I use the reverse iterator, since I know
       // the most likely edge to be removed is
       // the nontree edge on the top of the stack
-      
-      for(std::vector<pair<int,int> >::reverse_iterator i(nontree_edges.rbegin());
-	  i!=nontree_edges.rend();++i) {
-	if((i->first == from && i->second == to) ||
-	   (i->first == to && i->second == from)) {
-	  // yes, this is a nontree edge, so no big deal
-	  nontree_edges.erase(i.base());
-	  return true;
+
+      if(from == to) {
+	// this *must* be a loop edge
+	for(std::vector<int>::reverse_iterator i(loop_edges.rbegin());
+	    i!=loop_edges.rend();++i) {
+	  if(*i == from) {
+	    loop_edges.erase(i.base());
+	    return true;
+	  }
+	}
+      } else {
+	for(std::vector<pair<int,int> >::reverse_iterator i(nontree_edges.rbegin());
+	    i!=nontree_edges.rend();++i) {
+	  if((i->first == from && i->second == to) ||
+	     (i->first == to && i->second == from)) {
+	    // yes, this is a nontree edge, so no big deal
+	    nontree_edges.erase(i.base()); 
+	    return true;
+	  }
 	}
       }
       
@@ -63,13 +79,20 @@ public:
     return false;
   }
 
-  // pretty simple ... if there are no nontree edges,
-  // then we must be a tree!
-  bool is_tree() { return nontree_edges.size() == 0; }
+  // pretty simple ... if there are no nontree and loop edges, then we must be a tree!
+  bool is_tree() { return nontree_edges.size() == 0 && loop_edges.size() == 0; }
+
+  // if there are no nontree edges, but there are loop edges then we're a looptree :)
+  bool is_looptree() { return nontree_edges.size() == 0; }
 
   // assumes this is graph is NOT a tree
-  pair<int,int> const &select_nontree_edge() {
+  pair<int,int> const &select_nontree_edge() const {
     return nontree_edges.back();
+  }
+
+  // assumes this is graph is NOT a tree
+  int select_loop_edge() const {
+    return loop_edges.back();
   }
 
   void contract_edge(int from, int to) { 
@@ -92,6 +115,7 @@ private:
     // reset visited information
     fill(visited.begin(),visited.end(),false);
     nontree_edges.clear();
+    loop_edges.clear();
     // now, make sure each vertex is explored
     for(typename G::vertex_iterator i(graph.begin_verts());
 	i!=graph.end_verts();++i) {
@@ -113,6 +137,8 @@ private:
 	// this is a nontree edge
 	if(head < next) { // to prevent adding same edge twice
 	  nontree_edges.push_back(make_pair(head,next));
+	} else if(head == next) {
+	  loop_edges.push_back(head);
 	}
       } else {
 	// we're allowed to ignore visiting the same edge

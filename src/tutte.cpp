@@ -33,15 +33,11 @@ Poly deleteContract(Graph &g) {
   cout << "PROCESSING:" << endl;
   print_graph(cout,g);
   
-  // if the graph is a tree, then we're done.
-  if (g.is_loop()) {      
-    cout << "POLY: "  << Poly(0,1).str() << endl;
+  // if the graph is a "loop tree", then we're done.
+  if(g.is_looptree()) {
+    cout << "POLY: "  << Poly(g.num_edges()-g.num_loops(),g.num_loops()).str() << endl;
     cout << "=== END BRANCH ===" << endl;
-    return Poly(0,1);
-  } else if(g.is_tree()) {              
-    cout << "POLY: "  << Poly(g.num_edges(),0).str() << endl;
-    cout << "=== END BRANCH ===" << endl;
-    return Poly(g.num_edges(),0);
+    return Poly(g.num_edges()-g.num_loops(),g.num_loops());
   } else {
     
     // at this point, there are several things we can do:
@@ -61,9 +57,7 @@ Poly deleteContract(Graph &g) {
     g.remove_edge(e.first,e.second);        
     Graph cg = g; // copy graph
     cg.contract_edge(e.first,e.second); // contract edge
-    Poly r = deleteContract(g) + deleteContract(cg); // perform the recursion
-    cout << "POLY: "  << r.str() << endl;
-    return r;
+    return deleteContract(g) + deleteContract(cg); // perform the recursion
   }    
 }
 

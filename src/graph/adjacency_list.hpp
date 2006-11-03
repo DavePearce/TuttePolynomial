@@ -36,11 +36,11 @@ public:
     // remove all edges involving v
     for(edge_iterator i(begin_edges(v));i!=end_edges(v);++i) {
       if(*i != v) {
-	std::vector<int>::iterator ne = std::remove(edges[*i].begin(),edges[*i].end(),v);
-	numedges -= edges[*i].end() - ne;
+	std::vector<int>::iterator ne = std::remove(edges[*i].begin(),edges[*i].end(),v);	
 	edges[*i].erase(ne,edges[*i].end());
-      }
+      } 
     }
+    numedges -= edges[v].size();
     edges[v] = vector<int>(); // save memory
   }
 

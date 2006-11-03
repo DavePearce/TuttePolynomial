@@ -14,14 +14,12 @@ public:
   typedef typename G::edge_iterator edge_iterator;
 private:
   G graph;
-  int _xpower; // powers of x
-  int _ypower; // powers of y
-  int _xp1power; // powers of x+1
 public:
   tutte_graph(int n) : graph(n)  {  }
 
   int num_vertices() { return graph.num_vertices(); }
   int num_edges() { return graph.num_edges(); }
+  int num_loops() { return graph.num_loops(); }
   bool is_multi_graph() { return graph.is_multi_graph(); }
 
   // This method returns true if the graph is a loop.
@@ -49,28 +47,23 @@ public:
   void add_edge(int from, int to) { graph.add_edge(from,to); }
   void remove_edge(int from, int to) { graph.remove_edge(from,to);  }  
 
-  void remove_loops(int from) { 
-    while(graph.remove_edge(from,from)) { _ypower ++; }
+  int remove_loops(int from) { 
+    int r=0;
+    while(graph.remove_edge(from,from)) { r++; }
+    return r;
   }
   void contract_edge(int from, int to) { graph.contract_edge(from,to); }  
   
 
   // spanning tree stuff
   bool is_tree() { return graph.is_tree(); }
+  bool is_looptree() { return graph.is_looptree(); }
 
   pair<int,int> const &select_nontree_edge() {
     return graph.select_nontree_edge();
   }
 
   // these functions shouldn't be here !
-  void set_xpower(int p) { _xpower = p; }
-  void set_ypower(int p) { _ypower = p; }
-  void set_xp1power(int p) { _xp1power = p; }
-
-  int xpower() { return _xpower; }
-  int xp1power() { return _xp1power; }
-  int ypower() { return _ypower; }
-
   vertex_iterator begin_verts() const { return graph.begin_verts(); }
   vertex_iterator end_verts() const { return graph.end_verts(); }
   
