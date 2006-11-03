@@ -30,13 +30,13 @@ using namespace std;
 
 Poly deleteContract(Graph &g) { 
   
-  cout << "PROCESSING:" << endl;
-  print_graph(cout,g);
+  //  cout << "PROCESSING:" << endl;
+  //  print_graph(cout,g);
   
   // if the graph is a "loop tree", then we're done.
   if(g.is_looptree()) {
-    cout << "POLY: "  << Poly(g.num_edges()-g.num_loops(),g.num_loops()).str() << endl;
-    cout << "=== END BRANCH ===" << endl;
+    // cout << "POLY: "  << Poly(g.num_edges()-g.num_loops(),g.num_loops()).str() << endl;
+    // cout << "=== END BRANCH ===" << endl;
     return Poly(g.num_edges()-g.num_loops(),g.num_loops());
   } else {
     
@@ -53,7 +53,7 @@ Poly deleteContract(Graph &g) {
     
     // now, select the edge to remove
     pair<int,int> e = g.select_nontree_edge();
-    cout << "SELECTED: " << e.first << "--" << e.second << endl;
+    //    cout << "SELECTED: " << e.first << "--" << e.second << endl;
     g.remove_edge(e.first,e.second);        
     Graph cg = g; // copy graph
     cg.contract_edge(e.first,e.second); // contract edge

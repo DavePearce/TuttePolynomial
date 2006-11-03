@@ -9,8 +9,6 @@ LIBS = -lnauty
 
 TARGET=tutte
 
-CXXFLAGS = -g
-
 include ../makefile.std
 
 
