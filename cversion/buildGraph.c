@@ -249,10 +249,8 @@ readEdgeList(
       c = readGraphEdges();
       if(c == EOF) { break; }
       if(getchar() == EOF) { break; }
-      printf("GOT %d\n",c);
       edges[i][j] = c;
       c = readGraphEdges();
-      printf("GOT %d\n",c);
       edges[i][++j]=c;
       ++i;
       ++(*numberEdges);
@@ -273,7 +271,7 @@ int c,           /* value of next byte as unsigned char converted to an int    *
   }
   if(c == EOF) { return EOF; } // yucky hack
   while(c=='\n') { c=getchar(); }
-  return(n);
+  return n+1;
 
 }/* end of readGraphEdges */
 
