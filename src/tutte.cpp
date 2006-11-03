@@ -63,31 +63,37 @@ Poly deleteContract(Graph &g) {
 
 // the following is a really simple file parser
 
-int parse_number(std::istream &input) {
+int parse_number(unsigned int &pos, string const &str) {
+  int s = pos;
+  while(pos < str.length() && isdigit(str[pos])) {
+    pos = pos + 1;
+  }
+  stringstream ss(str.substr(s,pos));
   int r;
-  input >> r;
+  ss >> r;
   return r;
 }
 
-void parse_comma(std::istream &input) {
-  char c;
-  input >> c;
+void match(char c, unsigned int &pos, string const &str) {
+  if(pos >= str.length() || str[pos] != c) { throw runtime_error(string("syntax error -- expected '") + c + "', got '" + str[pos] + "'"); }
+  ++pos;
 }
 
 Graph read_graph(std::istream &input) {
   vector<pair<unsigned int, unsigned int> > edgelist;
-  unsigned int V=0;
+  unsigned int V=0, pos = 0;
     
   bool firstTime=true;
+  string in;
+  input >> in;
 
-  while(!input.eof()) {
-    if(!firstTime) { parse_comma(input); }
-    if(input.eof()) { break; }
+  while(pos < in.length()) {
+    if(!firstTime) { match(',',pos,in); }
     firstTime=false;
     // just keep on reading!
-    unsigned int tail = parse_number(input);
-    parse_comma(input);
-    unsigned int head = parse_number(input);
+    unsigned int tail = parse_number(pos,in);
+    match('-',pos,in); match('-',pos,in);
+    unsigned int head = parse_number(pos,in);
     V = max(V,max(head,tail));
     edgelist.push_back(std::make_pair(tail,head));
   }  
