@@ -193,29 +193,7 @@ enterEdges(
           )
 {
     graph tempg[MAXM * MAXN];
-
-    switch (getFileType(stdin)) 
-      {
-         case EDGELISTFILE:
-           //printf("\n");
-           //printf("******************* reading edge list *************\n");
-           //printf("\n");
-           readEdgeList(edges, numberEdges);
-           break;
-         case NAUTYFILE:
-           //printf("\n");
-           //printf("******************* reading nauty file *************\n");
-           //printf("\n");
-           readgraph(stdin, tempg, FALSE, FALSE, FALSE, 1024, MAXM, MAXN);
-           graphToEdges(tempg, edges, numberEdges);
-           break;
-         default:
-           //printf("\n");
-           //printf("error - unknown file type-execution stops\n");
-           //printf("\n");
-           exit(ONE);
-           break;
-     }
+    readEdgeList(edges, numberEdges);
 }
 
 /*                                            */
@@ -258,61 +236,43 @@ readEdgeList(
              int *numberEdges
             )
 {
-int j, /* indices for edges [][] */
+  int j, /* indices for edges [][] */
     i, 
     c; /* input character */ 
-
-/* read in the edges of the graph */
+  
+  /* read in the edges of the graph */
   i = ZERO;
   *numberEdges = MINUSONE;
   do 
     {
-       j = ZERO;
-       c= readGraphEdges();
-       edges[i][j] = c;
-       c = readGraphEdges();
-       edges[i][++j]=c;
-       ++i;
-       ++(*numberEdges);
-    } while(c != ZERO);
-  /* 
-     decreases by 1 to account for (0,0) being the
-     last pair entered to trigger an end of file
-     signal
-  */  
-  --(*numberEdges); 
+      j = ZERO;
+      c = readGraphEdges();
+      if(c == EOF) { break; }
+      if(getchar() == EOF) { break; }
+      printf("GOT %d\n",c);
+      edges[i][j] = c;
+      c = readGraphEdges();
+      printf("GOT %d\n",c);
+      edges[i][++j]=c;
+      ++i;
+      ++(*numberEdges);
+    } while(c != EOF);
 
 } /* end of readEdgeList */
 
-/*                                            */
-/*           end of readEdgeList              */
-/*                                            */
-/**********************************************/
-/*                                            */
-/*           start of readGraphEdges          */
-/*                                            */
+// ok, I've made a complete and utter mess of this routine.  But, it works ...
 
-/*
-Precondition: input from the standard input is processed. 
-              as a byte string 
-
-Modifies: the bytes of input that form one integer are put together
-
-Postcondition: standard input has been processed
-
-Returns: an integer value constructed one character at a time
-*/
- 
 int
 readGraphEdges()
 {
 int c,           /* value of next byte as unsigned char converted to an int    */
     n;           /* value of integer entered built one digit at a time         */
   n = ZERO;
-  for( c = getchar(); c != COMMA && c != EOLN; c = getchar()) 
-    {
-       n = n * TEN + c - CHARZERO;
-    }
+  for( c = getchar(); isdigit(c) ; c = getchar())  {
+    n = n * TEN + c - CHARZERO;
+  }
+  if(c == EOF) { return EOF; } // yucky hack
+  while(c=='\n') { c=getchar(); }
   return(n);
 
 }/* end of readGraphEdges */

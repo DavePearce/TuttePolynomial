@@ -81,7 +81,7 @@ void match(char c, unsigned int &pos, string const &str) {
 
 Graph read_graph(std::istream &input) {
   vector<pair<unsigned int, unsigned int> > edgelist;
-  unsigned int V=0, pos = 0;
+  unsigned int V = 0, pos = 0;
     
   bool firstTime=true;
   string in;
