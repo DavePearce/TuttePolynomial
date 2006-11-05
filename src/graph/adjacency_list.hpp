@@ -4,6 +4,7 @@
 #include <vector>
 #include <list>
 #include <algorithm>
+#include <stdexcept>
 
 using namespace std;
 
@@ -25,10 +26,10 @@ public:
     }
   }
 
-  int num_vertices() { return vertices.size(); }
-  int num_edges() { return numedges; }
+  int num_vertices() const { return vertices.size(); }
+  int num_edges() const { return numedges; }
 
-  bool is_multi_graph() { return false; }
+  bool is_multi_graph() const { return false; }
 
   // there is no add vertex!
   bool remove(int v) { 
