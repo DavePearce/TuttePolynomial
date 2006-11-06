@@ -73,7 +73,7 @@ public:
     int wb = head / WORDSIZE;      // index of word holding bit for head
     int wo = head - (wb*WORDSIZE); // offset within word for bit
     wb = wb + (tail*M);
-    setword mask = (1U << wo);
+    setword mask = (1U << (WORDSIZE-wo));
     bool r = (ptr[wb] & mask) != 0;
     ptr[wb] |= mask;               // set bit!
     return r;
@@ -83,7 +83,7 @@ public:
     int wb = head / WORDSIZE;      // index of word holding bit for head
     int wo = head - (wb*WORDSIZE); // offset within word for bit
     wb = wb + (tail*M);
-    setword mask = (1U << wo);
+    setword mask = (1U << (WORDSIZE-wo));
     bool r = (ptr[wb] & mask) != 0;
     ptr[wb] = ptr[wb] ^ mask;      // xor bit!
     return r;
