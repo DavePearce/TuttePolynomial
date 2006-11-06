@@ -1,12 +1,15 @@
 #include "adjacency_list.hpp"
+#include "nauty_graph.hpp"
 #include "algorithms.hpp"
-#include "spanning_graph.hpp"
-#include "tutte_graph.hpp"
 
 int main(int c, char *argv[]) {
-  tutte_graph<spanning_graph<adjacency_list> > g(10);
-  g.remove(7);
+  adjacency_list g(10);
   g.add_edge(1,2);
   g.add_edge(4,5);
   print_graph(cout,g);
+  
+  nauty_graph ng(g);
+  ng.print();
+  ng.makeCanonical();
+  ng.print();
 }

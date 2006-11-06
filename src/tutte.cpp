@@ -16,6 +16,7 @@ using namespace std;
 // ---------------------------------------------------------------
 
 unsigned long num_steps = 0;
+unsigned long old_num_steps = 0;
 
 // ---------------------------------------------------------------
 // Method Bodies
@@ -118,7 +119,8 @@ Graph read_graph(std::istream &input) {
 // ---------------------------------------------------------------
 
 void timer_handler(int signum) {
-  cout << "GOT ALARM" << endl;
+  cout << "COMPLETED " << num_steps << " graphs.  CURRENT RATE " << (num_steps - old_num_steps) << "/s" << endl;
+  old_num_steps = num_steps;
   alarm(1);
 }
 
