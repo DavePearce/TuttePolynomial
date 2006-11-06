@@ -1,6 +1,7 @@
 #ifndef NAUTYGRAPH_HPP
 #define NAUTYGRAPH_HPP
 
+#define MAXN 0
 #include "nauty.h" // nauty include must come first, otherwise it interferes with std::set
 #include <iostream>
 #include <cstring>
@@ -36,8 +37,9 @@ public:
   nauty_graph(T g) {
     N = g.num_vertices();
     M = N / WORDSIZE;
-    if((N % WORDSIZE) > 0) { M++; }
+    if((N % WORDSIZE) > 0) { M++; }    
     ptr = new setword[N*M];
+    for(int i=0;i!=N*M;++i) { ptr[i] = 0; } // this is wierd.  I thought this should be initialised to 0 by default?
     graph *p = ptr;
 
     // now create the graph
@@ -46,12 +48,15 @@ public:
       for(typename T::edge_iterator j(g.begin_edges(v));j!=g.end_edges(v);++j) {
 	int w = *j;
 	// represents edge v--w
-	int wb = w / WORDSIZE;      // index of word holding succ bit for w
-	int wo = w - (wb*WORDSIZE); // offset within word for succ bit
-	p[wb] |= (1U << wo);      // set succ bit!
+	unsigned int wb = w / WORDSIZE;      // index of word holding succ bit for w
+	unsigned int wo = w - (wb*WORDSIZE); // offset within word for succ bit
+	p[wb] |= (1U << wo);                 // set succ bit!
       }
       p += M;
-    }    
+    }
+    for(int i=0;i!=N*M;++i) { 
+      cout << ptr[i] << endl;
+    } 
   }
 
   nauty_graph const &operator=(nauty_graph const &g) {
@@ -91,7 +96,7 @@ public:
     if(worksize < (50*M)) {
       delete [] workspace;
       workspace = new setword[50*M];
-      worksize=50*M;
+      worksize = 50*M; // could change this parameter ??
     }
     graph *optr = ptr;
     ptr = new setword[N*M];
@@ -99,16 +104,32 @@ public:
     // options
     DEFAULTOPTIONS(opts); // could make static to save space
     opts.getcanon=TRUE;
+    opts.defaultptn = FALSE;
     opts.writemarkers = FALSE;
-    opts.defaultptn = TRUE;
     int lab[N];
-    int ptn[N];
-    for(int i=0;i!=N;++i) { lab[i] = 0; }
+    int ptn[N];    
+    for(int i=0;i!=N;++i) { 
+      lab[i] = i; 
+      ptn[i] = 1;
+    }
+    ptn[N-1]=0;
     nvector orbits[N];
     // call nauty
     nauty(optr,lab,ptn,NULL,orbits,&opts,&stats,workspace,worksize,M,N,ptr);
     // tidy up
     delete [] optr;
+
+    cout << "LAB: ";
+
+    for(int i=0;i!=N;++i) {
+      cout << lab[i];
+    }
+    
+    cout << endl;
+
+    if(stats.errstatus != 0) {
+      throw runtime_error("internal error: nauty returned an error?");
+    }
   }
 
   void print() {
