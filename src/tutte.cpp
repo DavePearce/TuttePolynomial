@@ -3,6 +3,8 @@
 #include <stack>
 #include <stdexcept>
 #include <algorithm>
+#include <csignal>
+
 
 #include "config.h"
 #include "graph/algorithms.hpp"
@@ -13,6 +15,7 @@ using namespace std;
 // Global Variables
 // ---------------------------------------------------------------
 
+unsigned long num_steps = 0;
 
 // ---------------------------------------------------------------
 // Method Bodies
@@ -29,7 +32,9 @@ using namespace std;
  */
 
 Poly deleteContract(Graph &g) { 
-  
+
+  num_steps++;
+
   //  cout << "PROCESSING:" << endl;
   //  print_graph(cout,g);
   
@@ -109,10 +114,26 @@ Graph read_graph(std::istream &input) {
 }
 
 // ---------------------------------------------------------------
+// Signal Handlers
+// ---------------------------------------------------------------
+
+void timer_handler(int signum) {
+  cout << "GOT ALARM" << endl;
+  alarm(1);
+}
+
+// ---------------------------------------------------------------
 // Main Method
 // ---------------------------------------------------------------
 
 int main(int argc, char *argv[]) {
+
+  // first up, register some signals to help make the environment sane
+  struct sigaction sa;
+  memset(&sa,0,sizeof(sa));
+  sa.sa_handler = &timer_handler;
+  if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
+  alarm(1); // trigger alarm in one secton
 
   Graph start_graph(0);
   try {
