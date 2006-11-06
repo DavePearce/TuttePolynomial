@@ -50,13 +50,10 @@ public:
 	// represents edge v--w
 	unsigned int wb = w / WORDSIZE;      // index of word holding succ bit for w
 	unsigned int wo = w - (wb*WORDSIZE); // offset within word for succ bit
-	p[wb] |= (1U << wo);                 // set succ bit!
+	p[wb] |= (1U << (WORDSIZE-wo));                 // set succ bit!
       }
       p += M;
     }
-    for(int i=0;i!=N*M;++i) { 
-      cout << ptr[i] << endl;
-    } 
   }
 
   nauty_graph const &operator=(nauty_graph const &g) {
@@ -112,7 +109,7 @@ public:
       lab[i] = i; 
       ptn[i] = 1;
     }
-    ptn[N-1]=0;
+    ptn[N-1] = 0;
     nvector orbits[N];
     // call nauty
     nauty(optr,lab,ptn,NULL,orbits,&opts,&stats,workspace,worksize,M,N,ptr);
@@ -121,10 +118,8 @@ public:
 
     cout << "LAB: ";
 
-    for(int i=0;i!=N;++i) {
-      cout << lab[i];
-    }
-    
+    for(int i=0;i!=N;++i) { cout << lab[i]; }
+
     cout << endl;
 
     if(stats.errstatus != 0) {
@@ -144,9 +139,9 @@ public:
 	setword mask = 1U;
 	// could eliminate first check in loop condition
 	// by splitting out the last iteration.
-	for(int k=0;(bp+k) < N && k!=WORDSIZE;++k) {
+	for(int k=0;k!=WORDSIZE;++k) {
 	  if(((*p) & mask)) { 
-	    int tail = (j*WORDSIZE) + k;
+	    int tail = (j*WORDSIZE) + (WORDSIZE-k);
 	    if(i <= tail) {
 	      cout << i << "--" << tail << " "; 
 	    }
@@ -170,8 +165,8 @@ public:
 	setword mask = 1U;
 	// could eliminate first check in loop condition
 	// by splitting out the last iteration.
-	for(int k=0;(bp+k) < N && k!=WORDSIZE;++k) {
-	  if((*p & mask) != 0 && i < (bp+k)) { g.add_edge(i,bp+k); }
+	for(int k=0;k!=WORDSIZE;++k) {
+	  if((*p & mask) != 0) { g.add_edge(i,bp+ (WORDSIZE-k)); }
 	  mask = mask << 1;
 	}
       }    
