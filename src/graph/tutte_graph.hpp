@@ -46,6 +46,9 @@ public:
 
   void add_edge(int from, int to) { graph.add_edge(from,to); }
   void remove_edge(int from, int to) { graph.remove_edge(from,to);  }  
+  
+  // assumes this is graph is NOT a tree
+  int select_loop_edge() const { return graph.select_loop_edge(); }
 
   int remove_loops(int from) { 
     int r=0;

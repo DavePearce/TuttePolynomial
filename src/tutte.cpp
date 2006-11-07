@@ -81,20 +81,21 @@ Poly deleteContract(Graph &g) {
     return Poly(g.num_edges()-g.num_loops(),g.num_loops());
   } else {
     
-    // at this point, there are several things we can do:
-    // 
-    // 1) eliminate small graphs using Gary's hard-coded
-    //    algorithms.
-    //
-    // 2) lookup this graph in the cache to see if we've
-    //    solved it before.
+    term ys(0,g.num_loops());
 
-    // first, see if this graph is already in the store
+    // first, remove any loops
+
+    while(g.num_loops() > 0) {
+      int l = g.select_loop_edge();
+      g.remove_edge(l,l);
+    }
+    
+    // second, check if we've seen this graph before
 
     Poly *p;
-    // if((p=lookup(g)) != NULL) { return *p; }
+    if((p=lookup(g)) != NULL) { return (*p) * ys; }
 
-    // now, select the edge to remove
+    // third, perform delete contract 
     pair<int,int> e = g.select_nontree_edge();
 
     Graph g1(g);  
@@ -105,10 +106,10 @@ Poly deleteContract(Graph &g) {
     // now, recursively compute the polynomial
     Poly r = deleteContract(g1) + deleteContract(g2); // perform the recursion
 
-    // save the computed polynomial 
-    // store(g,r);
+    // save computed polynomial 
+    store(g,r);
 
-    return r;
+    return r * ys;
   }    
 }
 

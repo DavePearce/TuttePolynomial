@@ -33,6 +33,7 @@ public:
 
 class simple_poly {
   friend const simple_poly operator+(simple_poly const&, simple_poly const&);
+  friend const simple_poly operator*(simple_poly const&, term const&);
 private:
   std::map<term,int> terms;
 public:
@@ -69,5 +70,6 @@ public:
 // useful methods
 
 const simple_poly operator+(simple_poly const &p1, simple_poly const &p2);
+const simple_poly operator*(simple_poly const &p1, term const &p2);
 
 #endif
