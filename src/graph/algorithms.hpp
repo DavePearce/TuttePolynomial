@@ -1,7 +1,6 @@
 #ifndef GRAPH_ALGORITHMS_HPP
 #define GRAPH_ALGORITHMS_HPP
 
-#include "nauty.h" // nauty include must come first, otherwise it interferes with std::set
 #include <iostream>
 #include <set>
 

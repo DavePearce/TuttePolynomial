@@ -42,6 +42,13 @@ public:
     if(x > 0 || y > 0) { terms.insert(std::make_pair(term(x,y),1)); }
   }
 
+  simple_poly const &operator=(simple_poly const &src) {
+    if(&src != this) { 
+      terms = src.terms;
+    }
+    return *this;
+  }
+
   const std::string str() const {
     std::stringstream ss;
     // start with xs

@@ -4,11 +4,13 @@
 #include <stdexcept>
 #include <algorithm>
 #include <csignal>
-
+#include <ext/hash_map>
 
 #include "config.h"
+#include "graph/nauty_graph.hpp"
 #include "graph/algorithms.hpp"
 
+using namespace __gnu_cxx; // needed for hash map
 using namespace std;
 
 // ---------------------------------------------------------------
@@ -21,6 +23,39 @@ unsigned long old_num_steps = 0;
 // ---------------------------------------------------------------
 // Method Bodies
 // ---------------------------------------------------------------
+
+hash_map<nauty_graph,Poly,hash_nauty_graph> polystore; // THE hash map
+unsigned int store_hits = 0;
+unsigned int store_misses = 0;
+
+/**
+ * lookup is another important function.  It's job is to 
+ * see if we have a stored solution for a particular graph.  If so, 
+ * it returns the polynomial.  Otherwise, it returns NULL;
+ */
+
+Poly *lookup(Graph const &g) {
+  nauty_graph ng(g);
+
+  hash_map<nauty_graph,Poly,hash_nauty_graph>::iterator i = polystore.find(ng);
+  if(i != polystore.end()) {
+    store_hits++;
+    return &(i->second);
+  } else {
+    store_misses++;
+    return NULL;
+  }
+}
+
+/**
+ * store is another important function.  It's job is to 
+ * store a particular solution for a graph in the hash map.
+ */
+
+void store(Graph const &g, Poly const &p) {
+  nauty_graph ng(g);
+  polystore.insert(make_pair(ng,p));
+}
 
 /* deleteContract is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
@@ -53,17 +88,27 @@ Poly deleteContract(Graph &g) {
     //
     // 2) lookup this graph in the cache to see if we've
     //    solved it before.
-    //
-    // At this stage, I'm not going to do either for 
-    // simplicity ...
-    
+
+    // first, see if this graph is already in the store
+
+    Poly *p;
+    // if((p=lookup(g)) != NULL) { return *p; }
+
     // now, select the edge to remove
     pair<int,int> e = g.select_nontree_edge();
-    //    cout << "SELECTED: " << e.first << "--" << e.second << endl;
-    g.remove_edge(e.first,e.second);        
-    Graph cg = g; // copy graph
-    cg.contract_edge(e.first,e.second); // contract edge
-    return deleteContract(g) + deleteContract(cg); // perform the recursion
+
+    Graph g1(g);  
+    g1.remove_edge(e.first,e.second);        
+    Graph g2(g1); 
+    g2.contract_edge(e.first,e.second); 
+
+    // now, recursively compute the polynomial
+    Poly r = deleteContract(g1) + deleteContract(g2); // perform the recursion
+
+    // save the computed polynomial 
+    // store(g,r);
+
+    return r;
   }    
 }
 
@@ -150,6 +195,11 @@ int main(int argc, char *argv[]) {
 
     cout << "Tutte Polynomial is " << tuttePoly.str() << endl;
 
+    cout << "==================" << endl;
+    cout << "Total Steps: " << num_steps << endl;
+    cout << "Hash Map Hits: " << store_hits << endl;
+    cout << "Hash Map Misses: " << store_misses << endl;
+    cout << "Hash Map Entries: " << polystore.size() << endl;
     // printPoly(tuttePolynomial);
   } catch(exception const &e) {
     cout << "error: " << e.what() << endl;
