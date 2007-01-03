@@ -19,6 +19,7 @@ public:
 
   int num_vertices() { return graph.num_vertices(); }
   int num_edges() { return graph.num_edges(); }
+  int num_multiedges() { return graph.num_multiedges(); }
   int num_loops() { return graph.num_loops(); }
   bool is_multi_graph() { return graph.is_multi_graph(); }
 

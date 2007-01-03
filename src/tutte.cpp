@@ -90,18 +90,22 @@ Poly deleteContract(Graph &g) {
     
     term ys(0,g.num_loops());
 
-    // first, remove any loops
+    // First, remove any loops
+
     while(g.num_loops() > 0) {
       int l = g.select_loop_edge();
       g.remove_edge(l,l);
     }
 
-    // second, check if we've seen this graph before
+    // Second, check if we've seen this graph before
 
     Poly *p;
-    if((p=lookup(g)) != NULL) { return (*p) * ys; }
+    int nmultedges = g.num_multiedges();
+    if(nmultedges < 0) { throw runtime_error("NEGATIVE MULTEDGES"); }
+    if(nmultedges == 0 && (p=lookup(g)) != NULL) { return (*p) * ys; }
 
-    // third, perform delete contract 
+    // Third, perform delete contract 
+
     pair<int,int> e = g.select_nontree_edge();
 
     Graph g1(g);  
@@ -109,11 +113,13 @@ Poly deleteContract(Graph &g) {
     Graph g2(g1); 
     g2.contract_edge(e.first,e.second); 
 
-    // now, recursively compute the polynomial
+    // Fourth, recursively compute the polynomial
+
     Poly r = deleteContract(g1) + deleteContract(g2); // perform the recursion
 
-    // save computed polynomial 
-    store(g,r);
+    // Finally, save computed polynomial 
+
+    if(nmultedges == 0) store(g,r);
 
     return r * ys;
   }    
