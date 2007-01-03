@@ -77,7 +77,6 @@ void store(Graph const &g, Poly const &p) {
 Poly deleteContract(Graph &g) { 
 
   num_steps++;
-
   //   cout << "PROCESSING:" << endl;
   //   print_graph(cout,g);
   
@@ -176,10 +175,13 @@ Graph read_graph(std::istream &input) {
 // Signal Handlers
 // ---------------------------------------------------------------
 
+static int status_interval = 5; // in seconds
+
 void timer_handler(int signum) {
-  cout << "COMPLETED " << num_steps << " graphs.  CURRENT RATE " << (num_steps - old_num_steps) << "/s" << endl;
+  double rate = (num_steps - old_num_steps);
+  rate /= status_interval;
+  cout << "Complete " << num_steps << " graphs at rate of " << ((int) rate) << "/s" << endl;
   old_num_steps = num_steps;
-  alarm(1);
 }
 
 // ---------------------------------------------------------------
@@ -193,7 +195,7 @@ int main(int argc, char *argv[]) {
   memset(&sa,0,sizeof(sa));
   sa.sa_handler = &timer_handler;
   if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
-  alarm(1); // trigger alarm in one secton
+  alarm(status_intercal); // trigger alarm in status_interval seconds
 
   Graph start_graph(0);
   try {
