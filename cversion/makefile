@@ -11,6 +11,8 @@ CC = gcc
 testor: $(OBJS)
 	$(CC) -o testor $(OBJS) 
  
+clean: 
+	rm -f *~ $(OBJS) testor *.exe
 
 
 
