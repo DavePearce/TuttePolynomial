@@ -2,6 +2,7 @@
 #define ADJACENCY_LIST_HPP
 
 #include <vector>
+#include <set>
 #include <list>
 #include <algorithm>
 #include <stdexcept>
@@ -11,14 +12,17 @@ using namespace std;
 // This graph type is simply the most basic implementation
 // you could think of.
 
+// Note, T here must implement the multiple sorted 
+// associative container interface defined in the STL
+template<class T = std::multiset<int> >
 class adjacency_list {
 public:
   typedef list<int>::const_iterator vertex_iterator;
-  typedef vector<int>::const_iterator edge_iterator;
+  typedef typename T::const_iterator edge_iterator;
 private:
   int numedges; // useful cache
   list<int> vertices;
-  vector<vector<int> > edges;  
+  vector<T> edges;  
 public:
   adjacency_list(int n) : edges(n), numedges(0)  { 
     for(int i=0;i!=n;++i) {
@@ -34,50 +38,55 @@ public:
   // there is no add vertex!
   bool remove(int v) { 
     vertices.remove(v); 
+
     // remove all edges involving v
     for(edge_iterator i(begin_edges(v));i!=end_edges(v);++i) {
       if(*i != v) {
-	std::vector<int>::iterator ne = std::remove(edges[*i].begin(),edges[*i].end(),v);	
-	edges[*i].erase(ne,edges[*i].end());
+	edges[*i].erase(v);
       } 
     }
     numedges -= edges[v].size();
-    edges[v] = vector<int>(); // save memory
+    edges[v] = T(); // save memory
   }
 
-  void add_edge(int from, int to) {
+  bool add_edge(int from, int to) {
+    bool r(false);
+
     numedges++;
-    if(from == to) {
-      edges[to].push_back(from);
-    } else {
-      edges[from].push_back(to);
-      edges[to].push_back(from);
+    
+    // the following is a hack to check
+    // whether the edge we're inserting
+    // is already in the graph or not
+    T &tos = edges[to];
+    edge_iterator i = tos.lower_bound(from);
+    if(i != tos.end() && *i == from) {      
+      r=true;
     }
+    // hmmm, is this really efficient?
+    tos.insert(i,from);
+
+    if(from != to) {
+      edges[from].insert(to);
+    }
+
+    return r;
   }
 
   bool remove_edge(int from, int to) {
     bool r=false;
-    // this is horribly inefficient
-    for(vector<int>::iterator i(edges[from].begin());i!=edges[from].end();++i) {
-      if(*i == to) {
-	// first match!
-	edges[from].erase(i);
-	numedges--;
-	r = true;
-	break;
-      }
+
+    typename T::iterator i = edges[from].find(to);
+    if(i != edges[from].end()) {
+      edges[from].erase(i);
+      numedges--;
+      r = true;
+    }
+    
+    if(from != to && r) {
+      i = edges[to].find(from);
+      edges[to].erase(i);
     }
 
-    if(from != to) {
-      // only if not loop!
-      for(vector<int>::iterator i(edges[to].begin());i!=edges[to].end();++i) {
-	if(*i == from) {
-	  // first match!
-	  edges[to].erase(i);
-	  break;
-	}
-      }
-    }
     return r;
   }
 

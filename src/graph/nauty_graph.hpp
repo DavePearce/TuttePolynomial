@@ -5,6 +5,7 @@
 #include "nauty.h" // nauty include must come first, otherwise it interferes with std::set
 #include <iostream>
 #include <cstring>
+#include <stdexcept>
 
 // this is a problem
 static graph *workspace = NULL;
@@ -98,14 +99,17 @@ public:
       workspace = new setword[50*M];
       worksize = 50*M; // could change this parameter ??
     }
+    
     graph *optr = ptr;
     ptr = new setword[N*M];
     statsblk stats;
+
     // options
-    DEFAULTOPTIONS(opts); // could make static to save space
+    DEFAULTOPTIONS(opts); // could make static to save space   
     opts.getcanon=TRUE;
     opts.defaultptn = FALSE;
     opts.writemarkers = FALSE;
+
     int lab[N];
     int ptn[N];    
     for(int i=0;i!=N;++i) { 
@@ -116,19 +120,21 @@ public:
     nvector orbits[N];
     // call nauty
     nauty(optr,lab,ptn,NULL,orbits,&opts,&stats,workspace,worksize,M,N,ptr);
+
     // tidy up
     delete [] optr;
 
+    // check for error
     if(stats.errstatus != 0) {
-      throw runtime_error("internal error: nauty returned an error?");
+      throw std::runtime_error("internal error: nauty returned an error?");
     }
   }
 
   void print() {
     setword *p = ptr; 
 
-    cout << "V = { 0.." << N << " }" << endl;
-    cout << "E = { ";
+    std::cout << "V = { 0.." << N << " }" << std::endl;
+    std::cout << "E = { ";
 
     for(int i=0;i!=N;++i) {
       int bp=0;
@@ -140,14 +146,14 @@ public:
 	  if(((*p) & mask)) { 
 	    int tail = (j*WORDSIZE) + (WORDSIZE-k);
 	    if(i <= tail) {
-	      cout << i << "--" << tail << " "; 
+	      std::cout << i << "--" << tail << " "; 
 	    }
 	  }
 	  mask = mask << 1;
 	}
       }
     }
-    cout << " }" << endl;
+    std::cout << " }" << std::endl;
   }
   
   template<class T>

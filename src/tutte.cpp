@@ -7,7 +7,6 @@
 #include <ext/hash_map>
 
 #include "config.h"
-#include "graph/nauty_graph.hpp"
 #include "graph/algorithms.hpp"
 
 using namespace __gnu_cxx; // needed for hash map
@@ -35,8 +34,16 @@ unsigned int store_misses = 0;
  */
 
 Poly *lookup(Graph const &g) {
-  nauty_graph ng(g);
 
+  // The following conversion is not cheap.  It would help to
+  // eliminate it whenever possible.  One approach might be, for
+  // example, to arrange the graphs such that we can tell no match
+  // exists simply by looking at the number of vertices and edges.
+  // This could include min, max edge degree?
+  nauty_graph ng(g); 
+
+  // Ok, now we have the nauty graph we can generate the unique
+  // canonical labelling to check whether it's really a match
   hash_map<nauty_graph,Poly,hash_nauty_graph>::iterator i = polystore.find(ng);
   if(i != polystore.end()) {
     store_hits++;

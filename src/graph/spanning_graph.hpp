@@ -106,9 +106,7 @@ public:
     // the spanning tree!
     build_tree();
   }
-
   
-
   vertex_iterator begin_verts() const { return graph.begin_verts(); }
   vertex_iterator end_verts() const { return graph.end_verts(); }
   
