@@ -55,7 +55,9 @@ public:
 	for(std::vector<int>::reverse_iterator i(loop_edges.rbegin());
 	    i!=loop_edges.rend();++i) {
 	  if(*i == from) {
-	    loop_edges.erase(i.base());
+	    // see: "Effective STL", item 28, p125 for explanation
+	    // as to why it's "(++i).base()", not "i.base()"
+	    loop_edges.erase((++i).base());
 	    return true;
 	  }
 	}
@@ -65,7 +67,10 @@ public:
 	  if((i->first == from && i->second == to) ||
 	     (i->first == to && i->second == from)) {
 	    // yes, this is a nontree edge, so no big deal
-	    nontree_edges.erase(i.base()); 
+	    //
+	    // see: "Effective STL", item 28, p125 for explanation
+	    // as to why it's "(++i).base()", not "i.base()"
+	    nontree_edges.erase((++i).base()); 
 	    return true;
 	  }
 	}
@@ -82,15 +87,15 @@ public:
   // pretty simple ... if there are no nontree and loop edges, then we must be a tree!
   bool is_tree() { return nontree_edges.size() == 0 && loop_edges.size() == 0; }
 
-  // if there are no nontree edges, but there are loop edges then we're a looptree :)
+  // if there are no nontree edges, but there are loop edges then we're a "looptree" :)
   bool is_looptree() { return nontree_edges.size() == 0; }
 
-  // assumes this is graph is NOT a tree
+  // assumes this graph is NOT a tree
   pair<int,int> const &select_nontree_edge() const {
     return nontree_edges.back();
   }
 
-  // assumes this is graph is NOT a tree
+  // assumes this graph is NOT a tree
   int select_loop_edge() const {
     return loop_edges.back();
   }

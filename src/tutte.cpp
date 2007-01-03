@@ -71,25 +71,24 @@ Poly deleteContract(Graph &g) {
 
   num_steps++;
 
-  //  cout << "PROCESSING:" << endl;
-  //  print_graph(cout,g);
+  //   cout << "PROCESSING:" << endl;
+  //   print_graph(cout,g);
   
   // if the graph is a "loop tree", then we're done.
   if(g.is_looptree()) {
-    // cout << "POLY: "  << Poly(g.num_edges()-g.num_loops(),g.num_loops()).str() << endl;
-    // cout << "=== END BRANCH ===" << endl;
+    //    cout << "POLY: "  << Poly(g.num_edges()-g.num_loops(),g.num_loops()).str() << endl;
+    //    cout << "=== END BRANCH ===" << endl;
     return Poly(g.num_edges()-g.num_loops(),g.num_loops());
   } else {
     
     term ys(0,g.num_loops());
 
     // first, remove any loops
-
     while(g.num_loops() > 0) {
       int l = g.select_loop_edge();
       g.remove_edge(l,l);
     }
-    
+
     // second, check if we've seen this graph before
 
     Poly *p;
