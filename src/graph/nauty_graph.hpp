@@ -60,6 +60,7 @@ public:
 	    add_edge(v,mestart);
 	    add_edge(mestart,w);
 	    // increment to ensure fresh vertex for next multi-edge
+	    mestart++;
 	  }
 	  E ++;
 	}

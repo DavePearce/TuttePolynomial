@@ -174,6 +174,7 @@ void timer_handler(int signum) {
   rate /= status_interval;
   cout << "Complete " << num_steps << " graphs at rate of " << ((int) rate) << "/s" << endl;
   old_num_steps = num_steps;
+  alarm(status_interval);
 }
 
 // ---------------------------------------------------------------
