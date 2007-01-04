@@ -11,13 +11,13 @@
 /* see users manual to understand how these variables were   */
 /* set and how to change them for special cases              */ 
 #define VERTEXSIZE 70 	  
-#define EDGESIZE 700
-#define GRAPHSIZE 400
-#define STACKSIZE 400 
+#define EDGESIZE 250
+#define GRAPHSIZE 100
+#define STACKSIZE 100 
 int origNoVert, origNoEdge;
 /* variables that determine hash table size */
-#define MAX_BLOCKS 15  
-#define INTS_PER_BLOCK 10000000
+#define MAX_BLOCKS 5  
+#define INTS_PER_BLOCK 100000  // was 10000000
 
 /* arrays to hold tutte polynomials */
 typedef long long int TUTTEMATCH;
