@@ -77,7 +77,6 @@ void store(Graph const &g, Poly const &p) {
 Poly deleteContract(Graph &g) { 
 
   num_steps++;
-  //   cout << "PROCESSING:" << endl;
   //   print_graph(cout,g);
   
   // if the graph is a "loop tree", then we're done.
@@ -86,7 +85,6 @@ Poly deleteContract(Graph &g) {
     //    cout << "=== END BRANCH ===" << endl;
     return Poly(g.num_edges()-g.num_loops(),g.num_loops());
   } else {
-    
     term ys(0,g.num_loops());
 
     // First, remove any loops
@@ -97,14 +95,10 @@ Poly deleteContract(Graph &g) {
     }
 
     // Second, check if we've seen this graph before
-
     Poly *p;
-    int nmultedges = g.num_multiedges();
-    if(nmultedges < 0) { throw runtime_error("NEGATIVE MULTEDGES"); }
-    if(nmultedges == 0 && (p=lookup(g)) != NULL) { return (*p) * ys; }
+    if((p=lookup(g)) != NULL) { return (*p) * ys; }
 
     // Third, perform delete contract 
-
     pair<int,int> e = g.select_nontree_edge();
 
     Graph g1(g);  
@@ -113,12 +107,10 @@ Poly deleteContract(Graph &g) {
     g2.contract_edge(e.first,e.second); 
 
     // Fourth, recursively compute the polynomial
-
     Poly r = deleteContract(g1) + deleteContract(g2); // perform the recursion
 
     // Finally, save computed polynomial 
-
-    if(nmultedges == 0) store(g,r);
+    store(g,r);
 
     return r * ys;
   }    
@@ -195,7 +187,7 @@ int main(int argc, char *argv[]) {
   memset(&sa,0,sizeof(sa));
   sa.sa_handler = &timer_handler;
   if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
-  alarm(status_intercal); // trigger alarm in status_interval seconds
+  alarm(status_interval); // trigger alarm in status_interval seconds
 
   Graph start_graph(0);
   try {

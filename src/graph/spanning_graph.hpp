@@ -23,15 +23,13 @@ private:
 public:
   spanning_graph(int n) : graph(n), visited(n)  {  }
 
-  int num_vertices() { return graph.num_vertices(); }
-  int num_edges() { return graph.num_edges(); }
-  int num_loops() { return loop_edges.size(); }
-  int num_multiedges() { return graph.num_multiedges(); }
+  int num_vertices() const { return graph.num_vertices(); }
+  int num_edges() const { return graph.num_edges(); }
+  int num_loops() const { return loop_edges.size(); }
+  int num_multiedges() const { return graph.num_multiedges(); }
+  bool is_multi_graph() const { return graph.is_multi_graph(); }
 
-  bool is_multi_graph() { return graph.is_multi_graph(); }
-
-  // there is no add vertex!
-  bool remove(int v) { graph.remove(v); }
+  bool clear(int v) { graph.clear(v); }
 
   void add_edge(int from, int to) { 
     graph.add_edge(from,to); 
@@ -121,9 +119,7 @@ private:
     nontree_edges.clear();
     loop_edges.clear();
     // now, make sure each vertex is explored
-    for(typename G::vertex_iterator i(graph.begin_verts());
-	i!=graph.end_verts();++i) {
-      int v = *i;
+    for(int v=0;v!=graph.num_vertices();++v) {
       if(!visited[v]) { traverse(-1,v); }
     }
   }

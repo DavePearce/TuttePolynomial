@@ -17,11 +17,11 @@ private:
 public:
   tutte_graph(int n) : graph(n)  {  }
 
-  int num_vertices() { return graph.num_vertices(); }
-  int num_edges() { return graph.num_edges(); }
-  int num_multiedges() { return graph.num_multiedges(); }
-  int num_loops() { return graph.num_loops(); }
-  bool is_multi_graph() { return graph.is_multi_graph(); }
+  int num_vertices() const { return graph.num_vertices(); }
+  int num_edges() const { return graph.num_edges(); }
+  int num_multiedges() const { return graph.num_multiedges(); }
+  int num_loops() const { return graph.num_loops(); }
+  bool is_multi_graph() const { return graph.is_multi_graph(); }
 
   // This method returns true if the graph is a loop.
   // Note that this *includes* multi-loops.
@@ -42,7 +42,7 @@ public:
   }
 
   // there is no add vertex!
-  bool remove(int v) { graph.remove(v); }
+  bool clear(int v) { graph.clear(v); }
   void remove_degree1_vertices() { /* replaces core/findDegOne */ }
 
   void add_edge(int from, int to) { graph.add_edge(from,to); }
