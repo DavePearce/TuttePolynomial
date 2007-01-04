@@ -1,0 +1,27 @@
+Things to do!
+=============
+
+* Add support for cache replacement policies and garbage collection
+* Add Gary's Triangle optimisation
+* Add Gary's small graph isomorphism tests
+
+Alternative Implementations
+---------------------------
+* Add vecmultiset option for adjacency list
+* Add alternative(s) to adjacency list (i.e. Gary's optimised for contracting)
+* Add alternative(s) to simple poly for representing polynomials
+
+Optimisations
+-------------
+* Optimise space used by nauty graphs
+* Optimise cache lookup policies (i.e. don't convert to nauty graph
+  unless really need to, possibly by using bins for different size graph) 
+* Optimise updating of canonical graph to prevent recomputing every time?
+* Optimise of hashing policy?
+* Explore nauty options?
+
+Other
+-----
+* Start using new version of nauty
+
+
