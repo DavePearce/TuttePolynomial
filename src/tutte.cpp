@@ -172,7 +172,7 @@ static int status_interval = 5; // in seconds
 void timer_handler(int signum) {
   double rate = (num_steps - old_num_steps);
   rate /= status_interval;
-  cout << "Complete " << num_steps << " graphs at rate of " << ((int) rate) << "/s" << endl;
+  cout << "Completed " << num_steps << " graphs at rate of " << ((int) rate) << "/s" << endl;
   old_num_steps = num_steps;
   alarm(status_interval);
 }
@@ -201,7 +201,9 @@ int main(int argc, char *argv[]) {
 
     Poly tuttePoly = deleteContract(start_graph);        
 
-    cout << "Tutte Polynomial is " << tuttePoly.str() << endl;
+    cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
+
+    cout << "Number of spanning trees: " << (long long) tuttePoly.substitute(1,1) << endl;
 
     cout << "==================" << endl;
     cout << "Total Steps: " << num_steps << endl;

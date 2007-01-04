@@ -1,6 +1,7 @@
 #ifndef SIMPLE_POLY_HPP
 #define SIMPLE_POLY_HPP
 
+#include <cmath>
 #include <iostream>
 #include <sstream>
 #include <string>
@@ -28,6 +29,10 @@ public:
     if(ypower > 1) { ss << "y^" << ypower; }
     else if(ypower == 1) { ss << "y"; }
     return ss.str();
+  }
+
+  double substitute(double x, double y) const {
+    return pow(x,xpower) * pow(y,ypower);
   }
 };
 
@@ -64,6 +69,14 @@ public:
     }
     
     return ss.str(); 
+  }
+
+  double substitute(double x, double y) const {
+    double val=0;
+    for(std::map<term,int>::const_iterator i(terms.begin());i!=terms.end();++i) {   
+      val += i->first.substitute(x,y) * i->second;
+    }
+    return val;
   }
 };
 
