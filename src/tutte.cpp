@@ -4,12 +4,11 @@
 #include <stdexcept>
 #include <algorithm>
 #include <csignal>
-#include <ext/hash_map>
 
 #include "config.h"
 #include "graph/algorithms.hpp"
+#include "cache/simple_cache.hpp"
 
-using namespace __gnu_cxx; // needed for hash map
 using namespace std;
 
 // ---------------------------------------------------------------
@@ -23,46 +22,7 @@ unsigned long old_num_steps = 0;
 // Method Bodies
 // ---------------------------------------------------------------
 
-hash_map<nauty_graph,Poly,hash_nauty_graph> polystore; // THE hash map
-unsigned int store_hits = 0;
-unsigned int store_misses = 0;
-
-/**
- * lookup is another important function.  It's job is to 
- * see if we have a stored solution for a particular graph.  If so, 
- * it returns the polynomial.  Otherwise, it returns NULL;
- */
-
-Poly *lookup(Graph const &g) {
-
-  // The following conversion is not cheap.  It would help to
-  // eliminate it whenever possible.  One approach might be, for
-  // example, to arrange the graphs such that we can tell no match
-  // exists simply by looking at the number of vertices and edges.
-  // This could include min, max edge degree?
-  nauty_graph ng(g); 
-
-  // Ok, now we have the nauty graph we can generate the unique
-  // canonical labelling to check whether it's really a match
-  hash_map<nauty_graph,Poly,hash_nauty_graph>::iterator i = polystore.find(ng);
-  if(i != polystore.end()) {
-    store_hits++;
-    return &(i->second);
-  } else {
-    store_misses++;
-    return NULL;
-  }
-}
-
-/**
- * store is another important function.  It's job is to 
- * store a particular solution for a graph in the hash map.
- */
-
-void store(Graph const &g, Poly const &p) {
-  nauty_graph ng(g);
-  polystore.insert(make_pair(ng,p));
-}
+static simple_cache<Poly> cache;
 
 /* deleteContract is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
@@ -94,9 +54,18 @@ Poly deleteContract(Graph &g) {
       g.remove_edge(l,l);
     }
 
-    // Second, check if we've seen this graph before
+    // Second, check if we've seen this graph before.  
+    // Note, the following conversion is not cheap.  It would help to
+    // eliminate it whenever possible.  One approach might be, for
+    // example, to arrange the graphs such that we can tell no match
+    // exists simply by looking at the number of vertices and edges.
+    // This could include min, max edge degree?
+
+    nauty_graph ng(g); 
+    ng.makeCanonical();
+
     Poly *p;
-    if((p=lookup(g)) != NULL) { return (*p) * ys; }
+    if((p=cache.lookup(ng)) != NULL) { return (*p) * ys; }
 
     // Third, perform delete contract 
     pair<int,int> e = g.select_nontree_edge();
@@ -110,7 +79,7 @@ Poly deleteContract(Graph &g) {
     Poly r = deleteContract(g1) + deleteContract(g2); // perform the recursion
 
     // Finally, save computed polynomial 
-    store(g,r);
+    cache.store(ng,r);
 
     return r * ys;
   }    
@@ -207,9 +176,9 @@ int main(int argc, char *argv[]) {
 
     cout << "==================" << endl;
     cout << "Total Steps: " << num_steps << endl;
-    cout << "Hash Map Hits: " << store_hits << endl;
-    cout << "Hash Map Misses: " << store_misses << endl;
-    cout << "Hash Map Entries: " << polystore.size() << endl;
+    cout << "Hash Map Hits: " << cache.num_hits() << endl;
+    cout << "Hash Map Misses: " << cache.num_misses() << endl;
+    cout << "Hash Map Entries: " << cache.num_entries() << endl;
     // printPoly(tuttePolynomial);
   } catch(exception const &e) {
     cout << "error: " << e.what() << endl;

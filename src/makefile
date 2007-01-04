@@ -1,6 +1,6 @@
 include ../makefile.config
 
-SUBDIRS=core graph hash misc poly
+SUBDIRS=core graph cache misc poly
 
 SRCS= tutte.cpp poly/simple_poly.cpp
 
