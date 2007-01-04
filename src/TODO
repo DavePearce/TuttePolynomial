@@ -4,6 +4,7 @@ Things to do!
 * Add support for cache replacement policies and garbage collection
 * Add Gary's Triangle optimisation
 * Add Gary's small graph isomorphism tests
+* Add support for integer overflow
 
 Alternative Implementations
 ---------------------------
