@@ -5,6 +5,13 @@
 #include <bits/allocator.h>
 #include <ext/hash_map>
 
+template<T>
+struct cache_node {
+  struct cache_node *next;  
+  // graph key comes here
+  // followed by polynomial
+}
+
 template<class P>
 class simple_cache {
 private:
@@ -14,23 +21,30 @@ private:
   unsigned int dealloced;  // for computing fragmentation
   unsigned int numentries; 
 
+  cache_node **buckets_p;        // start of bucket array
+  unsigned int nbuckets;         // number of buckets
   unsigned char *start_p;        // buffer start ptr
   unsigned char *next_p;         // buffer next ptr
   unsigned int bufsize;
   
 public:
   // max_size in bytes
-  simple_cache(size_t max_size) {
+  simple_cache(size_t max_size, size_t nbs = 100) {
     hits = 0;
     misses = 0;
     collisions = 0;
     dealloced = 0;
     bufsize = max_size;
+    nbuckets = nbs;
+    buckets_p = new (cache_node*)[nbs];
     start_p = new unsigned char[max_size];
   }
-
-  ~simple_cache() { delete [] start_p; }
-
+  
+  ~simple_cache() { 
+    delete [] buckets_p; 
+    delete [] start_p; 
+  }
+  
   int num_hits() { return hits; }
   int num_misses() { return misses; }
   int num_entries() { return numentries; }
