@@ -6,31 +6,49 @@
 #include <iostream>
 #include <cstring>
 #include <stdexcept>
+#include "../config.h"
 
 // this is a problem
 static graph *workspace = NULL;
 static int worksize = 0;
 
+template<class Alloc = std::allocator<setword> >
 class nauty_graph {
 private:
+  Alloc alloc; // allocator
+
   int N;
-  int REAL_N; // real number of vertices in original graph
-  int M;      // MAXM, cached for efficiency
+  int REAL_N;  // real number of vertices in original graph
+  int M;       // MAXM, cached for efficiency
   int E;
-  graph *ptr; // pointer to the data
-  
+
+  graph *ptr; // pointer to the data  
 public:
-  // copy constructor
+  // copy constructors  
   nauty_graph(nauty_graph const &g) {
     N = g.N;
     M = g.M;
     E = g.E;
     REAL_N = g.REAL_N;
-    ptr = new setword[N*M];    
-    memcpy(ptr,g.ptr,M*N*sizeof(setword));
+    ptr = alloc.allocate(N*M);    
+    memcpy(ptr,g.ptr,sizeof(setword)*M*N);
   }
 
-  ~nauty_graph() { delete [] ptr; }
+  // this one is needed for moving between 
+  // allocator domains.
+  template<class T>
+  nauty_graph(nauty_graph<T> const &g) {
+    N = g.N;
+    M = g.M;
+    E = g.E;
+    REAL_N = g.REAL_N;
+    ptr = alloc.allocate(N*M);    
+    memcpy(ptr,g.ptr,sizeof(setword)*M*N);
+  }
+
+  ~nauty_graph() { 
+    alloc.deallocate(ptr,N*M); 
+  }
   
   template<class T>
   nauty_graph(T g) {
@@ -44,7 +62,7 @@ public:
     M = N / WORDSIZE;
     E = 0;
     if((N % WORDSIZE) > 0) { M++; }    
-    ptr = new setword[N*M];
+    ptr = alloc.allocate(N*M);
     for(int i=0;i!=N*M;++i) { ptr[i] = 0; } // this is wierd.  I thought this should be initialised to 0 by default?
     graph *p = ptr;
 
@@ -67,14 +85,18 @@ public:
       }
     }
   }
-    
+
+  unsigned int num_vertices() const { return N; }
+  unsigned int num_edges() const { return E; }
+  unsigned int num_real_vertices() const { return REAL_N; }
+
   nauty_graph const &operator=(nauty_graph const &g) {
     if(this != &g) { 
       N = g.N;
       REAL_N = g.REAL_N;
       M = g.M;
       E = g.E;
-      ptr = new setword[N*M];    
+      ptr = alloc.allcate(N*M);
       memcpy(ptr,g.ptr,M*N*sizeof(setword));
     }
     return *this;
@@ -123,11 +145,11 @@ public:
     }
     
     graph *optr = ptr;
-    ptr = new setword[N*M];
+    ptr = alloc.allocate(N*M);
     statsblk stats;
 
     // options
-    DEFAULTOPTIONS(opts); // could make static to save space   
+    DEFAULTOPTIONS(opts); 
     opts.getcanon=TRUE;
     opts.defaultptn = FALSE;
     opts.writemarkers = FALSE;
@@ -145,7 +167,7 @@ public:
     nauty(optr,lab,ptn,NULL,orbits,&opts,&stats,workspace,worksize,M,N,ptr);
 
     // tidy up
-    delete [] optr;
+    alloc.deallocate(optr,N*M);
 
     // check for error
     if(stats.errstatus != 0) {
@@ -220,7 +242,7 @@ public:
     }
     std::cout << " }" << std::endl;
   }
-  
+
   template<class T>
   T toGraph() {
     T g(N);
@@ -245,9 +267,10 @@ public:
 };
 
 // standard hash function for nauty graph
+template<class Alloc = std::allocator<setword> >
 class hash_nauty_graph {
 public:
-  size_t operator()(nauty_graph const &g) const {
+  size_t operator()(nauty_graph<Alloc> const &g) const {
     return g.hash();
   }
 };

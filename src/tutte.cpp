@@ -22,8 +22,6 @@ unsigned long old_num_steps = 0;
 // Method Bodies
 // ---------------------------------------------------------------
 
-static simple_cache<Poly> cache;
-
 /* deleteContract is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
  * for one, and a contract operation for the other.
@@ -60,12 +58,12 @@ Poly deleteContract(Graph &g) {
     // example, to arrange the graphs such that we can tell no match
     // exists simply by looking at the number of vertices and edges.
     // This could include min, max edge degree?
-
-    nauty_graph ng(g); 
+    
+    nauty_graph<> ng(g); 
     ng.makeCanonical();
-
+    
     Poly *p;
-    if((p=cache.lookup(ng)) != NULL) { return (*p) * ys; }
+    if((p=simple_cache<Poly>::lookup(ng)) != NULL) { return (*p) * ys; }
 
     // Third, perform delete contract 
     pair<int,int> e = g.select_nontree_edge();
@@ -79,7 +77,7 @@ Poly deleteContract(Graph &g) {
     Poly r = deleteContract(g1) + deleteContract(g2); // perform the recursion
 
     // Finally, save computed polynomial 
-    cache.store(ng,r);
+    simple_cache<Poly>::store(ng,r);
 
     return r * ys;
   }    
@@ -176,9 +174,9 @@ int main(int argc, char *argv[]) {
 
     cout << "==================" << endl;
     cout << "Total Steps: " << num_steps << endl;
-    cout << "Hash Map Hits: " << cache.num_hits() << endl;
-    cout << "Hash Map Misses: " << cache.num_misses() << endl;
-    cout << "Hash Map Entries: " << cache.num_entries() << endl;
+    cout << "Hash Map Hits: " << simple_cache<Poly>::num_hits() << endl;
+    cout << "Hash Map Misses: " << simple_cache<Poly>::num_misses() << endl;
+    cout << "Hash Map Entries: " << simple_cache<Poly>::num_entries() << endl;
     // printPoly(tuttePolynomial);
   } catch(exception const &e) {
     cout << "error: " << e.what() << endl;
