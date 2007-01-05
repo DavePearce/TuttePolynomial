@@ -1,6 +1,6 @@
 SUBDIRS=
 
-SRCS=simple_cache.cpp
+SRCS=
 
 include ../../makefile.std
 

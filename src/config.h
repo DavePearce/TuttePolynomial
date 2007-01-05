@@ -1,7 +1,7 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
-#include "graph/nauty_graph.hpp"
+#include "graph/algorithms.hpp"
 #include "graph/adjacency_list.hpp"
 #include "graph/spanning_graph.hpp"
 #include "graph/tutte_graph.hpp"
