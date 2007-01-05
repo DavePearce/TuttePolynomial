@@ -59,6 +59,24 @@ inline bool nauty_add_edge(int from, int to, int M) {
   return true;
 }
 
+bool equals_graph_key(char *_k1, char *_k2) {
+  setword *k1 = (setword*) _k1;
+  setword *k2 = (setword*) _k2;
+  
+  unsigned int N1 = k1[0];
+  unsigned int N2 = k2[0];
+  
+  if(N1 != N2) { return false; }
+  else {
+    k1++;k2++;
+    unsigned int M = ((N1 % WORDSIZE) > 0) ? (N1 / WORDSIZE)+1 : N1 / WORDSIZE;
+    for(int i=0;i!=(N1*M);++i,++k1,++k2) {
+      if(*k1 != *k2) { return false; }
+    }
+  }
+  // success!
+  return true;
+}
 
 template<class T>
 char *graph_key(T const &graph) {
@@ -121,14 +139,26 @@ char *graph_key(T const &graph) {
 	NAUTY_WORKSPACE_SIZE,
 	M,
 	NN, // true graph size, since includes vertices added for multi edges.
-	nauty_canong_buf+2);
+	nauty_canong_buf+1 // add one for header
+	);
   
   // check for error
   if(stats.errstatus != 0) {
     throw std::runtime_error("internal error: nauty returned an error?");
   }  
 
+  nauty_canong_buf[0] = NN;
+  
   return (char*) nauty_canong_buf;
+}
+
+// returns the sizeof the graph key 
+// in bytes
+size_t sizeof_graph_key(char *key) {
+  setword *k1 = (setword*) key;  
+  unsigned int N = k1[0];
+  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+  return (N*M) * sizeof(setword);
 }
 
 #endif
