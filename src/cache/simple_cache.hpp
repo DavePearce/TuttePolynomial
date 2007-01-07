@@ -56,6 +56,11 @@ public:
   int num_entries() { return numentries; }
   int num_collisions() { return collisions; }
 
+  double density() {
+    size_t used = next_p - start_p;
+    return ((double)numentries) / used;
+  }
+
   P *lookup(unsigned char const *key) {
     // identify containing bucket
     unsigned int bucket = hash_graph_key(key) % nbuckets;

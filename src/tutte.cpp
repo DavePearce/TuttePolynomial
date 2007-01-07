@@ -177,6 +177,7 @@ int main(int argc, char *argv[]) {
     cout << "Cache Misses: " << cache.num_misses() << endl;
     cout << "Cache Collisions: " << cache.num_collisions() << endl;
     cout << "Cache Entries: " << cache.num_entries() << endl;
+    cout << "Cache Density: " << (cache.density()*1024) << " graphs/KB" << endl;
     // printPoly(tuttePolynomial);
   } catch(exception const &e) {
     cout << "error: " << e.what() << endl;
