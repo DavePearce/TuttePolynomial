@@ -59,7 +59,7 @@ inline bool nauty_add_edge(int from, int to, int M) {
   return true;
 }
 
-bool compare_graph_keys(char *_k1, char *_k2) {
+bool compare_graph_keys(unsigned char const *_k1, unsigned char const *_k2) {
   setword *k1 = (setword*) _k1;
   setword *k2 = (setword*) _k2;
   
@@ -79,7 +79,7 @@ bool compare_graph_keys(char *_k1, char *_k2) {
 }
 
 template<class T>
-char *graph_key(T const &graph) {
+unsigned char *graph_key(T const &graph) {
   unsigned int N = graph.num_vertices();
   unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   memset(nauty_graph_buf,sizeof(setword),N*M);
@@ -149,19 +149,29 @@ char *graph_key(T const &graph) {
 
   nauty_canong_buf[0] = NN;
   
-  return (char*) nauty_canong_buf;
+  return (unsigned char*) nauty_canong_buf;
 }
 
 // returns the sizeof the graph key 
 // in bytes
-size_t sizeof_graph_key(char *key) {
+size_t sizeof_graph_key(unsigned char const *key) {
   setword *k1 = (setword*) key;  
   unsigned int N = k1[0];
   unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   return (N*M) * sizeof(setword);
 }
 
-void print_graph_key(std::ostream &ostr, char *key) {
+unsigned int hash_graph_key(unsigned char const *key) {
+  setword *p = (setword*) key;  
+  unsigned int N = p[0];
+  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+  p = p + 1;
+  setword r = 0;
+  for(int i=0;i!=(N*M);++i) { r ^= p[i]; }
+  return r;
+}
+
+void print_graph_key(std::ostream &ostr, unsigned char const *key) {
   setword *p = (setword*) key;  
   unsigned int N = p[0];
   unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;

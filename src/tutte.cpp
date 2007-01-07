@@ -59,10 +59,10 @@ Poly deleteContract(Graph &g) {
     // exists simply by looking at the number of vertices and edges.
     // This could include min, max edge degree?
     
-    char *nauty_graph = graph_key(g);
+    unsigned char *key = graph_key(g);
     
-    //    Poly *p;
-    //    if((p=simple_cache<Poly>::lookup(ng)) != NULL) { return (*p) * ys; }
+    Poly *p;
+    if((p=cache.lookup(key)) != NULL) { return (*p) * ys; }
 
     // Third, perform delete contract 
     pair<int,int> e = g.select_nontree_edge();
@@ -76,7 +76,7 @@ Poly deleteContract(Graph &g) {
     Poly r = deleteContract(g1) + deleteContract(g2); // perform the recursion
 
     // Finally, save computed polynomial 
-    //    simple_cache<Poly>::store(ng,r);
+    cache.store(key,r);
 
     return r * ys;
   }    
@@ -173,9 +173,10 @@ int main(int argc, char *argv[]) {
 
     cout << "==================" << endl;
     cout << "Total Steps: " << num_steps << endl;
-    cout << "Hash Map Hits: " << cache.num_hits() << endl;
-    cout << "Hash Map Misses: " << cache.num_misses() << endl;
-    cout << "Hash Map Entries: " << cache.num_entries() << endl;
+    cout << "Cache Hits: " << cache.num_hits() << endl;
+    cout << "Cache Misses: " << cache.num_misses() << endl;
+    cout << "Cache Collisions: " << cache.num_collisions() << endl;
+    cout << "Cache Entries: " << cache.num_entries() << endl;
     // printPoly(tuttePolynomial);
   } catch(exception const &e) {
     cout << "error: " << e.what() << endl;

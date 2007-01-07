@@ -2,15 +2,15 @@
 #define SIMPLE_CACHE_HPP
 
 #include "../graph/algorithms.hpp"
-#include <bits/allocator.h>
+#include <stdexcept>
 #include <ext/hash_map>
 
-template<T>
 struct cache_node {
   struct cache_node *next;  
   // graph key comes here
   // followed by polynomial
-}
+};
+
 
 template<class P>
 class simple_cache {
@@ -20,8 +20,7 @@ private:
   unsigned int collisions;
   unsigned int dealloced;  // for computing fragmentation
   unsigned int numentries; 
-
-  cache_node **buckets_p;        // start of bucket array
+  struct cache_node** buckets;      // start of bucket array
   unsigned int nbuckets;         // number of buckets
   unsigned char *start_p;        // buffer start ptr
   unsigned char *next_p;         // buffer next ptr
@@ -36,27 +35,65 @@ public:
     dealloced = 0;
     bufsize = max_size;
     nbuckets = nbs;
-    buckets_p = new (cache_node*)[nbs];
+    buckets = new (cache_node*)[nbs];
     start_p = new unsigned char[max_size];
+    next_p = start_p;
+    for(int i=0;i!=nbs;++i) { buckets[i]=NULL; }
   }
   
   ~simple_cache() { 
-    delete [] buckets_p; 
+    delete [] buckets; 
     delete [] start_p; 
   }
   
   int num_hits() { return hits; }
   int num_misses() { return misses; }
   int num_entries() { return numentries; }
+  int num_collisions() { return collisions; }
 
-  P *lookup(char const *key) {
+  P *lookup(unsigned char const *key) {
+    // identify containing bucket
+    unsigned int bucket = hash_graph_key(key) % nbuckets;
+    struct cache_node *node_p = buckets[bucket];
+    // traverse bucket looking for match
+    while(node_p != NULL) {
+      unsigned char *key_p = (unsigned char *) (node_p + sizeof(struct cache_node));
+      if(compare_graph_keys(key,key_p)) {
+	// match made
+	std::cout << "MATCH MADE" << std::endl;
+	// do nothing for now
+      }
+      collisions++;
+      node_p = node_p->next;
+    }
     misses++;
     return NULL;    
   }
   
-  static void store(char const *key, P const &p) {
-    // do nothing for now
+  void store(unsigned char const *key, P const &p) {
+    // allocate space for new node
+    unsigned int sizeof_key = sizeof_graph_key(key);
+    unsigned char *ptr = alloc(sizeof(struct cache_node) + sizeof_key);  
+    struct cache_node *node_p = (struct cache_node *) ptr;
+    unsigned char *key_p = ptr + sizeof(struct cache_node);
+    // now put key at head of its bucket list
+    unsigned int bucket = hash_graph_key(key) % nbuckets; 
+    node_p->next = buckets[bucket];
+    buckets[bucket] = node_p;
+    // load the key into the node
+    memcpy(key_p,key,sizeof_key);
+    // update stats
+    numentries++;
+    // done.
   }  
+  
+  inline unsigned char *alloc(size_t size) {
+    // keep allocating until we run out of space ...
+    if(((next_p-start_p)+size) >= bufsize) { throw std::bad_alloc();  }
+    unsigned char *r = next_p;
+    next_p += size;
+    return r;
+  }
 };
 
 #endif
