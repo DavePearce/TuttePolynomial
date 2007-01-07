@@ -5,12 +5,17 @@
 #include <stdexcept>
 #include <ext/hash_map>
 
+/**
+ * This file implements a simple cache for storing graph_keys and
+ * their polynomials.  It's quite ugly in places, and I wonder how
+ * this could be improved.
+ */
+
 struct cache_node {
   struct cache_node *next;  
   // graph key comes here
   // followed by polynomial
 };
-
 
 template<class P>
 class simple_cache {
@@ -57,11 +62,12 @@ public:
     struct cache_node *node_p = buckets[bucket];
     // traverse bucket looking for match
     while(node_p != NULL) {
-      unsigned char *key_p = (unsigned char *) (node_p + sizeof(struct cache_node));
+      unsigned char *key_p = (unsigned char *) node_p;
+      key_p += sizeof(struct cache_node);
       if(compare_graph_keys(key,key_p)) {
 	// match made
 	std::cout << "MATCH MADE" << std::endl;
-	// do nothing for now
+	return NULL;  // do nothing for now
       }
       collisions++;
       node_p = node_p->next;

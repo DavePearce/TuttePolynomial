@@ -59,19 +59,21 @@ inline bool nauty_add_edge(int from, int to, int M) {
   return true;
 }
 
+void print_graph_key(std::ostream &ostr, unsigned char const *key);
+
 bool compare_graph_keys(unsigned char const *_k1, unsigned char const *_k2) {
   setword *k1 = (setword*) _k1;
   setword *k2 = (setword*) _k2;
   
   unsigned int N1 = k1[0];
   unsigned int N2 = k2[0];
-  
+
   if(N1 != N2) { return false; }
   else {
     k1++;k2++;
     unsigned int M = ((N1 % WORDSIZE) > 0) ? (N1 / WORDSIZE)+1 : N1 / WORDSIZE;
     for(int i=0;i!=(N1*M);++i,++k1,++k2) {
-      if(*k1 != *k2) { return false; }
+      if(*k1 != *k2) { 	return false; }
     }
   }
   // success!
@@ -158,7 +160,7 @@ size_t sizeof_graph_key(unsigned char const *key) {
   setword *k1 = (setword*) key;  
   unsigned int N = k1[0];
   unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
-  return (N*M) * sizeof(setword);
+  return ((N*M)+1) * sizeof(setword);
 }
 
 unsigned int hash_graph_key(unsigned char const *key) {
