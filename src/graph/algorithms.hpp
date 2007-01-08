@@ -177,7 +177,16 @@ unsigned int hash_graph_key(unsigned char const *key) {
   unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   p = p + 1;
   setword hash = 0;
-  //  for(int i=0;i!=(N*M);++i) { r ^= p[i]; }
+  //  for(int i=0;i!=(N*M);++i) { hash ^= p[i]; }
+
+  // The following code was taken from wikipedia and embodies the
+  // Jenkins One-at-a-time hash.  See this page:
+  //
+  //    http://www.burtleburtle.net/bob/hash/doobs.html
+  //
+  // for more detail.  I found this hash function to be significantly
+  // better that the above "xoring" approach.
+
   size_t i;
   
   for (i = 0; i < (N*M); i++) {
