@@ -5,6 +5,7 @@
 #include "../poly/algorithms.hpp"
 #include <stdexcept>
 #include <ext/hash_map>
+#include <climits>
 
 /**
  * This file implements a simple cache for storing graph_keys and
@@ -56,6 +57,32 @@ public:
   int num_misses() { return misses; }
   int num_entries() { return numentries; }
   int num_collisions() { return collisions; }
+  int num_buckets() { return nbuckets; }
+
+  unsigned int min_bucket_size() {
+    unsigned int r = UINT_MAX;
+    for(unsigned int i=0;i!=nbuckets;++i) {
+      r = min(r,bucket_length(i));
+    }
+    return r;
+  }
+  
+  unsigned int max_bucket_size() {
+    unsigned int r = 0;
+    for(unsigned int i=0;i!=nbuckets;++i) {
+      r = max(r,bucket_length(i));
+    }
+    return r;
+  }
+
+  unsigned int count_buckets_sized(int l, int u) {
+    unsigned int c = 0;
+    for(unsigned int i=0;i!=nbuckets;++i) {
+      unsigned int bl = bucket_length(i);
+      if(bl >= l && bl <= u) { c ++; }
+    }
+    return c;
+  }
 
   double density() {
     size_t used = next_p - start_p;
@@ -104,12 +131,23 @@ public:
     // done.
   }  
   
+private:
   inline unsigned char *alloc(size_t size) {
     // keep allocating until we run out of space ...
     if(((next_p-start_p)+size) >= bufsize) { throw std::bad_alloc();  }
     unsigned char *r = next_p;
     next_p += size;
     return r;
+  }
+
+  unsigned int bucket_length(unsigned int b) {
+    struct cache_node *ptr = buckets[b];
+    int len=0;
+    while(ptr != NULL) {
+      ptr = ptr->next;
+      len++;
+    }
+    return len;
   }
 };
 

@@ -16,7 +16,7 @@ using namespace std;
 
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
-simple_cache<Poly> cache(50*1024*1024); // 50 MEGABYTES FOR NOW
+simple_cache<Poly> cache(100*1024*1024); // 250 MEGABYTES FOR NOW
 
 // ---------------------------------------------------------------
 // Method Bodies
@@ -177,12 +177,22 @@ int main(int argc, char *argv[]) {
 
     cout << "==================" << endl;
     cout << "Total Steps: " << num_steps << endl;
+    cout << "Cache Entries: " << cache.num_entries() << endl;
+    cout << "Cache Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
     cout << "Cache Hits: " << cache.num_hits() << endl;
     cout << "Cache Misses: " << cache.num_misses() << endl;
     cout << "Cache Collisions: " << cache.num_collisions() << endl;
-    cout << "Cache Entries: " << cache.num_entries() << endl;
-    cout << "Cache Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
+    cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
+    cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
+    cout << "Num Buckets of size 0..0: " << cache.count_buckets_sized(0,0) << " (" << (((double)cache.count_buckets_sized(0,0)*100) / cache.num_buckets()) << "%)" << endl;
+    cout << "Num Buckets of size 1..2: " << cache.count_buckets_sized(1,2) << " (" << (((double)cache.count_buckets_sized(1,2)*100) / cache.num_buckets()) << "%)" << endl;
+    cout << "Num Buckets of size 3..5: " << cache.count_buckets_sized(3,5) << " (" << (((double)cache.count_buckets_sized(3,5)*100) / cache.num_buckets()) << "%)" << endl;
+    cout << "Num Buckets of size 6..10: " << cache.count_buckets_sized(6,10) << " (" << (((double)cache.count_buckets_sized(6,10)*100) / cache.num_buckets()) << "%)" << endl;
+    cout << "Num Buckets of size 11..100: " << cache.count_buckets_sized(11,100) << " (" << (((double)cache.count_buckets_sized(11,100)*100) / cache.num_buckets()) << "%)" << endl;
+    cout << "Num Buckets of size 101..1000: " << cache.count_buckets_sized(101,1000) << " (" << (((double)cache.count_buckets_sized(101,1000)*100) / cache.num_buckets()) << "%)" << endl;
     // printPoly(tuttePolynomial);
+  } catch(bad_alloc const &e) {
+    cout << "error: insufficient memory!" << endl;
   } catch(exception const &e) {
     cout << "error: " << e.what() << endl;
   }
