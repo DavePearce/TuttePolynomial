@@ -16,7 +16,7 @@ using namespace std;
 
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
-simple_cache<Poly> cache(100*1024*1024); // 250 MEGABYTES FOR NOW
+simple_cache<Poly> cache(250*1024*1024); // 250 MEGABYTES FOR NOW
 
 // ---------------------------------------------------------------
 // Method Bodies

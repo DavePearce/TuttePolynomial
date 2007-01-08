@@ -176,9 +176,21 @@ unsigned int hash_graph_key(unsigned char const *key) {
   unsigned int N = p[0];
   unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   p = p + 1;
-  setword r = 0;
-  for(int i=0;i!=((N*M)+1);++i) { r ^= p[i]; }
-  return r;
+  setword hash = 0;
+  //  for(int i=0;i!=(N*M);++i) { r ^= p[i]; }
+  size_t i;
+  
+  for (i = 0; i < (N*M); i++) {
+    hash += p[i];
+    hash += (hash << 10);
+    hash ^= (hash >> 6);
+  }
+
+  hash += (hash << 3);
+  hash ^= (hash >> 11);
+  hash += (hash << 15);
+
+  return hash;
 }
 
 void print_graph_key(std::ostream &ostr, unsigned char const *key) {
