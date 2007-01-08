@@ -89,9 +89,8 @@ unsigned char *graph_key(T const &graph) {
   unsigned int NN = N + graph.num_multiedges();
   unsigned int M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
   // quick sanity check
-  if(NN > MAXN) {
-    throw std::runtime_error("Graph to large for MAXN setting");
-  }
+  if(NN > MAXN) { throw std::runtime_error("graph to large for MAXN setting --- try changing it in config.h"); }
+
   // clear temporary space
   memset(nauty_graph_buf,0,sizeof(setword)*NN*M);
 
@@ -175,7 +174,7 @@ unsigned int hash_graph_key(unsigned char const *key) {
   setword *p = (setword*) key;  
   unsigned int N = p[0];
   unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
-  p = p + 1;
+  key = key + sizeof(setword);
   setword hash = 0;
   //  for(int i=0;i!=(N*M);++i) { hash ^= p[i]; }
 
@@ -189,8 +188,8 @@ unsigned int hash_graph_key(unsigned char const *key) {
 
   size_t i;
   
-  for (i = 0; i < (N*M); i++) {
-    hash += p[i];
+  for (i = 0; i < sizeof(setword)*(N*M); i++) {
+    hash += key[i];
     hash += (hash << 10);
     hash ^= (hash >> 6);
   }
