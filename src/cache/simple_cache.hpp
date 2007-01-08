@@ -35,7 +35,7 @@ private:
   
 public:
   // max_size in bytes
-  simple_cache(size_t max_size, size_t nbs = 10000) {
+  simple_cache(size_t max_size, size_t nbs = 100000) {
     hits = 0;
     misses = 0;
     collisions = 0;
