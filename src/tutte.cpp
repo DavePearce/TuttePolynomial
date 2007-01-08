@@ -34,12 +34,14 @@ simple_cache<Poly> cache(50*1024*1024); // 50 MEGABYTES FOR NOW
 
 Poly deleteContract(Graph &g) { 
 
+  //  cout << "=== PROCESSING === " << endl;
+  //  print_graph(cout,g);
+
   num_steps++;
   //   print_graph(cout,g);
   
   // if the graph is a "loop tree", then we're done.
   if(g.is_looptree()) {
-    //    cout << "POLY: "  << Poly(g.num_edges()-g.num_loops(),g.num_loops()).str() << endl;
     //    cout << "=== END BRANCH ===" << endl;
     return Poly(g.num_edges()-g.num_loops(),g.num_loops());
   } else {
@@ -61,8 +63,8 @@ Poly deleteContract(Graph &g) {
     
     unsigned char *key = graph_key(g);
     
-    Poly *p;
-    if((p=cache.lookup(key)) != NULL) { return (*p) * ys; }
+    Poly p;
+    if(cache.lookup(key,p)) { return p * ys; }
 
     // Third, perform delete contract 
     pair<int,int> e = g.select_nontree_edge();
@@ -73,10 +75,12 @@ Poly deleteContract(Graph &g) {
     g2.contract_edge(e.first,e.second); 
 
     // Fourth, recursively compute the polynomial
-    Poly r = deleteContract(g1) + deleteContract(g2); // perform the recursion
+    Poly r;
+    r = deleteContract(g1) + deleteContract(g2); // perform the recursion
 
     // Finally, save computed polynomial 
     cache.store(key,r);
+    delete [] key;  // free space used by key
 
     return r * ys;
   }    
@@ -177,7 +181,7 @@ int main(int argc, char *argv[]) {
     cout << "Cache Misses: " << cache.num_misses() << endl;
     cout << "Cache Collisions: " << cache.num_collisions() << endl;
     cout << "Cache Entries: " << cache.num_entries() << endl;
-    cout << "Cache Density: " << (cache.density()*1024) << " graphs/KB" << endl;
+    cout << "Cache Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
     // printPoly(tuttePolynomial);
   } catch(exception const &e) {
     cout << "error: " << e.what() << endl;

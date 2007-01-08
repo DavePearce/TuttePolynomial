@@ -34,10 +34,9 @@ void print_graph(std::ostream &ostr, T const &graph) {
 // METHODS FOR INTERFACING WITH NAUTY
 // ----------------------------------
 
-#define NAUTY_HEADER_SIZE 2
+#define NAUTY_HEADER_SIZE 1
 #define NAUTY_WORKSPACE_SIZE (50*MAXM)
 static setword nauty_graph_buf[(MAXN*MAXM)];
-static setword nauty_canong_buf[(MAXN*MAXM) + NAUTY_HEADER_SIZE];
 static setword nauty_workspace[NAUTY_WORKSPACE_SIZE];
 
 // return value indicates whether
@@ -67,10 +66,14 @@ bool compare_graph_keys(unsigned char const *_k1, unsigned char const *_k2) {
   
   unsigned int N1 = k1[0];
   unsigned int N2 = k2[0];
+  unsigned int REAL_N1 = k1[1];
+  unsigned int REAL_N2 = k2[1];
 
-  if(N1 != N2) { return false; }
+
+  if(N1 != N2 || REAL_N1 != REAL_N2) { return false; }
   else {
-    k1++;k2++;
+    k1=k1+NAUTY_HEADER_SIZE;
+    k2=k2+NAUTY_HEADER_SIZE;
     unsigned int M = ((N1 % WORDSIZE) > 0) ? (N1 / WORDSIZE)+1 : N1 / WORDSIZE;
     for(int i=0;i!=(N1*M);++i,++k1,++k2) {
       if(*k1 != *k2) { 	return false; }
@@ -83,14 +86,16 @@ bool compare_graph_keys(unsigned char const *_k1, unsigned char const *_k2) {
 template<class T>
 unsigned char *graph_key(T const &graph) {
   unsigned int N = graph.num_vertices();
-  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
-  memset(nauty_graph_buf,sizeof(setword),N*M);
+  unsigned int NN = N + graph.num_multiedges();
+  unsigned int M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
   // quick sanity check
-  if((graph.num_vertices() + graph.num_multiedges()) > MAXN) {
+  if(NN > MAXN) {
     throw std::runtime_error("Graph to large for MAXN setting");
   }
-     
-  int NN = N; // new vertices representing multiedges
+  // clear temporary space
+  memset(nauty_graph_buf,0,sizeof(setword)*NN*M);
+
+  int mes = N; // multi-edge start
   for(int v=0;v!=N;++v) {
     for(typename T::edge_iterator j(graph.begin_edges(v));j!=graph.end_edges(v);++j) {	
       int w = *j;
@@ -98,10 +103,10 @@ unsigned char *graph_key(T const &graph) {
 	if(!nauty_add_edge<T>(v,w,M)) {
 	  // attempt to add edge failed, which means
 	  // this must be a multi-edge ...
-	  nauty_add_edge<T>(v,NN,M);
-	  nauty_add_edge<T>(NN,w,M);
+	  nauty_add_edge<T>(v,mes,M);
+	  nauty_add_edge<T>(mes,w,M);
 	  // increment to ensure fresh vertex for next multi-edge
-	  NN++;
+	  mes++;
 	}
       }
     }
@@ -112,7 +117,7 @@ unsigned char *graph_key(T const &graph) {
   // canonical graph which essentially corresponds to our "graph key"
 
   statsblk stats;
-  static DEFAULTOPTIONS(opts); 
+  DEFAULTOPTIONS(opts); 
   opts.getcanon=TRUE;
   opts.defaultptn = FALSE;
   opts.writemarkers = FALSE;
@@ -129,6 +134,9 @@ unsigned char *graph_key(T const &graph) {
   ptn[NN-1] = 0;
   ptn[N-1]=0;
   nvector orbits[NN];
+
+  setword *nauty_canong_buf = new setword[((NN*M)+NAUTY_HEADER_SIZE) * sizeof(setword)];
+
   // call nauty
   nauty(nauty_graph_buf,
 	lab,
@@ -141,7 +149,7 @@ unsigned char *graph_key(T const &graph) {
 	NAUTY_WORKSPACE_SIZE,
 	M,
 	NN, // true graph size, since includes vertices added for multi edges.
-	nauty_canong_buf+1 // add one for header
+	nauty_canong_buf+NAUTY_HEADER_SIZE  // add two for header
 	);
   
   // check for error
@@ -150,7 +158,7 @@ unsigned char *graph_key(T const &graph) {
   }  
 
   nauty_canong_buf[0] = NN;
-  
+
   return (unsigned char*) nauty_canong_buf;
 }
 
@@ -160,7 +168,7 @@ size_t sizeof_graph_key(unsigned char const *key) {
   setword *k1 = (setword*) key;  
   unsigned int N = k1[0];
   unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
-  return ((N*M)+1) * sizeof(setword);
+  return ((N*M)+NAUTY_HEADER_SIZE) * sizeof(setword);
 }
 
 unsigned int hash_graph_key(unsigned char const *key) {
@@ -169,18 +177,19 @@ unsigned int hash_graph_key(unsigned char const *key) {
   unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   p = p + 1;
   setword r = 0;
-  for(int i=0;i!=(N*M);++i) { r ^= p[i]; }
+  for(int i=0;i!=((N*M)+1);++i) { r ^= p[i]; }
   return r;
 }
 
 void print_graph_key(std::ostream &ostr, unsigned char const *key) {
   setword *p = (setword*) key;  
   unsigned int N = p[0];
+  unsigned int REAL_N = p[1];
   unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
-  p=p+1;
+  p=p+NAUTY_HEADER_SIZE;
   
-  ostr << "V = { 0.." << N << " }" << std::endl;
-  ostr << "E = { ";
+  ostr << "V = { 0.." << N << "(" << REAL_N << ") }" << std::endl;
+  ostr << "E = { "; 
   
   for(int i=0;i!=N;++i) {
     int bp=0;
