@@ -27,7 +27,7 @@ private:
   unsigned int collisions;
   unsigned int dealloced;  // for computing fragmentation
   unsigned int numentries; 
-  struct cache_node** buckets;      // start of bucket array
+  struct cache_node** buckets;   // start of bucket array
   unsigned int nbuckets;         // number of buckets
   unsigned char *start_p;        // buffer start ptr
   unsigned char *next_p;         // buffer next ptr
@@ -120,6 +120,30 @@ public:
     }
     // done ?
     delete [] ostart_p;
+  }
+
+  void rebucket(size_t nbs) {
+    struct cache_node** bs = new (struct cache_node*)[nbs];
+    // initialise buckets
+    for(int i=0;i!=nbs;++i) { bs[i]=NULL; }
+    // now, rebucket everything
+    for(int i=0;i!=nbuckets;++i) {
+      struct cache_node *ptr, *nptr = buckets[i];
+      int len=0;
+      while(ptr != NULL) {
+	nptr = ptr->next;
+	unsigned char *key_p = (unsigned char *) ptr;
+	key_p += sizeof(struct cache_node);
+	unsigned int b = hash_graph_key(key_p) % nbs; 
+	ptr->next = bs[b];
+	bs[b] = ptr;
+	ptr = nptr;
+      }
+    }
+
+    delete [] buckets; // free up space
+    buckets = bs;      // assign new buckets
+    nbuckets = nbs;
   }
 
   bool lookup(unsigned char const *key, P &dst) {

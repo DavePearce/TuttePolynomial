@@ -4,8 +4,8 @@
 // the following is needed for Nauty and determines
 // the maximum graph size
 #define MAXN 96
+#include "nauty.h"
 
-#include "graph/algorithms.hpp"
 #include "graph/adjacency_list.hpp"
 #include "graph/spanning_graph.hpp"
 #include "graph/tutte_graph.hpp"

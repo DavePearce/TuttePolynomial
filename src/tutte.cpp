@@ -1,10 +1,12 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <stack>
 #include <stdexcept>
 #include <algorithm>
 #include <csignal>
 #include <getopt.h>
+#include <sys/time.h>
 
 #include "config.h"
 #include "cache/simple_cache.hpp"
@@ -12,12 +14,33 @@
 using namespace std;
 
 // ---------------------------------------------------------------
+// User-Defined Types
+// ---------------------------------------------------------------
+
+class my_timer {
+private:
+  struct timeval _start;
+public:
+  my_timer(void) {
+    gettimeofday(&_start,NULL);
+  }
+
+  double elapsed(void) {
+    struct timeval tmp;
+    gettimeofday(&tmp,NULL); 
+    double end = tmp.tv_sec + (tmp.tv_usec / 1000000.0);
+    double start = _start.tv_sec + (_start.tv_usec / 1000000.0);    
+    return end - start;
+  }  
+};
+
+// ---------------------------------------------------------------
 // Global Variables
 // ---------------------------------------------------------------
 
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
-simple_cache<Poly> cache(1024);
+simple_cache<Poly> cache(1024,100);
 
 // ---------------------------------------------------------------
 // Method Bodies
@@ -173,23 +196,27 @@ int main(int argc, char *argv[]) {
   // Process command-line arguments
   // ------------------------------
 
-#define OPT_HELP 0
-#define OPT_CACHESIZE 10
+  #define OPT_HELP 0
+  #define OPT_CACHESIZE 10
+  #define OPT_CACHEBUCKETS 11
 
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
+    {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     NULL
   };
   
   char *descriptions[]={
     "        --help                    display this information",
     " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700MB",
+    "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     NULL
   };
 
   unsigned int v;
-  unsigned int cache_size(1024*1024);
+  unsigned int cache_size(50*1024*1024); // detault 50MB
+  unsigned int cache_buckets(10000);     // default 10,000 buckets
 
   while((v=getopt_long(argc,argv,"c:",long_options,NULL)) != -1) {
     switch(v) {      
@@ -205,6 +232,9 @@ int main(int argc, char *argv[]) {
     case 'c':
     case OPT_CACHESIZE:
       cache_size = parse_amount(optarg);
+      break;
+    case OPT_CACHEBUCKETS:
+      cache_buckets = parse_amount(optarg);
       break;
     }
   }
@@ -225,6 +255,7 @@ int main(int argc, char *argv[]) {
   // -------------------------------------------------
 
   cache.resize(cache_size);
+  cache.rebucket(cache_buckets);
 
   // -------------------------------------------------
   // Register alarm signal for printing status updates
@@ -249,6 +280,8 @@ int main(int argc, char *argv[]) {
     
     print_graph(cout,start_graph);    
 
+    my_timer timer;
+
     Poly tuttePoly = deleteContract(start_graph);        
 
     cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
@@ -257,6 +290,7 @@ int main(int argc, char *argv[]) {
 
     cout << "==================" << endl;
     cout << "Total Steps: " << num_steps << endl;
+    cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
     cout << endl;
     cout << "Cache stats:" << endl << "------------" << endl;
     cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
