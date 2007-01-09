@@ -198,12 +198,14 @@ int main(int argc, char *argv[]) {
 
   #define OPT_HELP 0
   #define OPT_CACHESIZE 10
-  #define OPT_CACHEBUCKETS 11
+  #define OPT_CACHEBUCKETS 11  
+  #define OPT_NAUTYWORKSPACE 20
 
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
+    {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     NULL
   };
   
@@ -211,6 +213,7 @@ int main(int argc, char *argv[]) {
     "        --help                    display this information",
     " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700MB",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
+    "        --nauty-workspace=<amount> set size of nauty workspace, e.g. 10000",
     NULL
   };
 
@@ -235,6 +238,9 @@ int main(int argc, char *argv[]) {
       break;
     case OPT_CACHEBUCKETS:
       cache_buckets = parse_amount(optarg);
+      break;
+    case OPT_NAUTYWORKSPACE:
+      resize_nauty_workspace(parse_amount(optarg));
       break;
     }
   }
