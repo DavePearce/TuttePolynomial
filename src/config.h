@@ -1,6 +1,10 @@
 #ifndef CONFIG_H
 #define CONFIG_H
 
+// the following is needed for Nauty and determines
+// the maximum graph size
+#define MAXN 96
+
 #include "graph/algorithms.hpp"
 #include "graph/adjacency_list.hpp"
 #include "graph/spanning_graph.hpp"

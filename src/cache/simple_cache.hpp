@@ -35,7 +35,7 @@ private:
   
 public:
   // max_size in bytes
-  simple_cache(size_t max_size, size_t nbs = 100000) {
+  simple_cache(size_t max_size, size_t nbs = 10000) {
     hits = 0;
     misses = 0;
     collisions = 0;
@@ -52,7 +52,7 @@ public:
     delete [] buckets; 
     delete [] start_p; 
   }
-  
+    
   int num_hits() { return hits; }
   int num_misses() { return misses; }
   int num_entries() { return numentries; }
@@ -87,6 +87,39 @@ public:
   double density() {
     size_t used = next_p - start_p;
     return ((double)numentries) / used;
+  }
+
+  void resize(size_t max_size) {
+    unsigned int old_size = next_p - start_p;
+    unsigned char *ostart_p = start_p;
+    if(old_size > max_size) {
+      throw std::runtime_error("cache contains to much data to to be resized!");
+    } 
+    bufsize = max_size;
+    start_p = new unsigned char[max_size];
+
+    // update simple pointers
+    unsigned int diff = start_p - ostart_p;   
+    next_p = next_p + diff;
+
+    // first, copy old data into new location
+    memcpy(start_p,ostart_p,old_size);
+    // now, update pointers and links    
+    for(int i=0;i!=nbuckets;++i) {
+      if(buckets[i] != NULL) {
+	buckets[i] += diff;
+	struct cache_node *ptr = buckets[i];
+	int len=0;
+	while(ptr != NULL) {
+	  unsigned char *p = (unsigned char *) ptr->next;
+	  p += diff;
+	  ptr->next = (struct cache_node *) p;
+	  ptr = ptr->next;
+	}
+      }
+    }
+    // done ?
+    delete [] ostart_p;
   }
 
   bool lookup(unsigned char const *key, P &dst) {
@@ -132,6 +165,13 @@ public:
   }  
   
 private:
+  simple_cache const &operator=(simple_cache const &src) {
+    return this;
+  }
+
+  simple_cache(simple_cache const &src) {
+  }
+
   inline unsigned char *alloc(size_t size) {
     // keep allocating until we run out of space ...
     if(((next_p-start_p)+size) >= bufsize) { throw std::bad_alloc();  }

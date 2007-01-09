@@ -1,7 +1,7 @@
 #ifndef GRAPH_ALGORITHMS_HPP
 #define GRAPH_ALGORITHMS_HPP
 
-#define MAXN 64    // will this be enough?
+#include "../config.h"
 #include "nauty.h" // nauty include must come first, otherwise it interferes with std::set
 
 #include <iostream>

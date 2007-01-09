@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include <algorithm>
 #include <csignal>
+#include <getopt.h>
 
 #include "config.h"
 #include "cache/simple_cache.hpp"
@@ -16,7 +17,7 @@ using namespace std;
 
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
-simple_cache<Poly> cache(500*1024*1024); // 250 MEGABYTES FOR NOW
+simple_cache<Poly> cache(1024);
 
 // ---------------------------------------------------------------
 // Method Bodies
@@ -133,6 +134,21 @@ Graph read_graph(std::istream &input) {
   return r;
 }
 
+unsigned int parse_amount(char *str) {
+  char *endp=NULL;
+  long r = strtol(str,&endp,10);
+  if(*endp != '\0') {
+    if(strcmp(endp,"MB") == 0) {
+      r = r * 1024 * 1024;
+    } else if(strcmp(endp,"KB") == 0) {
+      r = r * 1024;
+    } else if(strcmp(endp,"GB") == 0) {
+      r = r * 1024 * 1024 * 1024;
+    }
+  }
+  return r;
+}
+
 // ---------------------------------------------------------------
 // Signal Handlers
 // ---------------------------------------------------------------
@@ -153,16 +169,80 @@ void timer_handler(int signum) {
 
 int main(int argc, char *argv[]) {
 
-  // first up, register some signals to help make the environment sane
+  // ------------------------------
+  // Process command-line arguments
+  // ------------------------------
+
+#define OPT_HELP 0
+#define OPT_CACHESIZE 10
+
+  struct option long_options[]={
+    {"help",no_argument,NULL,OPT_HELP},
+    {"cache-size",required_argument,NULL,OPT_CACHESIZE},
+    NULL
+  };
+  
+  char *descriptions[]={
+    "        --help                    display this information",
+    " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700MB",
+    NULL
+  };
+
+  unsigned int v;
+  unsigned int cache_size(1024*1024);
+
+  while((v=getopt_long(argc,argv,"c:",long_options,NULL)) != -1) {
+    switch(v) {      
+    case OPT_HELP:
+      cout << "usage: " << argv[0] << " [options] <input graph file>" << endl;
+      cout << "options:" << endl;
+      for(char **ptr=descriptions;*ptr != NULL; ptr++) {
+	cout << *ptr << endl;
+      }    
+      exit(1);
+          
+    // --- CACHE OPTIONS ---
+    case 'c':
+    case OPT_CACHESIZE:
+      cache_size = parse_amount(optarg);
+      break;
+    }
+  }
+
+  // Quick sanity check
+
+  if(optind >= argc) {
+    cout << "usage: " << argv[0] << " [options] <input graph file>" << endl;
+    cout << "options:" << endl;
+    for(char **ptr=descriptions;*ptr != NULL; ptr++) {
+      cout << *ptr << endl;
+    }    
+    exit(1);
+  }
+
+  // -------------------------------------------------
+  // Initialise Cache 
+  // -------------------------------------------------
+
+  cache.resize(cache_size);
+
+  // -------------------------------------------------
+  // Register alarm signal for printing status updates
+  // -------------------------------------------------
+
   struct sigaction sa;
   memset(&sa,0,sizeof(sa));
   sa.sa_handler = &timer_handler;
   if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
   alarm(status_interval); // trigger alarm in status_interval seconds
 
+  // -----------------------------------
+  // Now, begin solving the input graph!
+  // -----------------------------------
+
   Graph start_graph(0);
   try {
-    ifstream input(argv[1]);
+    ifstream input(argv[optind]);
     start_graph = read_graph(input);
 
     cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
