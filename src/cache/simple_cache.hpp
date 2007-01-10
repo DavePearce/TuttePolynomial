@@ -5,6 +5,7 @@
 #include "../poly/algorithms.hpp"
 #include <stdexcept>
 #include <ext/hash_map>
+#include <cstdlib>
 #include <climits>
 
 /**
@@ -15,6 +16,7 @@
 
 struct cache_node {
   struct cache_node *next;  
+  struct cache_node *prev;  
   // graph key comes here
   // followed by polynomial
 };
@@ -27,7 +29,7 @@ private:
   unsigned int collisions;
   unsigned int dealloced;  // for computing fragmentation
   unsigned int numentries; 
-  struct cache_node** buckets;   // start of bucket array
+  struct cache_node* buckets;    // start of bucket array
   unsigned int nbuckets;         // number of buckets
   unsigned char *start_p;        // buffer start ptr
   unsigned char *next_p;         // buffer next ptr
@@ -42,10 +44,9 @@ public:
     dealloced = 0;
     bufsize = max_size;
     nbuckets = nbs;
-    buckets = new (cache_node*)[nbs];
+    buckets = create_bucket_array(nbs);
     start_p = new unsigned char[max_size];
     next_p = start_p;
-    for(int i=0;i!=nbs;++i) { buckets[i]=NULL; }
   }
   
   ~simple_cache() { 
@@ -106,9 +107,9 @@ public:
     memcpy(start_p,ostart_p,old_size);
     // now, update pointers and links    
     for(int i=0;i!=nbuckets;++i) {
-      if(buckets[i] != NULL) {
-	buckets[i] += diff;
-	struct cache_node *ptr = buckets[i];
+      if(buckets[i].next != NULL) {
+	buckets[i].next += diff;
+	struct cache_node *ptr = buckets[i].next;
 	int len=0;
 	while(ptr != NULL) {
 	  unsigned char *p = (unsigned char *) ptr->next;
@@ -123,20 +124,22 @@ public:
   }
 
   void rebucket(size_t nbs) {
-    struct cache_node** bs = new (struct cache_node*)[nbs];
-    // initialise buckets
-    for(int i=0;i!=nbs;++i) { bs[i]=NULL; }
+    struct cache_node* bs = create_bucket_array(nbs);
+
     // now, rebucket everything
     for(int i=0;i!=nbuckets;++i) {
-      struct cache_node *ptr, *nptr = buckets[i];
+      struct cache_node *ptr, *nptr = buckets[i].next;
       int len=0;
       while(ptr != NULL) {
 	nptr = ptr->next;
 	unsigned char *key_p = (unsigned char *) ptr;
 	key_p += sizeof(struct cache_node);
 	unsigned int b = hash_graph_key(key_p) % nbs; 
-	ptr->next = bs[b];
-	bs[b] = ptr;
+	ptr->next = bs[b].next;
+	ptr->prev = &(bs[b]);
+	if(ptr->next != NULL) {
+	  ptr->next->prev = ptr;
+	}
 	ptr = nptr;
       }
     }
@@ -144,12 +147,13 @@ public:
     delete [] buckets; // free up space
     buckets = bs;      // assign new buckets
     nbuckets = nbs;
+
   }
 
   bool lookup(unsigned char const *key, P &dst) {
     // identify containing bucket
     unsigned int bucket = hash_graph_key(key) % nbuckets;
-    struct cache_node *node_p = buckets[bucket];
+    struct cache_node *node_p = buckets[bucket].next;
     // traverse bucket looking for match
     while(node_p != NULL) {
       unsigned char *key_p = (unsigned char *) node_p;
@@ -177,8 +181,7 @@ public:
     unsigned char *key_p = ptr + sizeof(struct cache_node);
     // now put key at head of its bucket list
     unsigned int bucket = hash_graph_key(key) % nbuckets; 
-    node_p->next = buckets[bucket];
-    buckets[bucket] = node_p;
+    insert_node_after(node_p,&(buckets[bucket]));
     // load the key into the node
     memcpy(key_p,key,sizeof_key);
     // load the poly into the node
@@ -194,24 +197,122 @@ private:
   }
 
   simple_cache(simple_cache const &src) {
-  }
+  }  
 
   inline unsigned char *alloc(size_t size) {
-    // keep allocating until we run out of space ...
-    if(((next_p-start_p)+size) >= bufsize) { throw std::bad_alloc();  }
+    // cannot ask for more than the buffer can contain
+    if(size >= bufsize) { throw std::bad_alloc();  }
+    // if there's not enough space left, free up some!
+    while(((next_p-start_p)+size) >= bufsize) { 
+      randomly_remove_nodes(0.5);  
+      pack_buffer();
+    }
     unsigned char *r = next_p;
     next_p += size;
     return r;
   }
 
   unsigned int bucket_length(unsigned int b) {
-    struct cache_node *ptr = buckets[b];
+    struct cache_node *ptr = buckets[b].next;
     int len=0;
     while(ptr != NULL) {
       ptr = ptr->next;
       len++;
     }
     return len;
+  }
+
+  struct cache_node *create_bucket_array(size_t nbs) {
+    struct cache_node *bs = new (struct cache_node)[nbs];
+    // initialise buckets
+    for(int i=0;i!=nbs;++i) { 
+      bs[i].next=NULL; 
+      bs[i].prev=NULL; 
+    }
+    return bs;
+  }
+
+  // randomly remove nodes with a probability of p
+  void randomly_remove_nodes(double p) {
+    int count=0;
+    for(int i=0;i!=nbuckets;++i) {
+      struct cache_node *ptr = buckets[i].next;
+      while(ptr != NULL) {
+	struct cache_node *optr=ptr;
+	ptr = ptr->next;
+	double f = ((double)rand())/RAND_MAX;
+	if(f > p) { 
+	  count++; 
+	  remove_node(optr); 
+	}
+      }
+    }
+    numentries-=count;
+  }
+
+  // compact buffer which pushes all free space to end
+  void pack_buffer() {    
+    unsigned int diff = 0;
+    struct cache_node *ptr = (struct cache_node *) start_p;
+    struct cache_node *pend = (struct cache_node *) next_p;
+
+    while(ptr != pend) {
+      if(ptr->next == NULL && ptr->prev == NULL) {
+	// this node is free
+	diff += sizeof_node(ptr);
+      } else {
+	// move node along
+	unsigned char *dst = (unsigned char *) ptr;
+	dst -= diff;
+	move_node(dst,ptr);
+      }
+      ptr = next_node(ptr);
+    }
+    next_p -= diff;
+    std::cout << "*** FREED UP " << diff << " BYTES" << std::endl;
+  }
+
+  struct cache_node *next_node(struct cache_node *ptr) {
+    unsigned char *p = (unsigned char *) ptr;
+    p += sizeof_node(ptr);
+    return (struct cache_node *) p;
+  }
+
+  size_t sizeof_node(struct cache_node *node) {
+    unsigned char *p = (unsigned char *) node;
+    size_t r = sizeof(struct cache_node);
+    p += r;
+    r += sizeof_graph_key(p);
+    p += r;
+    r += sizeof_compact_poly(p);
+    return r;
+  }
+
+  void insert_node_after(struct cache_node *new_node, struct cache_node *pos) {
+    new_node->next = pos->next;
+    new_node->prev = pos;
+    pos->next = new_node;
+    if(new_node->next != NULL) {
+      new_node->next->prev = new_node;
+    }
+  }
+  
+  void remove_node(struct cache_node *node) {
+    node->prev = node->next;
+    if(node->next != NULL) {
+      node->next->prev = node->prev;
+    }
+    node->next = NULL;
+    node->prev = NULL;
+  }
+
+  void move_node(unsigned char *dst, struct cache_node *ptr) {
+    struct cache_node *dstptr = (struct cache_node *) dst;
+    ptr->prev->next = dstptr;
+    if(ptr->next != NULL) {
+      ptr->next->prev = dstptr;
+    }    
+    memmove(dst,ptr,sizeof_node(ptr));
   }
 };
 
