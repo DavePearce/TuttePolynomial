@@ -47,7 +47,7 @@ size_t sizeof_graph_key(unsigned char const *key) {
 unsigned int hash_graph_key(unsigned char const *key) {
   setword *p = (setword*) key;  
   unsigned int N = p[0];
-  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE) : N / WORDSIZE;
   key = key + sizeof(setword);
   setword hash = 0;
   //  for(int i=0;i!=(N*M);++i) { hash ^= p[i]; }
@@ -62,7 +62,8 @@ unsigned int hash_graph_key(unsigned char const *key) {
 
   size_t i;
   
-  for (i = 0; i < sizeof(setword)*(N*M); i++) {
+  unsigned int nbytes = sizeof(setword)*((N*M)+NAUTY_HEADER_SIZE);
+  for (i = 0; i < nbytes; i++) {
     hash += key[i];
     hash += (hash << 10);
     hash ^= (hash >> 6);

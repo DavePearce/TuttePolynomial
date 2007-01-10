@@ -11,17 +11,16 @@
 template<class T>
 void print_graph(std::ostream &ostr, T const &graph) {
   ostr << "V = { ";
-  for(int i=0;i!=graph.num_vertices();++i) {
-    ostr << i << " ";
+  for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    ostr << *i << " ";
   }
   ostr << "}" << std::endl;
 
   ostr << "E = { ";
-
-  for(int i=0;i!=graph.num_vertices();++i) {
-    for(typename T::edge_iterator j(graph.begin_edges(i));j!=graph.end_edges(i);++j) {
-      if(i <= *j) {
-	ostr << i << "--" << *j << " ";
+  for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename T::edge_iterator j(graph.begin_edges(*i));j!=graph.end_edges(*i);++j) {
+      if(*i <= *j) {
+	ostr << *i << "--" << *j << " ";
       } 
     }
   }
@@ -33,7 +32,7 @@ void print_graph(std::ostream &ostr, T const &graph) {
 // METHODS FOR INTERFACING WITH NAUTY
 // ----------------------------------
 
-#define NAUTY_HEADER_SIZE 1
+#define NAUTY_HEADER_SIZE 2
 
 extern setword nauty_graph_buf[];
 extern setword *nauty_workspace;
@@ -66,7 +65,7 @@ unsigned char *graph_key(T const &graph) {
       i!=graph.end_verts();++i,++idx) {
     vtxmap[*i] = idx;
   }
-  
+
   // now, build nauty graph.
   int mes = N; // multi-edge start
   for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
@@ -87,7 +86,7 @@ unsigned char *graph_key(T const &graph) {
 	  nauty_add_edge(mes,w,M);
 	  // increment to ensure fresh vertex for next multi-edge
 	  mes++;
-	}
+	} 
       }
     }
   }  
@@ -138,6 +137,7 @@ unsigned char *graph_key(T const &graph) {
   }  
 
   nauty_canong_buf[0] = NN;
+  nauty_canong_buf[1] = N;
 
   return (unsigned char*) nauty_canong_buf;
 }

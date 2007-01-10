@@ -120,7 +120,8 @@ private:
     nontree_edges.clear();
     loop_edges.clear();
     // now, make sure each vertex is explored
-    for(int v=0;v!=graph.num_vertices();++v) {
+    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+      unsigned int v = *i;
       if(!visited[v]) { traverse(-1,v); }
     }
   }

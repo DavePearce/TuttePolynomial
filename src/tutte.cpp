@@ -58,12 +58,8 @@ simple_cache<Poly> cache(1024,100);
 
 Poly deleteContract(Graph &g) { 
 
-  //  cout << "=== PROCESSING === " << endl;
-  //  print_graph(cout,g);
-
   num_steps++;
-  //   print_graph(cout,g);
-  
+
   // if the graph is a "loop tree", then we're done.
   if(g.is_looptree()) {
     //    cout << "=== END BRANCH ===" << endl;
@@ -84,9 +80,9 @@ Poly deleteContract(Graph &g) {
     // example, to arrange the graphs such that we can tell no match
     // exists simply by looking at the number of vertices and edges.
     // This could include min, max edge degree?
-    
+
     unsigned char *key = graph_key(g);
-    
+  
     Poly p;
     if(cache.lookup(key,p)) { return p * ys; }
 
