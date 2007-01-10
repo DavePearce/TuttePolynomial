@@ -17,20 +17,23 @@ using namespace std;
 template<class T = std::multiset<int> >
 class adjacency_list {
 public:
-  typedef list<int>::const_iterator vertex_iterator;
+  typedef list<unsigned int>::const_iterator vertex_iterator;
   typedef typename T::const_iterator edge_iterator;
 private:
   int numedges; // useful cache
-  int numvertices;
+  list<unsigned int> vertices;
+  unsigned int _domain_size;
   vector<T> edges;  
   int nummultiedges;
 public:
-  adjacency_list(int n) : edges(n), numedges(0), nummultiedges(0), numvertices(n) { 
+  adjacency_list(int n) : edges(n), numedges(0), nummultiedges(0), _domain_size(n) { 
+    for(int i=0;i!=n;++i) { vertices.push_back(i); }
   }
 
-  int num_vertices() const { return numvertices; }
-  int num_edges() const { return numedges; }
-  int num_multiedges() const { return nummultiedges; }
+  unsigned int domain_size() const { return _domain_size; }
+  unsigned int num_vertices() const { return vertices.size(); }
+  unsigned int num_edges() const { return numedges; }
+  unsigned int num_multiedges() const { return nummultiedges; }
   bool is_multi_graph() const { return nummultiedges > 0; }
   
   // there is no add vertex!
@@ -62,7 +65,13 @@ public:
     edges[v] = T(); // save memory
   }
 
-  bool add_edge(int from, int to) {
+  // remove vertex from graph
+  void remove(unsigned int v) {
+    vertices.remove(v);
+    clear(v);
+  }
+
+  bool add_edge(unsigned int from, unsigned int to) {
     bool r(false);
 
     numedges++;
@@ -85,7 +94,7 @@ public:
     return r;
   }
 
-  bool remove_edge(int from, int to) {
+  bool remove_edge(unsigned int from, unsigned int to) {
     bool r=false;
     T &fset = edges[from];                  // optimisation
     typename T::iterator fend = fset.end(); // optimisation
@@ -111,7 +120,7 @@ public:
   // could use an indirection trick here as one solution?  
   //
   // POST: vertex 'from' remains, whilst vertex 'to' is removed
-  void contract_edge(int from, int to) { 
+  void contract_edge(unsigned int from, unsigned int to) { 
     if(from == to) { throw std::runtime_error("cannot contract a loop!"); } 
     for(edge_iterator i(begin_edges(to));i!=end_edges(to);++i) {
       if(*i == to) { 
@@ -121,8 +130,11 @@ public:
 	add_edge(from,*i); 
       }
     }
-    clear(to);
+    remove(to);
   }  
+
+  vertex_iterator begin_verts() const { return vertices.begin(); }
+  vertex_iterator end_verts() const { return vertices.end(); }
 
   edge_iterator begin_edges(int f) const { return edges[f].begin(); }
   edge_iterator end_edges(int f) const { return edges[f].end(); }

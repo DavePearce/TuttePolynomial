@@ -22,7 +22,6 @@ bool compare_graph_keys(unsigned char const *_k1, unsigned char const *_k2) {
   unsigned int REAL_N1 = k1[1];
   unsigned int REAL_N2 = k2[1];
 
-
   if(N1 != N2 || REAL_N1 != REAL_N2) { return false; }
   else {
     k1=k1+NAUTY_HEADER_SIZE;
@@ -36,8 +35,7 @@ bool compare_graph_keys(unsigned char const *_k1, unsigned char const *_k2) {
   return true;
 }
 
-// returns the sizeof the graph key 
-// in bytes
+// returns the sizeof the graph key in bytes
 size_t sizeof_graph_key(unsigned char const *key) {
   setword *k1 = (setword*) key;  
   unsigned int N = k1[0];
@@ -45,6 +43,7 @@ size_t sizeof_graph_key(unsigned char const *key) {
   return ((N*M)+NAUTY_HEADER_SIZE) * sizeof(setword);
 }
 
+// generate a hash code from a graph key
 unsigned int hash_graph_key(unsigned char const *key) {
   setword *p = (setword*) key;  
   unsigned int N = p[0];
@@ -106,6 +105,10 @@ void print_graph_key(std::ostream &ostr, unsigned char const *key) {
   }
   ostr << " }" << std::endl;
 }
+
+// -------------------------------
+// Helper functions
+// -------------------------------
 
 bool nauty_add_edge(int from, int to, int M) {    
   unsigned int wb = (from / WORDSIZE);      

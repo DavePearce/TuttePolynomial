@@ -23,10 +23,11 @@ private:
 public:
   spanning_graph(int n) : graph(n), visited(n)  {  }
 
-  int num_vertices() const { return graph.num_vertices(); }
-  int num_edges() const { return graph.num_edges(); }
-  int num_loops() const { return loop_edges.size(); }
-  int num_multiedges() const { return graph.num_multiedges(); }
+  unsigned int domain_size() const { return graph.domain_size(); }
+  unsigned int num_vertices() const { return graph.num_vertices(); }
+  unsigned int num_edges() const { return graph.num_edges(); }
+  unsigned int num_loops() const { return loop_edges.size(); }
+  unsigned int num_multiedges() const { return graph.num_multiedges(); }
   bool is_multi_graph() const { return graph.is_multi_graph(); }
 
   bool clear(int v) { graph.clear(v); }

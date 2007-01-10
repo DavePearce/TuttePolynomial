@@ -17,10 +17,11 @@ private:
 public:
   tutte_graph(int n) : graph(n)  {  }
 
-  int num_vertices() const { return graph.num_vertices(); }
-  int num_edges() const { return graph.num_edges(); }
-  int num_multiedges() const { return graph.num_multiedges(); }
-  int num_loops() const { return graph.num_loops(); }
+  unsigned int domain_size() const { return graph.domain_size(); }
+  unsigned int num_vertices() const { return graph.num_vertices(); }
+  unsigned int num_edges() const { return graph.num_edges(); }
+  unsigned int num_multiedges() const { return graph.num_multiedges(); }
+  unsigned int num_loops() const { return graph.num_loops(); }
   bool is_multi_graph() const { return graph.is_multi_graph(); }
 
   // This method returns true if the graph is a loop.

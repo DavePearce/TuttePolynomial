@@ -59,10 +59,26 @@ unsigned char *graph_key(T const &graph) {
   // clear temporary space
   memset(nauty_graph_buf,0,sizeof(setword)*NN*M);
 
+  // build map from graph vertex space to nauty vertex space
+  unsigned int vtxmap[graph.domain_size()];
+  unsigned int idx=0;
+  for(typename T::vertex_iterator i(graph.begin_verts());
+      i!=graph.end_verts();++i,++idx) {
+    vtxmap[*i] = idx;
+  }
+  
+  // now, build nauty graph.
   int mes = N; // multi-edge start
-  for(int v=0;v!=N;++v) {
-    for(typename T::edge_iterator j(graph.begin_edges(v));j!=graph.end_edges(v);++j) {	
-      int w = *j;
+  for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    unsigned int _v = *i;
+    for(typename T::edge_iterator j(graph.begin_edges(_v));j!=graph.end_edges(_v);++j) {	
+      unsigned int _w = *j;
+
+      // convert vertices into nauty graph vertex space
+      unsigned int v = vtxmap[_v];
+      unsigned int w = vtxmap[_w];
+
+      // now add this edge to nauty graph
       if(v <= w) {
 	if(!nauty_add_edge(v,w,M)) {
 	  // attempt to add edge failed, which means
