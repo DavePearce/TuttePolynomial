@@ -14,7 +14,7 @@ size_t sizeof_compact_poly(T const &poly) {
 
 size_t sizeof_compact_poly(unsigned char *poly) {
   unsigned int *p = (unsigned int *) poly;
-  unsigned int size = *p++;
+  unsigned int size = *p;
   
   return ((size * 3) + 1) * sizeof(unsigned int);
 }

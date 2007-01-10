@@ -177,7 +177,7 @@ public:
     // allocate space for new node
     unsigned int sizeof_key = sizeof_graph_key(key);
     unsigned int sizeof_poly = sizeof_compact_poly(p);
-    unsigned char *ptr = alloc(sizeof(struct cache_node) + sizeof_key + sizeof_poly);  
+    unsigned char *ptr = alloc_node(sizeof(struct cache_node) + sizeof_key + sizeof_poly);  
     struct cache_node *node_p = (struct cache_node *) ptr;
     unsigned char *key_p = ptr + sizeof(struct cache_node);
     // now put key at head of its bucket list
@@ -200,7 +200,7 @@ private:
   simple_cache(simple_cache const &src) {
   }  
 
-  inline unsigned char *alloc(size_t size) {
+  inline unsigned char *alloc_node(size_t size) {
     // cannot ask for more than the buffer can contain
     if(size >= bufsize) { throw std::bad_alloc();  }
     // if there's not enough space left, free up some!
@@ -258,6 +258,7 @@ private:
     struct cache_node *pend = (struct cache_node *) next_p;
 
     while(ptr != pend) {
+      struct cache_node *nptr = next_node(ptr);
       if(ptr->next == NULL && ptr->prev == NULL) {
 	// this node is free
 	diff += sizeof_node(ptr);
@@ -267,8 +268,9 @@ private:
 	dst -= diff;
 	move_node(dst,ptr);
       }
-      ptr = next_node(ptr);
+      ptr = nptr;
     }
+
     next_p -= diff;
     std::cout << "*** FREED UP " << diff << " BYTES, " << (next_p-start_p) << " BYTES USED" << std::endl;
   }
