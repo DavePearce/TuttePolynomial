@@ -60,6 +60,11 @@ public:
   int num_collisions() { return collisions; }
   int num_buckets() { return nbuckets; }
 
+  // get space used by cache in bytes
+  unsigned int size() {  return next_p - start_p; }
+  // get available space in bytes
+  unsigned int capacity() { return bufsize; }
+
   unsigned int min_bucket_size() {
     unsigned int r = UINT_MAX;
     for(unsigned int i=0;i!=nbuckets;++i) {
@@ -272,7 +277,6 @@ private:
     }
 
     next_p -= diff;
-    std::cout << "*** FREED UP " << diff << " BYTES, " << (next_p-start_p) << " BYTES USED" << std::endl;
   }
 
   // ---------------------------

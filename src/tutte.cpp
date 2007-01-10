@@ -161,11 +161,11 @@ unsigned int parse_amount(char *str) {
   char *endp=NULL;
   long r = strtol(str,&endp,10);
   if(*endp != '\0') {
-    if(strcmp(endp,"MB") == 0) {
+    if(strcmp(endp,"M") == 0) {
       r = r * 1024 * 1024;
-    } else if(strcmp(endp,"KB") == 0) {
+    } else if(strcmp(endp,"K") == 0) {
       r = r * 1024;
-    } else if(strcmp(endp,"GB") == 0) {
+    } else if(strcmp(endp,"G") == 0) {
       r = r * 1024 * 1024 * 1024;
     }
   }
@@ -180,8 +180,9 @@ static int status_interval = 5; // in seconds
 
 void timer_handler(int signum) {
   double rate = (num_steps - old_num_steps);
+  double cf = (100*((double)cache.size())) / cache.capacity();
   rate /= status_interval;
-  cout << "Completed " << num_steps << " graphs at rate of " << ((int) rate) << "/s" << endl;
+  cout << "Completed " << num_steps << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full." << endl;
   old_num_steps = num_steps;
   alarm(status_interval);
 }
@@ -211,14 +212,14 @@ int main(int argc, char *argv[]) {
   
   char *descriptions[]={
     "        --help                    display this information",
-    " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700MB",
+    " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     "        --nauty-workspace=<amount> set size of nauty workspace, e.g. 10000",
     NULL
   };
 
   unsigned int v;
-  unsigned int cache_size(50*1024*1024); // detault 50MB
+  unsigned int cache_size(50*1024*1024); // detault 50M
   unsigned int cache_buckets(10000);     // default 10,000 buckets
 
   while((v=getopt_long(argc,argv,"c:",long_options,NULL)) != -1) {
