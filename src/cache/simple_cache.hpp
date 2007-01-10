@@ -168,6 +168,10 @@ public:
 	// match made
 	size_t sizeof_key = sizeof_graph_key(key_p);
 	dst = read_compact_poly<P>(key_p + sizeof_key);
+	// move node to front of bucket
+	remove_node(node_p);
+	insert_node_after(node_p,&(buckets[bucket]));
+	// update hit count and we're done!
 	hits++;
 	return true;
       }
