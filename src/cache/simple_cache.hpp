@@ -140,6 +140,7 @@ public:
 	if(ptr->next != NULL) {
 	  ptr->next->prev = ptr;
 	}
+	bs[b].next = ptr;
 	ptr = nptr;
       }
     }
@@ -251,7 +252,7 @@ private:
   }
 
   // compact buffer which pushes all free space to end
-  void pack_buffer() {    
+  void pack_buffer() {
     unsigned int diff = 0;
     struct cache_node *ptr = (struct cache_node *) start_p;
     struct cache_node *pend = (struct cache_node *) next_p;
@@ -260,7 +261,7 @@ private:
       if(ptr->next == NULL && ptr->prev == NULL) {
 	// this node is free
 	diff += sizeof_node(ptr);
-      } else {
+      } else if(diff > 0){
 	// move node along
 	unsigned char *dst = (unsigned char *) ptr;
 	dst -= diff;
@@ -269,8 +270,12 @@ private:
       ptr = next_node(ptr);
     }
     next_p -= diff;
-    std::cout << "*** FREED UP " << diff << " BYTES" << std::endl;
+    std::cout << "*** FREED UP " << diff << " BYTES, " << (next_p-start_p) << " BYTES USED" << std::endl;
   }
+
+  // ---------------------------
+  // note manipulation functions 
+  // ---------------------------
 
   struct cache_node *next_node(struct cache_node *ptr) {
     unsigned char *p = (unsigned char *) ptr;
@@ -280,25 +285,21 @@ private:
 
   size_t sizeof_node(struct cache_node *node) {
     unsigned char *p = (unsigned char *) node;
-    size_t r = sizeof(struct cache_node);
-    p += r;
-    r += sizeof_graph_key(p);
-    p += r;
-    r += sizeof_compact_poly(p);
-    return r;
+    unsigned int header_size = sizeof(struct cache_node);
+    unsigned int key_size = sizeof_graph_key(p + header_size);
+    unsigned int poly_size = sizeof_compact_poly(p + header_size + key_size);
+    return header_size + key_size + poly_size;
   }
 
   void insert_node_after(struct cache_node *new_node, struct cache_node *pos) {
     new_node->next = pos->next;
     new_node->prev = pos;
     pos->next = new_node;
-    if(new_node->next != NULL) {
-      new_node->next->prev = new_node;
-    }
+    if(new_node->next != NULL) { new_node->next->prev = new_node; }
   }
   
   void remove_node(struct cache_node *node) {
-    node->prev = node->next;
+    node->prev->next = node->next;
     if(node->next != NULL) {
       node->next->prev = node->prev;
     }
@@ -311,7 +312,7 @@ private:
     ptr->prev->next = dstptr;
     if(ptr->next != NULL) {
       ptr->next->prev = dstptr;
-    }    
+    }
     memmove(dst,ptr,sizeof_node(ptr));
   }
 };

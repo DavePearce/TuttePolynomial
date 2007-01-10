@@ -277,6 +277,8 @@ int main(int argc, char *argv[]) {
   // Now, begin solving the input graph!
   // -----------------------------------
 
+  srand(time(NULL));
+
   Graph start_graph(0);
   try {
     ifstream input(argv[optind]);
