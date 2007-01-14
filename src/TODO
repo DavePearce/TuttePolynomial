@@ -5,6 +5,7 @@ Things to do!
 * Add Gary's Triangle optimisation
 * Add Gary's small graph isomorphism tests
 * Add support for integer overflow
+* Add support for decent stats reporting [breakdown of bucket length, proportion of memory used by graphs vs polynomial]
 
 Alternative Implementations
 ---------------------------
@@ -14,9 +15,11 @@ Alternative Implementations
 
 Optimisations
 -------------
+* Threshold support
 * Optimise space used by nauty graphs
 * Optimise cache lookup policies (i.e. don't convert to nauty graph
   unless really need to, possibly by using bins for different size graph) 
+  Could use things like min-max degree to help compare graphs?
 * Optimise updating of canonical graph to prevent recomputing every time?
 * Optimise of hashing policy?
 * Explore nauty options?
