@@ -8,6 +8,7 @@
 #include <string>
 #include <ext/hash_map>
 #include <ext/hash_set>
+#include <cmath>
 #include "../graph/adjacency_list.hpp"
 #include "../graph/algorithms.hpp"
 
@@ -90,6 +91,16 @@ vector<int> degree_sequence(adjacency_list<> const &graph) {
   return r;
 }
 
+unsigned long degree_sequence_key(adjacency_list<> const &graph, int shift) {
+  unsigned long key = 0;
+
+  for(int i=0;i!=graph.num_vertices();++i) { 
+    key += 1U << (graph.num_edges(i)*shift);
+  }
+
+  return key;
+}
+
 bool two_connected(adjacency_list<> const &g) {
   for(int i=0;i!=g.num_vertices();++i) {
     if(g.num_edges(i) < 2) {
@@ -102,7 +113,7 @@ bool two_connected(adjacency_list<> const &g) {
 int main(int argc, char *argv[]) {
   bool simple=true;
   long size = strtol(argv[1],NULL,10);
-  cout << "Generating code for matching simple graphs of size " << size << endl;
+  cerr << "Generating code for matching simple graphs of size " << size << endl;
 
   try {
     
@@ -136,7 +147,7 @@ int main(int argc, char *argv[]) {
       else { i++; }
     }
 
-    cout << "Generated " << ngraphs_generated << " graphs, of which " << graphs.size() << " are unique." << endl;
+    cerr << "Generated " << ngraphs_generated << " graphs, of which " << graphs.size() << " are unique." << endl;
 
     // Second, we bucket this list according to edge degree sequence
     hash_map<vector<int>, adjacency_list<>, degree_sequence_hash> buckets;
@@ -145,25 +156,74 @@ int main(int argc, char *argv[]) {
       keys.insert(degree_sequence(*i));
       buckets.insert(make_pair(degree_sequence(*i),*i));
     }
-    cout << "Partitioned unique graphs into " << keys.size() << " distinct classes using degree sequences." << endl;   
-
-    cout << "-------- CODE STARTS HERE -------- " << endl;
+    cerr << "Partitioned unique graphs into " << keys.size() << " distinct classes using degree sequences." << endl;   
     
     cout << "// THIS CODE WAS AUTOMATICALLY GENERATED" << endl;
+    cout << endl;
+    string cnm[] = {"ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE"};
+    cout << "#ifndef EVALUATE_SIMPLE_" << cnm[size] << "_HPP" << endl;
+    cout << "#define EVALUATE_SIMPLE_" << cnm[size] << "_HPP" << endl;
+    cout << endl << "#include <stdexcept>" << endl;
     cout << endl;
     cout << "template<class G, class P>" << endl;
     string nm[] = {"zero","one","two","three","four","five","six","seven","eight","nine"};
     cout << "P const &evaluate_simple_" << nm[size] << "(G const &graph) {" << endl << endl;
-    cout << "\t// first, compute degree sequence" << endl;
-    cout << "\tlong degseq = 0;" << endl;
+    cout << "\t// first, define polynomial solutions" << endl;
+    for(hash_set<vector<int>,  degree_sequence_hash>::iterator i(keys.begin());i!=keys.end();++i) {
+      cout << "\tstatic P poly";
+      for(vector<int>::const_iterator j(i->begin());j!=i->end();++j) {
+	cout << "_" << *j;
+      }
+      cout << " = P(0,0);" << endl;
+    }
+    cout << endl << "\t// second, compute degree sequence" << endl;
+    cout << "\tunsigned long degseq = 0;" << endl;
+    unsigned int shift = (unsigned int) ceil(log2((double) size));
     cout << "\tfor(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) { " << endl;
-    cout << "\t\tdeg[graph.num_edges(*i)]++;" << endl;
+    cout << "\t\tdegseq = degseq + (1U << (graph.num_edges(*i) * " << shift << "));" << endl;
     cout << "\t}" << endl;
     cout << endl;
-    cout << "\t// now, switch on it!" << endl;
-    cout << "\t long 
+    cout << "\t// third, switch on it!" << endl;
+    cout << "\tswitch(degseq) {" << endl;
     
-    
+    // now, go through the keys and put in the answer for each
+    for(hash_set<vector<int>,  degree_sequence_hash>::iterator i(keys.begin());i!=keys.end();++i) {
+      adjacency_list<> const &graph = buckets.find(*i)->second;
+      unsigned long k = degree_sequence_key(graph,shift);
+      vector<int> ds = degree_sequence(graph);
+      cout << "\t\tcase " << k << "L:" << endl;
+      cout << "\t\t // DEGSEQ: ";
+      // print degree sequence
+      int deg=0;
+      for(vector<int>::iterator j(ds.begin());j!=ds.end();++j, ++deg) {
+	if(j!=ds.begin()) { cout << ", "; }
+	cout << deg << "(" << *j << ")";
+      }
+      // print graph
+      cout << endl << "\t\t // GRAPH : ";
+      bool first_time(true);
+      for(unsigned int j=0;j!=graph.num_vertices();++j) {
+	for(adjacency_list<>::edge_iterator k(graph.begin_edges(j));
+	    k!=graph.end_edges(j);++k) {
+	  if(j <= *k) {
+	    if(!first_time) { cout << ", "; }
+	    first_time=false;
+	    cout << j << "--" << *k;
+	  }
+	}
+      }
+      cout << endl << "\t\t return poly";
+      for(vector<int>::iterator j(ds.begin());j!=ds.end();++j) {
+	cout << "_" << *j;
+      }
+      cout << ";" << endl;
+    }
+    cout << "\t\tdefault:" << endl;
+    cout << "\t\t throw std::runtime_error(\"unreachable code reached!\");" << endl;
+    cout << "\t}" << endl;
+    cout << "\t// SHOULD BE UNREACHABLE!" << endl;
+    cout << "}" << endl;
+    cout << endl << "#endif" << endl;
     // now, print code for matching graphs!
 
   } catch(bad_alloc const &e) {
