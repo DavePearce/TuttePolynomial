@@ -20,6 +20,7 @@ public:
   unsigned int domain_size() const { return graph.domain_size(); }
   unsigned int num_vertices() const { return graph.num_vertices(); }
   unsigned int num_edges() const { return graph.num_edges(); }
+  unsigned int num_edges(unsigned int vertex) const { return graph.num_edges(vertex); }
   unsigned int num_multiedges() const { return graph.num_multiedges(); }
   unsigned int num_loops() const { return graph.num_loops(); }
   bool is_multi_graph() const { return graph.is_multi_graph(); }
@@ -44,6 +45,7 @@ public:
 
   // there is no add vertex!
   bool clear(int v) { graph.clear(v); }
+  bool remove(int v) { graph.remove(v); }
   void remove_degree1_vertices() { /* replaces core/findDegOne */ }
 
   void add_edge(int from, int to) { graph.add_edge(from,to); }

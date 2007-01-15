@@ -33,11 +33,12 @@ public:
   unsigned int domain_size() const { return _domain_size; }
   unsigned int num_vertices() const { return vertices.size(); }
   unsigned int num_edges() const { return numedges; }
+  unsigned int num_edges(unsigned int vertex) const { return edges[vertex].size(); }
   unsigned int num_multiedges() const { return nummultiedges; }
   bool is_multi_graph() const { return nummultiedges > 0; }
   
   // there is no add vertex!
-  void clear(int v) { 
+  void clear(unsigned int v) { 
     // Now, clear all edges involving v
     //
     // I make j one step ahead of i so that I can tell whether I'm

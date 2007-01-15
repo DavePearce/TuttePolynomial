@@ -26,11 +26,14 @@ public:
   unsigned int domain_size() const { return graph.domain_size(); }
   unsigned int num_vertices() const { return graph.num_vertices(); }
   unsigned int num_edges() const { return graph.num_edges(); }
+  unsigned int num_edges(unsigned int vertex) const { return graph.num_edges(vertex); }
   unsigned int num_loops() const { return loop_edges.size(); }
   unsigned int num_multiedges() const { return graph.num_multiedges(); }
   bool is_multi_graph() const { return graph.is_multi_graph(); }
 
   bool clear(int v) { graph.clear(v); }
+
+  void remove(int vertex) { graph.remove(vertex); }
 
   void add_edge(int from, int to) { 
     graph.add_edge(from,to); 
@@ -61,7 +64,10 @@ public:
 	    return true;
 	  }
 	}
+	// shouldn't get here
+	throw std::runtime_error("Unreachable code reached!");
       } else {
+	// now, check to see if this was a non-tree
 	for(std::vector<pair<int,int> >::reverse_iterator i(nontree_edges.rbegin());
 	    i!=nontree_edges.rend();++i) {
 	  if((i->first == from && i->second == to) ||

@@ -2,7 +2,7 @@ Things to do!
 =============
 
 * Add support for cache replacement policies and garbage collection
-* Add Gary's Triangle optimisation
+* Add Gary's Triangle optimisation and Pendand (degree 1) vertices
 * Add Gary's small graph isomorphism tests
 * Add support for integer overflow
 * Add support for decent stats reporting [breakdown of bucket length, proportion of memory used by graphs vs polynomial]
@@ -23,6 +23,7 @@ Optimisations
 * Optimise updating of canonical graph to prevent recomputing every time?
 * Optimise of hashing policy?
 * Explore nauty options?
+* Search for multiple edge of tree edge for removal as this means spaning tree is unchanged.
 
 Other
 -----

@@ -65,16 +65,28 @@ Poly deleteContract(Graph &g) {
     //    cout << "=== END BRANCH ===" << endl;
     return Poly(g.num_edges()-g.num_loops(),g.num_loops());
   } else {
-    term ys(0,g.num_loops());
+    term ys(0,g.num_loops());   
 
-    // First, remove any loops
+    // First, remove any loops and pendant vertices (i.e. vertices of degree one).
 
     while(g.num_loops() > 0) {
       int l = g.select_loop_edge();
       g.remove_edge(l,l);
     }
 
+    // This could be made more efficient
+    // There's a BUG as well when removing a pendant vertex creates another!    
+
+    int num_pendants(0);
+    for(Graph::vertex_iterator i(g.begin_verts());i!=g.end_verts();) {
+      int j=*(i++);
+      if(g.num_edges(j) == 1) { g.remove(j); num_pendants++; }
+    }
+    
+    term xs(num_pendants,0);    
+
     // Second, check if we've seen this graph before.  
+    //
     // Note, the following conversion is not cheap.  It would help to
     // eliminate it whenever possible.  One approach might be, for
     // example, to arrange the graphs such that we can tell no match
@@ -84,7 +96,7 @@ Poly deleteContract(Graph &g) {
     unsigned char *key = graph_key(g);
   
     Poly p;
-    if(cache.lookup(key,p)) { return p * ys; }
+    if(cache.lookup(key,p)) { return p * ys * xs; }
 
     // Third, perform delete contract 
     pair<int,int> e = g.select_nontree_edge();
@@ -102,7 +114,7 @@ Poly deleteContract(Graph &g) {
     cache.store(key,r);
     delete [] key;  // free space used by key
 
-    return r * ys;
+    return r * ys * xs;
   }    
 }
 
