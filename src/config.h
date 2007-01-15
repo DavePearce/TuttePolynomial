@@ -12,7 +12,7 @@
 #include "poly/simple_poly.hpp"
 
 // set the internal graph representation
-typedef tutte_graph<spanning_graph<adjacency_list<> > > Graph;
+typedef spanning_graph<adjacency_list<> > Graph;
 
 // set the internal polynomial representation
 typedef simple_poly Poly;
