@@ -8,7 +8,6 @@
 
 #include "graph/adjacency_list.hpp"
 #include "graph/spanning_graph.hpp"
-#include "graph/tutte_graph.hpp"
 #include "poly/simple_poly.hpp"
 
 // set the internal graph representation

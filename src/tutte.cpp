@@ -67,7 +67,6 @@ Poly deleteContract(Graph &g) {
     return Poly(g.num_edges()-g.num_loops(),g.num_loops());
   } else {
     term ys(0,g.num_loops());   
-
     // First, remove any loops and pendant vertices (i.e. vertices of degree one).
 
     while(g.num_loops() > 0) {
@@ -75,15 +74,13 @@ Poly deleteContract(Graph &g) {
       g.remove_edge(l,l);
     }
 
-    // This could be made more efficient
-    // There's a BUG as well when removing a pendant vertex creates another!    
-
     int num_pendants(0);
-    for(Graph::vertex_iterator i(g.begin_verts());i!=g.end_verts();) {
-      int j=*(i++);
-      if(g.num_edges(j) == 1) { g.remove(j); num_pendants++; }
+    while(g.num_pendant_vertices() > 0) {
+      int l = g.select_pendant_vertex();
+      g.remove(l);
+      num_pendants++;
     }
-    
+
     term xs(num_pendants,0);    
 
     // Second, if this is a small graph for which we have an auto-generated
