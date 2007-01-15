@@ -202,13 +202,13 @@ int main(int argc, char *argv[]) {
     cout << "// THIS CODE WAS AUTOMATICALLY GENERATED ON " << ctime(&ct) << endl;
     cout << endl;
     string cnm[] = {"ZERO","ONE","TWO","THREE","FOUR","FIVE","SIX","SEVEN","EIGHT","NINE"};
-    cout << "#ifndef EVALUATE_SIMPLE_" << cnm[size] << "_HPP" << endl;
-    cout << "#define EVALUATE_SIMPLE_" << cnm[size] << "_HPP" << endl;
+    cout << "#ifndef EVALUATE_SIMPLE_" << cnm[size] << "S_HPP" << endl;
+    cout << "#define EVALUATE_SIMPLE_" << cnm[size] << "S_HPP" << endl;
     cout << endl << "#include <stdexcept>" << endl;
     cout << endl;
     cout << "template<class G, class P>" << endl;
     string nm[] = {"zero","one","two","three","four","five","six","seven","eight","nine"};
-    cout << "P const &evaluate_simple_" << nm[size] << "(G const &graph) {" << endl << endl;
+    cout << "P const &evaluate_simple_" << nm[size] << "s(G const &graph) {" << endl << endl;
     cout << "\t// first, define polynomial solutions" << endl;
     for(hash_set<vector<int>,  degree_sequence_hash>::iterator i(keys.begin());i!=keys.end();++i) {
       graph_t const &graph = buckets.find(*i)->second;
@@ -263,7 +263,7 @@ int main(int argc, char *argv[]) {
       cout << ";" << endl;
     }
     cout << "\t\tdefault:" << endl;
-    cout << "\t\t throw std::runtime_error(\"unreachable code reached!\");" << endl;
+    cout << "\t\t throw std::runtime_error(\"unreachable code reached in evaluate_simple_" + nm[size] + "s!\");" << endl;
     cout << "\t}" << endl;
     cout << "\t// SHOULD BE UNREACHABLE!" << endl;
     cout << "}" << endl;

@@ -52,6 +52,10 @@ public:
     if(x > 0 || y > 0) { terms.insert(std::make_pair(term(x,y),1)); }
   }
 
+  simple_poly(unsigned int n, unsigned int x, unsigned int y) {
+    if(x > 0 || y > 0) { terms.insert(std::make_pair(term(x,y),n)); }
+  }
+
   simple_poly(simple_poly const &t) {
     terms = t.terms;
   }

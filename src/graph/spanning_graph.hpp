@@ -22,6 +22,9 @@ private:
   std::vector<bool> visited;
 public:
   spanning_graph(int n) : graph(n), visited(n)  {  }
+  spanning_graph(G const &g) : graph(g), visited(g.domain_size())  {  
+    build_tree();
+  }
 
   unsigned int domain_size() const { return graph.domain_size(); }
   unsigned int num_vertices() const { return graph.num_vertices(); }

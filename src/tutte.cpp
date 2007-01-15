@@ -9,6 +9,7 @@
 #include <sys/time.h>
 
 #include "config.h"
+#include "eval_simple_fours.hpp" // auto-generated solutions for simple graphs of size 4
 #include "cache/simple_cache.hpp"
 
 using namespace std;
@@ -85,7 +86,12 @@ Poly deleteContract(Graph &g) {
     
     term xs(num_pendants,0);    
 
-    // Second, check if we've seen this graph before.  
+    // Second, if this is a small graph for which we have an auto-generated
+    // solution, then use it!!
+
+    if(g.num_vertices() == 4) { return evaluate_simple_fours<Graph,Poly>(g) * ys * xs; }
+
+    // Third, check if we've seen this graph before.  
     //
     // Note, the following conversion is not cheap.  It would help to
     // eliminate it whenever possible.  One approach might be, for
@@ -98,7 +104,7 @@ Poly deleteContract(Graph &g) {
     Poly p;
     if(cache.lookup(key,p)) { return p * ys * xs; }
 
-    // Third, perform delete contract 
+    // Fourth, perform delete contract 
     pair<int,int> e = g.select_nontree_edge();
 
     Graph g1(g);  
@@ -106,7 +112,7 @@ Poly deleteContract(Graph &g) {
     Graph g2(g1); 
     g2.contract_edge(e.first,e.second); 
 
-    // Fourth, recursively compute the polynomial
+    // Fifth, recursively compute the polynomial
     Poly r;
     r = deleteContract(g1) + deleteContract(g2); // perform the recursion
 
