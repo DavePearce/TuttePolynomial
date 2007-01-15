@@ -89,7 +89,9 @@ Poly deleteContract(Graph &g) {
     // Second, if this is a small graph for which we have an auto-generated
     // solution, then use it!!
 
-    if(g.num_vertices() == 4) { return evaluate_simple_fours<Graph,Poly>(g) * ys * xs; }
+    if(g.num_vertices() == 4 && !g.is_multi_graph()) { 
+      return evaluate_simple_fours<Graph,Poly>(g) * ys * xs; 
+    }
 
     // Third, check if we've seen this graph before.  
     //

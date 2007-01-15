@@ -4,7 +4,9 @@
 #ifndef EVALUATE_SIMPLE_FOURS_HPP
 #define EVALUATE_SIMPLE_FOURS_HPP
 
+#include <iostream>
 #include <stdexcept>
+#include "graph/algorithms.hpp"
 
 template<class G, class P>
 P const &evaluate_simple_fours(G const &graph) {
