@@ -10,6 +10,7 @@
 
 #include "config.h"
 #include "eval_simple_fours.hpp" // auto-generated solutions for simple graphs of size 4
+#include "eval_simple_fives.hpp" // auto-generated solutions for simple graphs of size 5
 #include "cache/simple_cache.hpp"
 
 using namespace std;
@@ -41,6 +42,7 @@ public:
 
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
+unsigned int small_graph_threshold = 5;
 simple_cache<Poly> cache(1024,100);
 
 // ---------------------------------------------------------------
@@ -57,7 +59,7 @@ simple_cache<Poly> cache(1024,100);
  * in a cache; and, dynamically monitoring the "treeness" of the graph.
  */
 
-Poly deleteContract(Graph &g) { 
+Poly deleteContract(Graph &g, bool cache_enable) { 
 
   num_steps++;
 
@@ -83,27 +85,29 @@ Poly deleteContract(Graph &g) {
 
     term xs(num_pendants,0);    
 
-    // Second, if this is a small graph for which we have an auto-generated
-    // solution, then use it!!
+    // Second, attempt to evaluate small graphs directly.  For big graphs,
+    // look them up in the cache.
 
-    if(g.num_vertices() == 4 && !g.is_multi_graph()) { 
-      return evaluate_simple_fours<Graph,Poly>(g) * ys * xs; 
+    unsigned char *key = NULL;
+    if(g.num_vertices() < small_graph_threshold) {
+      // if this is a small 
+      if(!g.is_multi_graph()) { 
+	switch(g.num_vertices()) {
+	case 4:
+	  return evaluate_simple_fours<Graph,Poly>(g) * ys * xs; 
+	case 5:
+	  return evaluate_simple_fives<Graph,Poly>(g) * ys * xs; 
+	default:
+	  break;
+	}
+      }
+    } else {
+      key = graph_key(g);      
+      Poly p;
+      if(cache.lookup(key,p)) { return p * ys * xs; }          
     }
-
-    // Third, check if we've seen this graph before.  
-    //
-    // Note, the following conversion is not cheap.  It would help to
-    // eliminate it whenever possible.  One approach might be, for
-    // example, to arrange the graphs such that we can tell no match
-    // exists simply by looking at the number of vertices and edges.
-    // This could include min, max edge degree?
-
-    unsigned char *key = graph_key(g);
-  
-    Poly p;
-    if(cache.lookup(key,p)) { return p * ys * xs; }
-
-    // Fourth, perform delete contract 
+    
+    // third, perform delete contract 
     pair<int,int> e = g.select_nontree_edge();
 
     Graph g1(g);  
@@ -111,14 +115,16 @@ Poly deleteContract(Graph &g) {
     Graph g2(g1); 
     g2.contract_edge(e.first,e.second); 
 
-    // Fifth, recursively compute the polynomial
+    // Fourth, recursively compute the polynomial
     Poly r;
-    r = deleteContract(g1) + deleteContract(g2); // perform the recursion
+    r = deleteContract(g1,false) + deleteContract(g2,true); // perform the recursion
 
-    // Finally, save computed polynomial 
-    cache.store(key,r);
-    delete [] key;  // free space used by key
-
+    // Finally, save computed polynomial for g2
+    if(key != NULL) {
+      cache.store(key,r);
+      delete [] key;  // free space used by key
+    }
+    
     return r * ys * xs;
   }    
 }
@@ -211,6 +217,7 @@ int main(int argc, char *argv[]) {
   // ------------------------------
 
   #define OPT_HELP 0
+  #define OPT_SMALLGRAPHS 5
   #define OPT_CACHESIZE 10
   #define OPT_CACHEBUCKETS 11  
   #define OPT_NAUTYWORKSPACE 20
@@ -220,6 +227,7 @@ int main(int argc, char *argv[]) {
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
+    {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
     NULL
   };
   
@@ -228,6 +236,7 @@ int main(int argc, char *argv[]) {
     " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     "        --nauty-workspace=<amount> set size of nauty workspace, e.g. 10000",
+    "        --small-graphs=size        set threshold for small graphs, e.g. 7",
     NULL
   };
 
@@ -255,6 +264,9 @@ int main(int argc, char *argv[]) {
       break;
     case OPT_NAUTYWORKSPACE:
       resize_nauty_workspace(parse_amount(optarg));
+      break;
+    case OPT_SMALLGRAPHS:
+      small_graph_threshold = parse_amount(optarg);      
       break;
     }
   }
@@ -304,7 +316,7 @@ int main(int argc, char *argv[]) {
 
     my_timer timer;
 
-    Poly tuttePoly = deleteContract(start_graph);        
+    Poly tuttePoly = deleteContract(start_graph,false);        
 
     cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
 
