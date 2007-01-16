@@ -1,0 +1,20 @@
+set terminal postscript enhanced "Helvetica" 16
+set boxwidth 1
+
+set xtics nomirror font "Helvetica, 14"
+set ytics nomirror
+set tics out
+
+set log x
+set title "Distribution of Cache Bucket Lengths"
+set ylabel "Number of Buckets" 1,0
+set xlabel "Bucket Size" 1,0
+set output "cache-bucket-lengths.ps"
+plot [][0:] "tutte-stats.dat" index 0 using 1:2 with linespoints
+
+set nolog x
+set title "Distribution of Cached Graphs"
+set ylabel "Number of Graphs" 1,0
+set xlabel "Graph Size" 1,0
+set output "graph-sizes.ps"
+plot [][0:] "tutte-stats.dat" index 1 using 1:2 with linespoints

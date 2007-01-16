@@ -214,16 +214,20 @@ void write_bucket_lengths(fstream &out) {
   // second, print the data!
   for(unsigned int i=0;i!=counts.size();++i) {
     double percentage(((double)counts[i]*100) / cache.num_buckets());
-    out << i << "\t" << counts[i] << "\t" << percentage << endl;
+    out << i << "\t" << counts[i] << "\t" << setprecision(2) << percentage << endl;
   }
 }
 
 void write_graph_sizes(fstream &out) {
+  out << endl << endl;
   out << "#########################" << endl;
   out << "# CACHE GRAPH SIZE DATA #" << endl;
   out << "#########################" << endl;
-  out << "# Size\tCount" << endl;
+  out << "# Size\t#Graphs (%)\t#MultiGraphs (%)" << endl;
   vector<int> counts;
+  vector<int> mcounts;
+  int nmgraphs=0;
+  int ngraphs=0;
   // first, count the lengths
   for(simple_cache<Poly>::iterator i(cache.begin());i!=cache.end();++i) {
     Graph g(graph_from_key<Graph>(i.key()));
@@ -231,13 +235,24 @@ void write_graph_sizes(fstream &out) {
       // need to increase size of count array
       counts.resize(g.num_vertices()+1,0);
     }
+    ++ngraphs;
     counts[g.num_vertices()]++;
+    if(g.is_multi_graph()) {
+      nmgraphs++;
+      if(mcounts.size() < (g.num_vertices()+1)) {
+	// need to increase size of count array
+	mcounts.resize(g.num_vertices()+1,0);
+      }
+      mcounts[g.num_vertices()]++;      
+    }
   }
 
   // second, print the data!
   for(unsigned int i=0;i!=counts.size();++i) {
-    double percentage(((double)counts[i]*100) / cache.num_entries());
-    out << i << "\t" << counts[i] << "\t" << percentage << endl;
+    double percentage(((double)counts[i]*100) / ngraphs);
+    out << i << "\t" << counts[i] << "\t" << setprecision(2) << percentage;
+    percentage = (((double)mcounts[i]*100) / nmgraphs);
+    out << "\t" << mcounts[i] << "\t" << setprecision(2) << percentage << endl;
   }
 }
 
