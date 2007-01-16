@@ -142,5 +142,42 @@ unsigned char *graph_key(T const &graph) {
   return (unsigned char*) nauty_canong_buf;
 }
 
+template<class T>
+T graph_from_key(unsigned char *key) {
+  setword *p = (setword*) key;  
+  unsigned int N = p[0];
+  unsigned int REAL_N = p[1];
+  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+  p=p+NAUTY_HEADER_SIZE;
+  
+  T graph(REAL_N); // should make real N
+  
+  // first, deal with normal edges
+  for(int i=0;i!=REAL_N;++i) {    
+    for(int j=i;j!=REAL_N;++j) {
+      unsigned int wb = (i / WORDSIZE);      
+      unsigned int wo = i - (wb*WORDSIZE); 
+      
+      setword mask = (1U << (WORDSIZE-wo-1));
+      if(p[(j*M)+wb] & mask) { graph.add_edge(i,j); }
+    }
+  }
+
+  // second, deal with multi-edges
+  for(int i=REAL_N;i!=N;++i) {
+    unsigned int y=N;
+    unsigned int x=N;
+    for(int j=0;j!=REAL_N;++j) {
+      unsigned int wb = (i / WORDSIZE);      
+      unsigned int wo = i - (wb*WORDSIZE); 
+      
+      setword mask = (1U << (WORDSIZE-wo-1));
+      if(p[(j*M)+wb] & mask) { y=x; x=j; }
+    }
+    graph.add_edge(x,y);
+  }
+
+  return graph;
+}
 
 #endif

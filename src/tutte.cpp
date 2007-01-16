@@ -192,6 +192,57 @@ unsigned int parse_amount(char *str) {
 }
 
 // ---------------------------------------------------------------
+// Statistics Printing Methods
+// ---------------------------------------------------------------
+
+void write_bucket_lengths(fstream &out) {
+  out << "############################" << endl;
+  out << "# CACHE BUCKET LENGTH DATA #" << endl;
+  out << "############################" << endl;
+  out << "# Length\tCount" << endl;
+  vector<int> counts;
+  // first, count the lengths
+  for(int i=0;i!=cache.num_buckets();++i) {
+    int len = cache.bucket_length(i);
+    if(counts.size() < (len+1)) {
+      // need to increase size of count array
+      counts.resize(len+1,0);
+    }
+    counts[len]++;
+  }
+
+  // second, print the data!
+  for(unsigned int i=0;i!=counts.size();++i) {
+    double percentage(((double)counts[i]*100) / cache.num_buckets());
+    out << i << "\t" << counts[i] << "\t" << percentage << endl;
+  }
+}
+
+void write_graph_sizes(fstream &out) {
+  out << "#########################" << endl;
+  out << "# CACHE GRAPH SIZE DATA #" << endl;
+  out << "#########################" << endl;
+  out << "# Size\tCount" << endl;
+  vector<int> counts;
+  // first, count the lengths
+  for(simple_cache<Poly>::iterator i(cache.begin());i!=cache.end();++i) {
+    Graph g(graph_from_key<Graph>(i.key()));
+    if(counts.size() < (g.num_vertices()+1)) {
+      // need to increase size of count array
+      counts.resize(g.num_vertices()+1,0);
+    }
+    counts[g.num_vertices()]++;
+  }
+
+  // second, print the data!
+  for(unsigned int i=0;i!=counts.size();++i) {
+    double percentage(((double)counts[i]*100) / cache.num_entries());
+    out << i << "\t" << counts[i] << "\t" << percentage << endl;
+  }
+}
+
+
+// ---------------------------------------------------------------
 // Signal Handlers
 // ---------------------------------------------------------------
 
@@ -334,12 +385,12 @@ int main(int argc, char *argv[]) {
     cout << "# Cache Collisions: " << cache.num_collisions() << endl;
     cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
     cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
-    cout << "# Buckets of size 0..0: " << cache.count_buckets_sized(0,0) << " (" << (((double)cache.count_buckets_sized(0,0)*100) / cache.num_buckets()) << "%)" << endl;
-    cout << "# Buckets of size 1..2: " << cache.count_buckets_sized(1,2) << " (" << (((double)cache.count_buckets_sized(1,2)*100) / cache.num_buckets()) << "%)" << endl;
-    cout << "# Buckets of size 3..5: " << cache.count_buckets_sized(3,5) << " (" << (((double)cache.count_buckets_sized(3,5)*100) / cache.num_buckets()) << "%)" << endl;
-    cout << "# Buckets of size 6..10: " << cache.count_buckets_sized(6,10) << " (" << (((double)cache.count_buckets_sized(6,10)*100) / cache.num_buckets()) << "%)" << endl;
-    cout << "# Buckets of size 11..100: " << cache.count_buckets_sized(11,100) << " (" << (((double)cache.count_buckets_sized(11,100)*100) / cache.num_buckets()) << "%)" << endl;
-    cout << "# Buckets of size 101..1000: " << cache.count_buckets_sized(101,1000) << " (" << (((double)cache.count_buckets_sized(101,1000)*100) / cache.num_buckets()) << "%)" << endl;
+
+    // now, write out stats
+    
+    fstream stats_out("tutte-stats.dat",fstream::out);
+    write_bucket_lengths(stats_out);
+    write_graph_sizes(stats_out);
     // printPoly(tuttePolynomial);
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;

@@ -22,7 +22,49 @@ struct cache_node {
 };
 
 template<class P>
+class simple_cache_iterator {
+private:
+  struct cache_node *ptr;
+public:
+  simple_cache_iterator(struct cache_node *p) : ptr(p) {}
+  
+  void operator++() { 
+    unsigned char *p = (unsigned char *) ptr;
+    unsigned int header_size = sizeof(struct cache_node);
+    unsigned int key_size = sizeof_graph_key(p + header_size);
+    unsigned int poly_size = sizeof_compact_poly(p + header_size + key_size);
+    p += header_size + key_size + poly_size;
+    ptr = (struct cache_node *) p;
+  }
+
+  simple_cache_iterator operator++(int) { 
+    simple_cache_iterator tmp(this);
+    ++(this);
+    return tmp;
+  }
+  
+  // the following two methods should be
+  // replaced with an operator*() when
+  // I implement a graph_key class
+
+  unsigned char *key() {
+    unsigned char *p = (unsigned char *) ptr;
+    return p + sizeof(struct cache_node);
+  }
+
+  bool operator==(simple_cache_iterator const &o) const {
+    return ptr == o.ptr;
+  }
+
+  bool operator!=(simple_cache_iterator const &o) const {
+    return ptr != o.ptr;
+  }
+};
+
+template<class P>
 class simple_cache {
+public:
+  typedef simple_cache_iterator<P> iterator;
 private:
   unsigned int hits;
   unsigned int misses;
@@ -88,6 +130,16 @@ public:
       if(bl >= l && bl <= u) { c ++; }
     }
     return c;
+  }
+
+  unsigned int bucket_length(unsigned int b) {
+    struct cache_node *ptr = buckets[b].next;
+    int len=0;
+    while(ptr != NULL) {
+      ptr = ptr->next;
+      len++;
+    }
+    return len;
   }
 
   double density() {
@@ -200,7 +252,12 @@ public:
     numentries++;
     // done.
   }  
-  
+
+  // methods for accessing the internal state
+
+  iterator begin() { return iterator((struct cache_node *) start_p); }
+  iterator end() { return iterator((struct cache_node *) next_p); }
+
 private:
   simple_cache const &operator=(simple_cache const &src) {
     return this;
@@ -220,16 +277,6 @@ private:
     unsigned char *r = next_p;
     next_p += size;
     return r;
-  }
-
-  unsigned int bucket_length(unsigned int b) {
-    struct cache_node *ptr = buckets[b].next;
-    int len=0;
-    while(ptr != NULL) {
-      ptr = ptr->next;
-      len++;
-    }
-    return len;
   }
 
   struct cache_node *create_bucket_array(size_t nbs) {
