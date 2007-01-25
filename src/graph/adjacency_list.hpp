@@ -7,8 +7,6 @@
 #include <algorithm>
 #include <stdexcept>
 
-using namespace std;
-
 // This graph type is simply the most basic implementation
 // you could think of.
 
@@ -17,14 +15,14 @@ using namespace std;
 template<class T = std::map<unsigned int, unsigned int> >
 class adjacency_list {
 public:
-  typedef list<unsigned int>::const_iterator vertex_iterator;
+  typedef std::list<unsigned int>::const_iterator vertex_iterator;
   typedef typename T::iterator int_edge_iterator;
   typedef typename T::const_iterator edge_iterator;
 private:
   int numedges; // useful cache
-  list<unsigned int> vertices;
+  std::list<unsigned int> vertices;
   unsigned int _domain_size;
-  vector<T> edges;  
+  std::vector<T> edges;  
   int nummultiedges;
 public:
   adjacency_list(int n) : edges(n), numedges(0), nummultiedges(0), _domain_size(n) { 

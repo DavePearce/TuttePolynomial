@@ -1,0 +1,36 @@
+#ifndef TRIPLE_HPP
+#define TRIPLE_HPP
+
+template<class A, class B, class C> 
+class triple {
+public:
+  A first;
+  B second;
+  C third;
+  
+  triple(A a, B b, C c) : first(a), second(b), third(c) { }  
+};
+
+template<class A, class B, class C>
+bool operator==(triple<A,B,C> const &x, triple<A,B,C> const &y) {
+  return x.first == y.first && x.second == y.second && x.third == y.third;
+}
+
+template<class A, class B, class C>
+bool operator!=(triple<A,B,C> const &x, triple<A,B,C> const &y) {
+  return x.first != y.first || x.second != y.second || x.third != y.third;
+}
+
+template<class A, class B, class C>
+bool operator<(triple<A,B,C> const &x, triple<A,B,C> const &y) {
+  return x.first < y.first || 
+    (!(x.first < y.first) && x.second < y.second) || 
+    (!(x.first < y.first) && !(x.second < y.second) && x.third < y.third);
+}
+
+template<class A, class B, class C>
+triple<A,B,C> make_triple(A a, B b, C c) {
+  return triple<A,B,C>(a,b,c);
+}
+
+#endif

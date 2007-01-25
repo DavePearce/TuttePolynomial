@@ -5,6 +5,8 @@
 #include <stack>
 #include <utility>
 
+#include "misc/triple.hpp"
+
 // this is a simple implementation of a dynamic algorithm for maintaining 
 // a spanning tree.  The notion we use of a spanning tree is slightly
 // different from normal in that we permit loops to be part of the tree.  I call
@@ -15,9 +17,10 @@ class spanning_graph {
 public:
   typedef typename G::vertex_iterator vertex_iterator;
   typedef typename G::edge_iterator edge_iterator;
+  typedef triple<unsigned int, unsigned int, unsigned int> edge_t;
 private:
   G graph;
-  std::vector<std::pair<std::pair<unsigned int, unsigned int>,unsigned int> > nontree_edges; // all non-tree edges *except* loop edges
+  std::vector<edge_t> nontree_edges; // all non-tree edges *except* loop edges
   std::vector<int> pendant_vertices;
   std::vector<bool> visited;
 public:
@@ -103,13 +106,13 @@ public:
 	if(num_edges(from) == 1) { pendant_vertices.push_back(from); }
 	if(num_edges(to) == 1) { pendant_vertices.push_back(to); }
 	// now, check to see if this was a non-tree
-	for(std::vector<pair<std::pair<unsigned int, unsigned int>, unsigned int> >::reverse_iterator i(nontree_edges.rbegin());
+	for(std::vector<edge_t>::reverse_iterator i(nontree_edges.rbegin());
 	    i!=nontree_edges.rend();++i) {
-	  if((i->first.first == from && i->first.second == to) ||
-	     (i->first.first == to && i->first.second == from)) {
+	  if((i->first == from && i->second == to) ||
+	     (i->first == to && i->second == from)) {
 	    // yes, this is a nontree edge, so no big deal
-	    i->second--;
-	    if(i->second == 0) {
+	    i->third--;
+	    if(i->third == 0) {
 	      // see: "Effective STL", item 28, p125 for explanation
 	      // as to why it's "(++i).base()", not "i.base()"
 	      nontree_edges.erase((++i).base()); 
@@ -131,8 +134,8 @@ public:
   bool is_tree() { return nontree_edges.size() == 0; }
 
   // assumes this graph is NOT a tree
-  pair<int,int> select_nontree_edge() const {
-    return nontree_edges.back().first;
+  edge_t select_nontree_edge() const {
+    return nontree_edges.back();
   }
 
   int select_pendant_vertex() const {
@@ -181,7 +184,7 @@ private:
       else if(next == tail) { k--; }
 
       if(k > 0 && head < next) { 
-	nontree_edges.push_back(make_pair(make_pair(head,next),k));
+	nontree_edges.push_back(edge_t(head,next,k));
       } 
     }
 

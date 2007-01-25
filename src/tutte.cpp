@@ -112,7 +112,7 @@ Poly deleteContract(Graph &g, bool cache_enable) {
     }
 
     // third, perform delete contract 
-    pair<int,int> e = g.select_nontree_edge();
+    Graph::edge_t e = g.select_nontree_edge();
 
     Graph g1(g);  
     g1.remove_edge(e.first,e.second);        
