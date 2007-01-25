@@ -63,18 +63,21 @@ Poly deleteContract(Graph &g, bool cache_enable) {
 
   num_steps++;
 
-  // if the graph is a "loop tree", then we're done.
-  if(g.is_looptree()) {
-    //    cout << "=== END BRANCH ===" << endl;
-    return Poly(g.num_edges()-g.num_loops(),g.num_loops());
-  } else {
-    term ys(0,g.num_loops());   
-    // First, remove any loops and pendant vertices (i.e. vertices of degree one).
+  cout << "-----------" << endl;
+  print_graph(cout,g); 
 
-    while(g.num_loops() > 0) {
-      int l = g.select_loop_edge();
-      g.remove_edge(l,l);
-    }
+  // first, eliminate any loops
+  unsigned int num_loops = g.remove_loops(); 
+
+  // if the graph is a "loop tree", then we're done.
+  if(g.is_tree()) {
+    //    cout << "=== END BRANCH ===" << endl;
+    return Poly(g.num_edges(),num_loops);
+  } else {
+    cout << "[1]";
+    term ys(0,num_loops);  
+
+    // Now, remove any pendant vertices (i.e. vertices of degree one).
 
     int num_pendants(0);
     while(g.num_pendant_vertices() > 0) {
@@ -82,6 +85,8 @@ Poly deleteContract(Graph &g, bool cache_enable) {
       g.remove(l);
       num_pendants++;
     }
+
+    cout << "[2]";
 
     term xs(num_pendants,0);    
 
@@ -108,14 +113,20 @@ Poly deleteContract(Graph &g, bool cache_enable) {
       Poly p;
       if(cache.lookup(key,p)) { return p * ys * xs; }          
     }
-    
+
+    print_graph(cout,g); 
+
     // third, perform delete contract 
     pair<int,int> e = g.select_nontree_edge();
+
+    cout << "[3]";
 
     Graph g1(g);  
     g1.remove_edge(e.first,e.second);        
     Graph g2(g1); 
     g2.contract_edge(e.first,e.second); 
+
+    cout << "[4," << e.first << "--" << e.second << "]" << endl;
 
     // Fourth, recursively compute the polynomial
     Poly r = deleteContract(g1,false) + deleteContract(g2,true); 

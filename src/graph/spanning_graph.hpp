@@ -17,8 +17,7 @@ public:
   typedef typename G::edge_iterator edge_iterator;
 private:
   G graph;
-  std::vector<std::pair<int,int> > nontree_edges; // all non-tree edges *except* loop edges
-  std::vector<int> loop_edges;
+  std::vector<std::pair<std::pair<unsigned int, unsigned int>,unsigned int> > nontree_edges; // all non-tree edges *except* loop edges
   std::vector<int> pendant_vertices;
   std::vector<bool> visited;
 public:
@@ -31,7 +30,6 @@ public:
   unsigned int num_vertices() const { return graph.num_vertices(); }
   unsigned int num_edges() const { return graph.num_edges(); }
   unsigned int num_edges(unsigned int vertex) const { return graph.num_edges(vertex); }
-  unsigned int num_loops() const { return loop_edges.size(); }
   unsigned int num_pendant_vertices() const { return pendant_vertices.size(); }
   unsigned int num_multiedges() const { return graph.num_multiedges(); }
   bool is_multi_graph() const { return graph.is_multi_graph(); }
@@ -75,8 +73,16 @@ public:
     build_tree(); // WOAH, rather inefficient!
   }
 
-  bool remove_edge(int from, int to) {     
+  unsigned int remove_loops() {
+    unsigned int c=0;    
+    for(typename G::vertex_iterator i(graph.begin_verts());
+	i!=graph.end_verts();++i) {
+      c += graph.remove_all_edges(*i,*i);
+    }
+    return c;
+  }
 
+  bool remove_edge(int from, int to) {     
     if(graph.remove_edge(from,to)) {    
       // if we've removed a tree edge then we'd
       // need to rebuild the tree.
@@ -89,35 +95,25 @@ public:
       // the nontree edge on the top of the stack
 
       if(from == to) {
-	// check for pendant vertices
-	if(num_edges(from) == 1) { pendant_vertices.push_back(from); }
 	// this *must* be a loop edge
-	for(std::vector<int>::reverse_iterator i(loop_edges.rbegin());
-	    i!=loop_edges.rend();++i) {
-	  if(*i == from) {
-	    // see: "Effective STL", item 28, p125 for explanation
-	    // as to why it's "(++i).base()", not "i.base()"
-	    loop_edges.erase((++i).base());
-	    return true;
-	  }
-	}
-	// shouldn't get here
-	throw std::runtime_error("Unreachable code reached!");
+	return true;
       } else {
 	// check for pendant vertices
 	if(num_edges(from) == 1) { pendant_vertices.push_back(from); }
 	if(num_edges(to) == 1) { pendant_vertices.push_back(to); }
 	// now, check to see if this was a non-tree
-	for(std::vector<pair<int,int> >::reverse_iterator i(nontree_edges.rbegin());
+	for(std::vector<pair<std::pair<unsigned int, unsigned int>, unsigned int> >::reverse_iterator i(nontree_edges.rbegin());
 	    i!=nontree_edges.rend();++i) {
-	  if((i->first == from && i->second == to) ||
-	     (i->first == to && i->second == from)) {
+	  if((i->first.first == from && i->first.second == to) ||
+	     (i->first.first == to && i->first.second == from)) {
 	    // yes, this is a nontree edge, so no big deal
-	    //
-	    // see: "Effective STL", item 28, p125 for explanation
-	    // as to why it's "(++i).base()", not "i.base()"
-	    nontree_edges.erase((++i).base()); 
-	    return true;
+
+	    if(--(i->second) == 0) {
+	      // see: "Effective STL", item 28, p125 for explanation
+	      // as to why it's "(++i).base()", not "i.base()"
+	      nontree_edges.erase((++i).base()); 
+	      return true;
+	    }
 	  }
 	}
       }
@@ -131,19 +127,11 @@ public:
   }
 
   // pretty simple ... if there are no nontree and loop edges, then we must be a tree!
-  bool is_tree() { return nontree_edges.size() == 0 && loop_edges.size() == 0; }
-
-  // if there are no nontree edges, but there are loop edges then we're a "looptree" :)
-  bool is_looptree() { return nontree_edges.size() == 0; }
+  bool is_tree() { return nontree_edges.size() == 0; }
 
   // assumes this graph is NOT a tree
-  pair<int,int> const &select_nontree_edge() const {
-    return nontree_edges.back();
-  }
-
-  // assumes this graph is NOT a tree
-  int select_loop_edge() const {
-    return loop_edges.back();
+  pair<int,int> select_nontree_edge() const {
+    return nontree_edges.back().first;
   }
 
   int select_pendant_vertex() const {
@@ -168,7 +156,6 @@ private:
     // reset visited information
     fill(visited.begin(),visited.end(),false);
     nontree_edges.clear();
-    loop_edges.clear();
     pendant_vertices.clear();
     // now, make sure each vertex is explored
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
@@ -180,27 +167,20 @@ private:
   void traverse(int tail, int head) {
     // traverse edge tail->head
     visited[head] = true;
-    int backlink_count = 1;
     // pendant vertex check
     if(graph.num_edges(head) == 1) { pendant_vertices.push_back(head); }
     // now, consider edges
     for(typename G::edge_iterator i(graph.begin_edges(head));
 	i!=graph.end_edges(head);++i) {
       int next = i->first;
+      int k = i->second; // number of multi edges
 
-      if(!visited[next]) { traverse(head,next); }
-      else if(tail != next || backlink_count == 0) {
-	// this is a nontree edge
-	if(head < next) { // to prevent adding same edge twice
-	  nontree_edges.push_back(make_pair(head,next));
-	} else if(head == next) {
-	  loop_edges.push_back(head);
-	}
-      } else {
-	// we're allowed to ignore visiting the same edge
-	// just once, since other multiedges may exist ...
-	backlink_count=0;
-      }
+      if(!visited[next]) { traverse(head,next); k--; }
+      else if(next == tail) { k--; }
+
+      if(k > 0 && head < next) { 
+	nontree_edges.push_back(make_pair(make_pair(head,next),k));
+      } 
     }
   }
 };

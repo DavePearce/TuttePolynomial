@@ -107,7 +107,6 @@ public:
   bool add_edge(unsigned int from, unsigned int to) { return add_edge(from,to,1); }
 
   bool remove_edge(unsigned int from, unsigned int to, unsigned int c) {
-    bool r=false;
     T &fset = edges[from];                  // optimisation
     typename T::iterator fend = fset.end(); // optimisation
     typename T::iterator i = fset.find(to);
@@ -121,7 +120,6 @@ public:
 	  i = edges[to].find(from);
 	  i->second--;
 	}
-	return true;
       } else {
 	nummultiedges -= (i->second - 1);
 	fset.erase(to);	
@@ -129,9 +127,27 @@ public:
 	  edges[to].erase(from);
 	}
       }
+      return true;
     }
 
     return false;
+  }
+
+  unsigned int remove_all_edges(unsigned int from, unsigned int to) {
+    // remove all edges "from--to"
+    unsigned int r=0;
+    T &fset = edges[from];                  // optimisation
+    typename T::iterator fend = fset.end(); // optimisation
+    typename T::iterator i = fset.find(to);
+    if(i != fend) {
+      r = i->second;
+      numedges--;
+      nummultiedges -= (i->second - 1);
+      fset.erase(to);	
+      if(from != to) { edges[to].erase(from); }
+    }
+
+    return r;
   }
 
   bool remove_edge(unsigned int from, unsigned int to) {

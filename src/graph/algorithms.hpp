@@ -23,7 +23,7 @@ void print_graph(std::ostream &ostr, T const &graph) {
 	if(j->second == 1) {
 	  ostr << *i << "--" << j->first << " ";
 	} else {
-	  ostr << *i << "-" << j->second << "-" << j->first << " ";
+	  ostr << *i << "--" << j->first << "(" << j->second << ") ";
 	}
       } 
     }

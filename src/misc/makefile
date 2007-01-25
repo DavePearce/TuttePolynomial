@@ -2,12 +2,12 @@ include ../../makefile.config
 
 SUBDIRS=
 
-SRCS=sgs_gen.cpp ../graph/algorithms.cpp ../poly/simple_poly.cpp
+SRCS=
 
 LDFLAGS += -L../../nauty
 LIBS = -lnauty
 
-TARGET=sgs_gen
+# TARGET=sgs_gen
 
 include ../../makefile.std
 
