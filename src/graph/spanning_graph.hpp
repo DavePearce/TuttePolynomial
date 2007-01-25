@@ -95,7 +95,8 @@ public:
       // the nontree edge on the top of the stack
 
       if(from == to) {
-	// this *must* be a loop edge
+	// check for pendant vertices
+	if(num_edges(from) == 1) { pendant_vertices.push_back(from); }
 	return true;
       } else {
 	// check for pendant vertices

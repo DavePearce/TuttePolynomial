@@ -76,12 +76,13 @@ Poly deleteContract(Graph &g, bool cache_enable) {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
 
     int num_pendants(0);
+    
     while(g.num_pendant_vertices() > 0) {
       int l = g.select_pendant_vertex();
       g.remove(l);
       num_pendants++;
     }
-
+    
     term xs(num_pendants,0);    
 
     // Second, break down multi-edges
