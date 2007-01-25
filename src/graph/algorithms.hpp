@@ -81,11 +81,11 @@ unsigned char *graph_key(T const &graph) {
       unsigned int v = vtxmap[_v];
       unsigned int w = vtxmap[_w];
 
-      // now add this edge to nauty graph
+      // now add this edge(s) to nauty graph
       if(v <= w) {
 	nauty_add_edge(v,w,M);
 	unsigned int k=j->second-1;
-	if(j->second > 0) {
+	if(k > 0) {
 	  // this is a multi-edge!
 	  for(;k!=0;--k,++mes) {
 	    nauty_add_edge(v,mes,M);

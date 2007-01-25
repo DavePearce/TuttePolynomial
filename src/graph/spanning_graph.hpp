@@ -54,7 +54,7 @@ public:
 	    // yes, found one!  
 	    //
 	    // BUG HERE WHEN EDGE IS A LOOP (BUT THIS
-	    // CURRENTLY NEVER HAPPENS, SINCE LOOPS ARE REMOVED IN
+ 	    // CURRENTLY NEVER HAPPENS, SINCE LOOPS ARE REMOVED IN
 	    // DELCONTRACT).
 	    pendant_vertices.push_back(j->first);
 	  }
@@ -108,8 +108,8 @@ public:
 	  if((i->first.first == from && i->first.second == to) ||
 	     (i->first.first == to && i->first.second == from)) {
 	    // yes, this is a nontree edge, so no big deal
-
-	    if(--(i->second) == 0) {
+	    i->second--;
+	    if(i->second == 0) {
 	      // see: "Effective STL", item 28, p125 for explanation
 	      // as to why it's "(++i).base()", not "i.base()"
 	      nontree_edges.erase((++i).base()); 
@@ -168,13 +168,14 @@ private:
   void traverse(int tail, int head) {
     // traverse edge tail->head
     visited[head] = true;
-    // pendant vertex check
-    if(graph.num_edges(head) == 1) { pendant_vertices.push_back(head); }
     // now, consider edges
+    unsigned int total(0);
     for(typename G::edge_iterator i(graph.begin_edges(head));
 	i!=graph.end_edges(head);++i) {
       int next = i->first;
       int k = i->second; // number of multi edges
+
+      total += k;
 
       if(!visited[next]) { traverse(head,next); k--; }
       else if(next == tail) { k--; }
@@ -183,6 +184,9 @@ private:
 	nontree_edges.push_back(make_pair(make_pair(head,next),k));
       } 
     }
+
+    // pendant vertex check
+    if(total == 1) { pendant_vertices.push_back(head); }
   }
 };
 

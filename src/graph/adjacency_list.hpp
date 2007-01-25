@@ -52,16 +52,14 @@ public:
     T &vset = edges[v];                    // optimisation
     int_edge_iterator vend(vset.end());        // optimisation
     int_edge_iterator i(vset.begin());
-    int count = 0;
     for(;i!=vend;++i) {
       unsigned int k = i->second;
-      nummultiedges -= k - 1;
+      nummultiedges -= (k - 1);
+      numedges -= k;
       if(i->first != v) {
 	edges[i->first].erase(v);
       } 
-      count += k;
     }
-    numedges -= count;
     edges[v] = T(); // save memory
   }
 
@@ -79,10 +77,9 @@ public:
     // is already in the graph or not
     T &tos = edges[to];                     // optimisation
     int_edge_iterator i = tos.find(from);
-    nummultiedges += c - 1;
     if(i != tos.end()) {
       // edge already present so another multi-edge!
-      nummultiedges++;
+      nummultiedges += c;
       i->second += c;
       // don't want to increment same edge twice!
       if(from != to) {
@@ -92,7 +89,8 @@ public:
       return true;
     } else {
       // completely new edge!
-      tos.insert(std::make_pair(from,1));
+      nummultiedges += (c - 1);
+      tos.insert(std::make_pair(from,c));
       // self-loops only get one mention in the edge set
       if(from != to) { 
 	edges[from].insert(std::make_pair(to,c));
@@ -108,16 +106,18 @@ public:
     typename T::iterator fend = fset.end(); // optimisation
     typename T::iterator i = fset.find(to);
     if(i != fend) {
-      numedges--;
       if(i->second > c) {
 	// this is a multi-edge, so decrement count.
 	nummultiedges -= c;
+	numedges -= c;
 	i->second -= c;
 	if(from != to) {
 	  i = edges[to].find(from);
 	  i->second -= c;
 	}
       } else {
+	// clear our ALL edges
+	numedges -= i->second;
 	nummultiedges -= (i->second - 1);
 	fset.erase(to);	
 	if(from != to) {
@@ -138,8 +138,8 @@ public:
     typename T::iterator i = fset.find(to);
     if(i != fend) {
       r = i->second;
-      numedges--;
-      nummultiedges -= (i->second - 1);
+      numedges -= r;
+      nummultiedges -= (r - 1);
       fset.erase(to);	
       if(from != to) { edges[to].erase(from); }
     }
