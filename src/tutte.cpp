@@ -63,9 +63,6 @@ Poly deleteContract(Graph &g, bool cache_enable) {
 
   num_steps++;
 
-  cout << "-----------" << endl;
-  print_graph(cout,g); 
-
   // first, eliminate any loops
   unsigned int num_loops = g.remove_loops(); 
 
@@ -74,7 +71,6 @@ Poly deleteContract(Graph &g, bool cache_enable) {
     //    cout << "=== END BRANCH ===" << endl;
     return Poly(g.num_edges(),num_loops);
   } else {
-    cout << "[1]";
     term ys(0,num_loops);  
 
     // Now, remove any pendant vertices (i.e. vertices of degree one).
@@ -86,8 +82,6 @@ Poly deleteContract(Graph &g, bool cache_enable) {
       num_pendants++;
     }
 
-    cout << "[2]";
-
     term xs(num_pendants,0);    
 
     // Second, break down multi-edges
@@ -98,6 +92,7 @@ Poly deleteContract(Graph &g, bool cache_enable) {
     unsigned char *key = NULL;
     if(g.num_vertices() < small_graph_threshold) {
       // if this is a small 
+      /*
       if(!g.is_multi_graph()) { 
 	switch(g.num_vertices()) {
 	case 4:
@@ -108,28 +103,23 @@ Poly deleteContract(Graph &g, bool cache_enable) {
 	  break;
 	}
       }
+      */
     } else {
       key = graph_key(g);      
       Poly p;
       if(cache.lookup(key,p)) { return p * ys * xs; }          
     }
 
-    print_graph(cout,g); 
-
     // third, perform delete contract 
     pair<int,int> e = g.select_nontree_edge();
-
-    cout << "[3]";
 
     Graph g1(g);  
     g1.remove_edge(e.first,e.second);        
     Graph g2(g1); 
     g2.contract_edge(e.first,e.second); 
 
-    cout << "[4," << e.first << "--" << e.second << "]" << endl;
-
     // Fourth, recursively compute the polynomial
-    Poly r = deleteContract(g1,false) + deleteContract(g2,true); 
+    Poly r = deleteContract(g1,false) + deleteContract(g2,true);     
 
     // Finally, save computed polynomial
     if(key != NULL) {
@@ -137,7 +127,7 @@ Poly deleteContract(Graph &g, bool cache_enable) {
       delete [] key;  // free space used by key
     }
     
-    return r * ys * xs;
+    return r * xs * ys;
   }    
 }
 
@@ -416,8 +406,8 @@ int main(int argc, char *argv[]) {
     // now, write out stats
     
     fstream stats_out("tutte-stats.dat",fstream::out);
-    write_bucket_lengths(stats_out);
-    write_graph_sizes(stats_out);
+    //    write_bucket_lengths(stats_out);
+    // write_graph_sizes(stats_out);
     // printPoly(tuttePolynomial);
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;

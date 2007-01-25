@@ -54,14 +54,11 @@ public:
     int_edge_iterator i(vset.begin());
     int count = 0;
     for(;i!=vend;++i) {
-      int k = i->second;
+      unsigned int k = i->second;
+      nummultiedges -= k - 1;
       if(i->first != v) {
-	if(k > 1) { nummultiedges--; } 
 	edges[i->first].erase(v);
-      } else if(k > 1) {
-	// this is a multi-self loop
-	nummultiedges -= (k-1);
-      }
+      } 
       count += k;
     }
     numedges -= count;
@@ -84,7 +81,7 @@ public:
     int_edge_iterator i = tos.find(from);
     nummultiedges += c - 1;
     if(i != tos.end()) {
-      // this is a multi-edge
+      // edge already present so another multi-edge!
       nummultiedges++;
       i->second += c;
       // don't want to increment same edge twice!
@@ -115,10 +112,10 @@ public:
       if(i->second > c) {
 	// this is a multi-edge, so decrement count.
 	nummultiedges -= c;
-	i->second--;
+	i->second -= c;
 	if(from != to) {
 	  i = edges[to].find(from);
-	  i->second--;
+	  i->second -= c;
 	}
       } else {
 	nummultiedges -= (i->second - 1);
