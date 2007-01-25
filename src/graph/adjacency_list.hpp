@@ -2,7 +2,7 @@
 #define ADJACENCY_LIST_HPP
 
 #include <vector>
-#include <set>
+#include <map>
 #include <list>
 #include <algorithm>
 #include <stdexcept>
@@ -14,10 +14,11 @@ using namespace std;
 
 // Note, T here must implement the multiple sorted 
 // associative container interface defined in the STL
-template<class T = std::multiset<int> >
+template<class T = std::map<unsigned int, unsigned int> >
 class adjacency_list {
 public:
   typedef list<unsigned int>::const_iterator vertex_iterator;
+  typedef typename T::iterator int_edge_iterator;
   typedef typename T::const_iterator edge_iterator;
 private:
   int numedges; // useful cache
@@ -33,36 +34,37 @@ public:
   unsigned int domain_size() const { return _domain_size; }
   unsigned int num_vertices() const { return vertices.size(); }
   unsigned int num_edges() const { return numedges; }
-  unsigned int num_edges(unsigned int vertex) const { return edges[vertex].size(); }
+  unsigned int num_edges(unsigned int vertex) const { 
+    // this could also be cached.
+    unsigned int count=0;
+    for(edge_iterator i(edges[vertex].begin());i!=edges[vertex].end();++i) {
+      count += i->second;
+    }
+    return count; 
+  }
   unsigned int num_multiedges() const { return nummultiedges; }
   bool is_multi_graph() const { return nummultiedges > 0; }
   
   // there is no add vertex!
   void clear(unsigned int v) { 
     // Now, clear all edges involving v
-    //
-    // I make j one step ahead of i so that I can tell whether I'm
-    // deleting a multi edge or not.  Also, it means I don't
-    // need to call erase twice for the same vertex, since only
-    // one call is necessary to remove all traces of this "v"
 
     T &vset = edges[v];                    // optimisation
-    edge_iterator vend(vset.end());        // optimisation
-    edge_iterator i(vset.begin());
-    if(i == vend) { return; }              // needed for case where v has no edges
-    edge_iterator j(i);
-    ++j;
-    for(;i!=vend;++i,++j) {
-      if(*i != v) {
-	if(j != vend && *j == *i) {
-	  // removing a multi edge
-	  nummultiedges--;
-	} else {
-	  edges[*i].erase(v);
-	}
-      } 
+    int_edge_iterator vend(vset.end());        // optimisation
+    int_edge_iterator i(vset.begin());
+    int count = 0;
+    for(;i!=vend;++i) {
+      int k = i->second;
+      if(i->first != v) {
+	if(k > 1) { nummultiedges--; } 
+	edges[i->first].erase(v);
+      } else if(k > 1) {
+	// this is a multi-self loop
+	nummultiedges -= (k-1);
+      }
+      count += k;
     }
-    numedges -= vset.size();
+    numedges -= count;
     edges[v] = T(); // save memory
   }
 
@@ -72,49 +74,68 @@ public:
     clear(v);
   }
 
-  bool add_edge(unsigned int from, unsigned int to) {
-    bool r(false);
-
-    numedges++;
+  bool add_edge(unsigned int from, unsigned int to, unsigned int c) {
+    numedges += c;
     
     // the following is a hack to check
     // whether the edge we're inserting
     // is already in the graph or not
     T &tos = edges[to];                     // optimisation
-    edge_iterator i = tos.lower_bound(from);
-    if(i != tos.end() && *i == from) {      
+    int_edge_iterator i = tos.find(from);
+    nummultiedges += c - 1;
+    if(i != tos.end()) {
+      // this is a multi-edge
       nummultiedges++;
-      r=true;
+      i->second += c;
+      // don't want to increment same edge twice!
+      if(from != to) {
+	i = edges[from].find(to);
+	i->second += c;
+      }
+      return true;
+    } else {
+      // completely new edge!
+      tos.insert(std::make_pair(from,1));
+      // self-loops only get one mention in the edge set
+      if(from != to) { 
+	edges[from].insert(std::make_pair(to,c));
+      }
+      return false;
     }
-    // hmmm, is this really efficient?
-    tos.insert(i,from);
-
-    // self-loops only get one mention in the edge set
-    if(from != to) { edges[from].insert(to); }
-
-    return r;
   }
 
-  bool remove_edge(unsigned int from, unsigned int to) {
+  bool add_edge(unsigned int from, unsigned int to) { return add_edge(from,to,1); }
+
+  bool remove_edge(unsigned int from, unsigned int to, unsigned int c) {
     bool r=false;
     T &fset = edges[from];                  // optimisation
     typename T::iterator fend = fset.end(); // optimisation
     typename T::iterator i = fset.find(to);
     if(i != fend) {
-      fset.erase(i++);
       numedges--;
-      r = true;
-      // check if this was a multi-edge or not.
-      if(i != fend && *i == to) { nummultiedges--; }
+      if(i->second > c) {
+	// this is a multi-edge, so decrement count.
+	nummultiedges -= c;
+	i->second--;
+	if(from != to) {
+	  i = edges[to].find(from);
+	  i->second--;
+	}
+	return true;
+      } else {
+	nummultiedges -= (i->second - 1);
+	fset.erase(to);	
+	if(from != to) {
+	  edges[to].erase(from);
+	}
+      }
     }
 
-    if(from != to && r) {
-      T &tset = edges[to];                  // optimisation    
-      i = tset.find(from);
-      tset.erase(i);
-    }
+    return false;
+  }
 
-    return r;
+  bool remove_edge(unsigned int from, unsigned int to) {
+    return remove_edge(from,to,1);
   }
 
   // Ok, this implementation is seriously inefficient! 
@@ -124,11 +145,11 @@ public:
   void contract_edge(unsigned int from, unsigned int to) { 
     if(from == to) { throw std::runtime_error("cannot contract a loop!"); } 
     for(edge_iterator i(begin_edges(to));i!=end_edges(to);++i) {
-      if(*i == to) { 
+      if(i->first == to) { 
 	// is self loop
-	add_edge(from,from);
+	add_edge(from,from,i->second);
       } else {
-	add_edge(from,*i); 
+	add_edge(from,i->first,i->second); 
       }
     }
     remove(to);

@@ -19,8 +19,12 @@ void print_graph(std::ostream &ostr, T const &graph) {
   ostr << "E = { ";
   for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     for(typename T::edge_iterator j(graph.begin_edges(*i));j!=graph.end_edges(*i);++j) {
-      if(*i <= *j) {
-	ostr << *i << "--" << *j << " ";
+      if(*i <= j->first) {
+	if(j->second == 1) {
+	  ostr << *i << "--" << j->first << " ";
+	} else {
+	  ostr << *i << "-" << j->second << "-" << j->first << " ";
+	}
       } 
     }
   }
@@ -71,21 +75,22 @@ unsigned char *graph_key(T const &graph) {
   for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     unsigned int _v = *i;
     for(typename T::edge_iterator j(graph.begin_edges(_v));j!=graph.end_edges(_v);++j) {	
-      unsigned int _w = *j;
-
+      unsigned int _w = j->first;
+      
       // convert vertices into nauty graph vertex space
       unsigned int v = vtxmap[_v];
       unsigned int w = vtxmap[_w];
 
       // now add this edge to nauty graph
       if(v <= w) {
-	if(!nauty_add_edge(v,w,M)) {
-	  // attempt to add edge failed, which means
-	  // this must be a multi-edge ...
-	  nauty_add_edge(v,mes,M);
-	  nauty_add_edge(mes,w,M);
-	  // increment to ensure fresh vertex for next multi-edge
-	  mes++;
+	nauty_add_edge(v,w,M);
+	unsigned int k=j->second-1;
+	if(j->second > 0) {
+	  // this is a multi-edge!
+	  for(;k!=0;--k,++mes) {
+	    nauty_add_edge(v,mes,M);
+	    nauty_add_edge(mes,w,M);	    
+	  }
 	} 
       }
     }

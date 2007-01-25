@@ -52,13 +52,13 @@ public:
 	// since these are by definition pendants now
 	for(typename G::edge_iterator j(graph.begin_edges(vertex));
 	    j!=graph.end_edges(vertex);++j) {
-	  if(graph.num_edges(*j) == 2) {
+	  if(graph.num_edges(j->first) == 2) {
 	    // yes, found one!  
 	    //
 	    // BUG HERE WHEN EDGE IS A LOOP (BUT THIS
 	    // CURRENTLY NEVER HAPPENS, SINCE LOOPS ARE REMOVED IN
 	    // DELCONTRACT).
-	    pendant_vertices.push_back(*j);
+	    pendant_vertices.push_back(j->first);
 	  }
 	}
 	graph.remove(vertex); 
@@ -186,7 +186,7 @@ private:
     // now, consider edges
     for(typename G::edge_iterator i(graph.begin_edges(head));
 	i!=graph.end_edges(head);++i) {
-      int next = *i;
+      int next = i->first;
 
       if(!visited[next]) { traverse(head,next); }
       else if(tail != next || backlink_count == 0) {

@@ -85,6 +85,8 @@ Poly deleteContract(Graph &g, bool cache_enable) {
 
     term xs(num_pendants,0);    
 
+    // Second, break down multi-edges
+
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
 
@@ -116,10 +118,9 @@ Poly deleteContract(Graph &g, bool cache_enable) {
     g2.contract_edge(e.first,e.second); 
 
     // Fourth, recursively compute the polynomial
-    Poly r;
-    r = deleteContract(g1,false) + deleteContract(g2,true); // perform the recursion
+    Poly r = deleteContract(g1,false) + deleteContract(g2,true); 
 
-    // Finally, save computed polynomial for g2
+    // Finally, save computed polynomial
     if(key != NULL) {
       cache.store(key,r);
       delete [] key;  // free space used by key
