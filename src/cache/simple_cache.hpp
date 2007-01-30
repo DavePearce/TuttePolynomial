@@ -280,7 +280,7 @@ private:
   }
 
   struct cache_node *create_bucket_array(size_t nbs) {
-    struct cache_node *bs = new (struct cache_node)[nbs];
+    struct cache_node *bs = new struct cache_node[nbs];
     // initialise buckets
     for(int i=0;i!=nbs;++i) { 
       bs[i].next=NULL; 

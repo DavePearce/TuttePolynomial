@@ -38,7 +38,7 @@ P const &evaluate_simple_fours(G const &graph) {
 		 // GRAPH : 0--2, 0--3, 1--2, 1--3
 		 return poly_0_0_4_0;
 		default:
-		  cout << "*** DEBUG INFO ***" << endl;
+		  std::cout << "*** DEBUG INFO ***" << std::endl;
 		  print_graph(std::cout,graph);
 		  std::cout << "KEY = " << degseq << std::endl;
 		 throw std::runtime_error("unreachable code reached in evaluate_simple_fours!");
