@@ -86,7 +86,11 @@ public:
   }
 
   bool remove_edge(int from, int to) {     
-    if(graph.remove_edge(from,to)) {    
+    remove_edge(from,to,1);
+  }
+
+  bool remove_edge(int from, int to, int c) {     
+    if(graph.remove_edge(from,to,c)) {    
       // if we've removed a tree edge then we'd
       // need to rebuild the tree.
       //
@@ -111,7 +115,7 @@ public:
 	  if((i->first == from && i->second == to) ||
 	     (i->first == to && i->second == from)) {
 	    // yes, this is a nontree edge, so no big deal
-	    i->third--;
+	    i->third -= c;
 	    if(i->third == 0) {
 	      // see: "Effective STL", item 28, p125 for explanation
 	      // as to why it's "(++i).base()", not "i.base()"
@@ -136,6 +140,17 @@ public:
   // assumes this graph is NOT a tree
   edge_t select_nontree_edge() const {
     return nontree_edges.back();
+  }
+  
+  edge_t select_multi_edge() {
+    // this is a simple hack for now
+    for(std::vector<edge_t>::reverse_iterator i(nontree_edges.rbegin());
+	i!=nontree_edges.rend();++i) {
+      if(i->third > 0) {
+	return *i;
+      }
+    }
+    throw std::runtime_error("unreachable code reached!");
   }
 
   int select_pendant_vertex() const {

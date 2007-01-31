@@ -85,8 +85,6 @@ Poly deleteContract(Graph &g, bool cache_enable) {
 
     term xs(num_pendants,0);    
 
-    // Second, break down multi-edges
-
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
     unsigned char *key = NULL;
@@ -108,6 +106,35 @@ Poly deleteContract(Graph &g, bool cache_enable) {
       key = graph_key(g);      
       Poly p;
       if(cache.lookup(key,p)) { return p * ys * xs; }          
+    }
+
+    // Third, break down multi-edges
+    
+    if(g.is_multi_graph()) {
+      Graph::edge_t me = g.select_multi_edge();
+      Graph g1(g);  
+      // remove all but one of the multi-edges
+      // in order to preserve connectivity
+      g1.remove_edge(me.first,me.second,me.third);
+      Graph g2(g1);  
+      g2.contract_edge(me.first,me.second);
+      // now, compute the result (in a rather awkward manner)
+      Poly p1 = deleteContract(g1,false);
+      Poly p2 = deleteContract(g2,false);
+
+      for(int i=0;i!=me.third;++i) {
+	p1 = p1 + p2;
+	p2 = p2 * term(0,1);
+      }
+
+      // Finally, save computed polynomial [need to factor this]
+      if(key != NULL) {
+	cache.store(key,p1);
+	delete [] key;  // free space used by key
+      }
+
+      // all done for this multi-edge!
+      return p1;
     }
 
     // third, perform delete contract 
