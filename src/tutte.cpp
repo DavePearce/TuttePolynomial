@@ -43,7 +43,7 @@ public:
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
-simple_cache<Poly> cache(1024,100);
+simple_cache<Poly> cache(1024*1024,100);
 
 // ---------------------------------------------------------------
 // Method Bodies
@@ -89,7 +89,6 @@ Poly deleteContract(Graph &g, bool cache_enable) {
 
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
-
     unsigned char *key = NULL;
     if(g.num_vertices() < small_graph_threshold) {
       // if this is a small 

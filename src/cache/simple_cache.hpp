@@ -185,7 +185,7 @@ public:
 
     // now, rebucket everything
     for(int i=0;i!=nbuckets;++i) {
-      struct cache_node *ptr, *nptr = buckets[i].next;
+      struct cache_node *nptr, *ptr = buckets[i].next;
       int len=0;
       while(ptr != NULL) {
 	nptr = ptr->next;
