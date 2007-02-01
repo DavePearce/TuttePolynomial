@@ -429,11 +429,10 @@ int main(int argc, char *argv[]) {
     cout << "# Cache Collisions: " << cache.num_collisions() << endl;
     cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
     cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
-
     // now, write out stats
     
     fstream stats_out("tutte-stats.dat",fstream::out);
-    //    write_bucket_lengths(stats_out);
+    write_bucket_lengths(stats_out);
     // write_graph_sizes(stats_out);
     // printPoly(tuttePolynomial);
   } catch(bad_alloc const &e) {

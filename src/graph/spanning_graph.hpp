@@ -139,7 +139,21 @@ public:
 
   // assumes this graph is NOT a tree
   edge_t select_nontree_edge() {
-    return nontree_edges.back();
+    edge_t cur(0,0,0);
+    int min=999999;
+    int max=0;
+    for(std::vector<edge_t>::reverse_iterator i(nontree_edges.rbegin());
+	i!=nontree_edges.rend();++i) {
+      int x = graph.num_underlying_edges(i->first) + 
+	graph.num_underlying_edges(i->second);
+      if(x < min) {
+	cur = *i;
+	min = x;
+      }
+    }
+    return cur;
+    
+    // return nontree_edges.back();
   }
   
   edge_t select_multi_edge() {

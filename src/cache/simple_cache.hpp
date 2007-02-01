@@ -76,7 +76,6 @@ private:
   unsigned char *start_p;        // buffer start ptr
   unsigned char *next_p;         // buffer next ptr
   unsigned int bufsize;
-  
 public:
   // max_size in bytes
   simple_cache(size_t max_size, size_t nbs = 10000) {
@@ -242,7 +241,7 @@ public:
     struct cache_node *node_p = (struct cache_node *) ptr;
     unsigned char *key_p = ptr + sizeof(struct cache_node);
     // now put key at head of its bucket list
-    unsigned int bucket = hash_graph_key(key) % nbuckets; 
+    unsigned int bucket = hash_graph_key(key) % nbuckets;
     insert_node_after(node_p,&(buckets[bucket]));
     // load the key into the node
     memcpy(key_p,key,sizeof_key);

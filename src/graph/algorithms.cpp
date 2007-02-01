@@ -51,35 +51,7 @@ size_t sizeof_graph_key(unsigned char const *key) {
 unsigned int hash_graph_key(unsigned char const *key) {
   setword *p = (setword*) key;  
   unsigned int N = p[0];
-  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE) : N / WORDSIZE;
-  key = key + sizeof(setword);
-  setword hash = 0;
-  //  for(int i=0;i!=(N*M);++i) { hash ^= p[i]; }
-
-  // The following code was taken from wikipedia and embodies the
-  // Jenkins One-at-a-time hash.  See this page:
-  //
-  //    http://www.burtleburtle.net/bob/hash/doobs.html
-  //
-  // for more detail.  I found this hash function to be significantly
-  // better that the above "xoring" approach.
-  /*
-  size_t i;
-  
-  unsigned int nbytes = sizeof(setword)*((N*M)+NAUTY_HEADER_SIZE);
-  for (i = 0; i < nbytes; i++) {
-    hash += key[i];
-    hash += (hash << 10);
-    hash ^= (hash >> 6);
-  }
-
-  hash += (hash << 3);
-  hash ^= (hash >> 11);
-  hash += (hash << 15);
-  
-  return hash;
-  
-  */
+  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   return hashlittle(key,sizeof(setword)*((N*M)+NAUTY_HEADER_SIZE),0);
 }
 
