@@ -138,19 +138,20 @@ public:
   bool is_tree() { return nontree_edges.size() == 0; }
 
   // assumes this graph is NOT a tree
-  edge_t select_nontree_edge() const {
+  edge_t select_nontree_edge() {
     return nontree_edges.back();
   }
   
   edge_t select_multi_edge() {
     // this is a simple hack for now
+    edge_t cur(0,0,0);
     for(std::vector<edge_t>::reverse_iterator i(nontree_edges.rbegin());
 	i!=nontree_edges.rend();++i) {
-      if(i->third > 0) {
-	return *i;
+      if(i->third > cur.third) {
+	cur = *i;
       }
     }
-    throw std::runtime_error("unreachable code reached!");
+    return cur;
   }
 
   int select_pendant_vertex() const {

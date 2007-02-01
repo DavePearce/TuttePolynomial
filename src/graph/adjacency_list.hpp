@@ -40,6 +40,11 @@ public:
     }
     return count; 
   }
+
+  unsigned int num_underlying_edges(unsigned int vertex) const { 
+    return edges[vertex].size();
+  }
+
   unsigned int num_multiedges() const { return nummultiedges; }
   bool is_multi_graph() const { return nummultiedges > 0; }
   

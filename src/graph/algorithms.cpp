@@ -4,6 +4,10 @@ setword nauty_graph_buf[(MAXN*MAXM)];
 setword *nauty_workspace = new setword[50*MAXM];
 size_t _nauty_workspace_size = 50*MAXM;
 
+extern "C" {
+uint32_t hashlittle( const void *key, size_t length, uint32_t initval);
+}
+
 void resize_nauty_workspace(int newsize) {
   nauty_workspace = new setword[newsize];
   _nauty_workspace_size = newsize;
@@ -59,7 +63,7 @@ unsigned int hash_graph_key(unsigned char const *key) {
   //
   // for more detail.  I found this hash function to be significantly
   // better that the above "xoring" approach.
-
+  /*
   size_t i;
   
   unsigned int nbytes = sizeof(setword)*((N*M)+NAUTY_HEADER_SIZE);
@@ -72,8 +76,11 @@ unsigned int hash_graph_key(unsigned char const *key) {
   hash += (hash << 3);
   hash ^= (hash >> 11);
   hash += (hash << 15);
-
+  
   return hash;
+  
+  */
+  return hashlittle(key,sizeof(setword)*((N*M)+NAUTY_HEADER_SIZE),0);
 }
 
 void print_graph_key(std::ostream &ostr, unsigned char const *key) {

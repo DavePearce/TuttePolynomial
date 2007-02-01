@@ -2,7 +2,7 @@ include ../makefile.config
 
 SUBDIRS=core graph cache misc poly
 
-SRCS= tutte.cpp poly/simple_poly.cpp graph/algorithms.cpp
+SRCS= tutte.cpp poly/simple_poly.cpp graph/algorithms.cpp graph/hash.c
 
 LDFLAGS += -L../nauty
 LIBS = -lnauty
