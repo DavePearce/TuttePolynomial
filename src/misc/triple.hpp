@@ -24,8 +24,8 @@ bool operator!=(triple<A,B,C> const &x, triple<A,B,C> const &y) {
 template<class A, class B, class C>
 bool operator<(triple<A,B,C> const &x, triple<A,B,C> const &y) {
   return x.first < y.first || 
-    (!(x.first < y.first) && x.second < y.second) || 
-    (!(x.first < y.first) && !(x.second < y.second) && x.third < y.third);
+    (!(y.first < x.first) && x.second < y.second) || 
+    (!(y.first < x.first) && !(y.second < x.second) && x.third < y.third);
 }
 
 template<class A, class B, class C>

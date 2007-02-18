@@ -17,6 +17,7 @@
 struct cache_node {
   struct cache_node *next;  
   struct cache_node *prev;  
+  unsigned int hit_count; 
   // graph key comes here
   // followed by polynomial
 };
@@ -50,6 +51,10 @@ public:
   unsigned char *key() {
     unsigned char *p = (unsigned char *) ptr;
     return p + sizeof(struct cache_node);
+  }
+
+  unsigned int hit_count() {
+    return ptr->hit_count;
   }
 
   bool operator==(simple_cache_iterator const &o) const {
@@ -219,6 +224,8 @@ public:
 	// match made
 	size_t sizeof_key = sizeof_graph_key(key_p);
 	dst = read_compact_poly<P>(key_p + sizeof_key);
+	// update hit count
+	node_p->hit_count++;
 	// move node to front of bucket
 	remove_node(node_p);
 	insert_node_after(node_p,&(buckets[bucket]));
@@ -243,6 +250,8 @@ public:
     // now put key at head of its bucket list
     unsigned int bucket = hash_graph_key(key) % nbuckets;
     insert_node_after(node_p,&(buckets[bucket]));
+    // init hit count
+    node_p->hit_count = 0;
     // load the key into the node
     memcpy(key_p,key,sizeof_key);
     // load the poly into the node
@@ -270,7 +279,8 @@ private:
     if(size >= bufsize) { throw std::bad_alloc();  }
     // if there's not enough space left, free up some!
     while(((next_p-start_p)+size) >= bufsize) { 
-      randomly_remove_nodes(0.5);  
+      // randomly_remove_nodes(0.5);  
+      remove_unused_nodes(0.3);
       pack_buffer();
     }
     unsigned char *r = next_p;
@@ -304,6 +314,30 @@ private:
       }
     }
     numentries-=count;
+  }
+
+  // remove unused nodes to reduce cache by p % 
+  void remove_unused_nodes(double p) {
+    unsigned int hc = 0;    
+    unsigned orig_size = (next_p-start_p);
+    double amount=0;
+    do {
+      hc = hc + 1;
+      unsigned int count=0;
+      for(int i=0;i!=nbuckets;++i) {
+	struct cache_node *ptr = buckets[i].next;
+	while(ptr != NULL) {
+	  struct cache_node *optr=ptr;
+	  ptr = ptr->next;
+	  if(optr->hit_count < hc) { 
+	    count++; 
+	    amount += sizeof_node(optr);
+	    remove_node(optr); 
+	  }
+	}
+      }
+      numentries-=count;
+    } while((amount / orig_size) < p);
   }
 
   // compact buffer which pushes all free space to end

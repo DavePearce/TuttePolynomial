@@ -13,6 +13,8 @@
 #include "eval_simple_fives.hpp" // auto-generated solutions for simple graphs of size 5
 #include "cache/simple_cache.hpp"
 
+#include <set>
+
 using namespace std;
 
 // ---------------------------------------------------------------
@@ -108,53 +110,31 @@ Poly deleteContract(Graph &g, bool cache_enable) {
       if(cache.lookup(key,p)) { return p * ys * xs; }          
     }
 
-    // Third, break down multi-edges
-    
-    if(g.is_multi_graph()) {
-      Graph::edge_t me = g.select_multi_edge();
-      Graph g1(g);  
-      // remove all but one of the multi-edges
-      // in order to preserve connectivity
-      g1.remove_edge(me.first,me.second,me.third);
-      Graph g2(g1);  
-      g2.contract_edge(me.first,me.second);
-      // now, compute the result (in a rather awkward manner)
-      Poly p1 = deleteContract(g1,false);
-      Poly p2 = deleteContract(g2,false);
-
-      for(int i=0;i!=me.third;++i) {
-	p1 = p1 + p2;
-	p2 = p2 * term(0,1);
-      }
-
-      // Finally, save computed polynomial [need to factor this]
-      if(key != NULL) {
-	cache.store(key,p1);
-	delete [] key;  // free space used by key
-      }
-
-      // all done for this multi-edge!
-      return p1;
-    }
-
-    // third, perform delete contract 
+    // Third, perform delete contract 
     Graph::edge_t e = g.select_nontree_edge();
 
     Graph g1(g);  
-    g1.remove_edge(e.first,e.second);        
+    g1.remove_edge(e.first,e.second,e.third);        
     Graph g2(g1); 
     g2.contract_edge(e.first,e.second); 
 
-    // Fourth, recursively compute the polynomial
-    Poly r = deleteContract(g1,false) + deleteContract(g2,true);     
+    // Fourth, recursively compute the polynomial   
+    Poly p1 = deleteContract(g1,false);
+    Poly p2 = deleteContract(g2,false);
+    
+    // deal with multiple edges
+    for(int i=0;i!=e.third;++i) {
+      p1 = p1 + p2;
+      p2 = p2 * term(0,1);
+    }
 
     // Finally, save computed polynomial
     if(key != NULL) {
-      cache.store(key,r);
+      cache.store(key,p1);
       delete [] key;  // free space used by key
     }
     
-    return r * xs * ys;
+    return p1 * xs * ys;
   }    
 }
 
@@ -285,6 +265,26 @@ void write_graph_sizes(fstream &out) {
   }
 }
 
+void write_hit_counts(fstream &out) {
+  std::set<triple<unsigned int, unsigned int, unsigned int> > hs;
+  out << endl << endl;
+  out << "##############################" << endl;
+  out << "# CACHE GRAPH HIT COUNT DATA #" << endl;
+  out << "##############################" << endl;
+  out << "# Hit Count\tV\tE" << endl;
+  int nmgraphs=0;
+  int ngraphs=0;
+
+  for(simple_cache<Poly>::iterator i(cache.begin());i!=cache.end();++i) {
+    Graph g(graph_from_key<Graph>(i.key()));
+    hs.insert(make_triple(i.hit_count(),g.num_vertices(),g.num_edges()));
+  }
+  
+  for(std::set<triple<unsigned int, unsigned int, unsigned int> >::iterator i(hs.begin());
+      i!=hs.end();++i) {
+    out << i->first << "\t" << i->second << "\t" << i->third << endl;
+  }
+}
 
 // ---------------------------------------------------------------
 // Signal Handlers
@@ -433,7 +433,8 @@ int main(int argc, char *argv[]) {
     
     fstream stats_out("tutte-stats.dat",fstream::out);
     write_bucket_lengths(stats_out);
-    // write_graph_sizes(stats_out);
+    write_graph_sizes(stats_out);
+    write_hit_counts(stats_out);
     // printPoly(tuttePolynomial);
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
