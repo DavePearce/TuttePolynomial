@@ -266,23 +266,26 @@ void write_graph_sizes(fstream &out) {
 }
 
 void write_hit_counts(fstream &out) {
-  std::set<triple<unsigned int, unsigned int, unsigned int> > hs;
+  std::set<pair<unsigned int, unsigned int> > hs;
+  std::vector<triple<unsigned int, unsigned int, unsigned int> > table;
   out << endl << endl;
   out << "##############################" << endl;
   out << "# CACHE GRAPH HIT COUNT DATA #" << endl;
   out << "##############################" << endl;
-  out << "# Hit Count\tV\tE" << endl;
+  out << "# Hit Count\tV\tE\tE'" << endl;
   int nmgraphs=0;
   int ngraphs=0;
 
   for(simple_cache<Poly>::iterator i(cache.begin());i!=cache.end();++i) {
     Graph g(graph_from_key<Graph>(i.key()));
-    hs.insert(make_triple(i.hit_count(),g.num_vertices(),g.num_edges()));
+    table.push_back(make_triple(g.num_vertices(),g.num_edges(),g.num_edges() - g.num_multiedges()));
+    hs.insert(make_pair(i.hit_count(),table.size()-1));
   }
   
-  for(std::set<triple<unsigned int, unsigned int, unsigned int> >::iterator i(hs.begin());
+  for(std::set<pair<unsigned int, unsigned int> >::iterator i(hs.begin());
       i!=hs.end();++i) {
-    out << i->first << "\t" << i->second << "\t" << i->third << endl;
+    triple<unsigned int, unsigned int, unsigned int> const &t(table[i->second]);
+    out << i->first << "\t" << t.first << "\t" << t.second << "\t" << t.third << endl;
   }
 }
 

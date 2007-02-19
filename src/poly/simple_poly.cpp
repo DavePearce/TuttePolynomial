@@ -21,7 +21,6 @@ const simple_poly operator+(simple_poly const &p1, simple_poly const &p2) {
 const simple_poly operator*(simple_poly const &p1, term const &p2) {
   simple_poly r;
   
-  // this probably breaks the STL rules a little ??
   for(map<term,unsigned int>::const_iterator i(p1.terms.begin());i!=p1.terms.end();++i) {      
     term t(i->first);
     t.xpower += p2.xpower;

@@ -279,7 +279,7 @@ private:
     if(size >= bufsize) { throw std::bad_alloc();  }
     // if there's not enough space left, free up some!
     while(((next_p-start_p)+size) >= bufsize) { 
-      // randomly_remove_nodes(0.5);  
+      // randomly_remove_nodes(0.3);  
       remove_unused_nodes(0.3);
       pack_buffer();
     }
@@ -307,7 +307,7 @@ private:
 	struct cache_node *optr=ptr;
 	ptr = ptr->next;
 	double f = ((double)rand())/RAND_MAX;
-	if(f > p) { 
+	if(f < p) { 
 	  count++; 
 	  remove_node(optr); 
 	}

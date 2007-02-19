@@ -80,7 +80,9 @@ public:
     unsigned int c=0;    
     for(typename G::vertex_iterator i(graph.begin_verts());
 	i!=graph.end_verts();++i) {
+
       c += graph.remove_all_edges(*i,*i);
+
     }
     return c;
   }
