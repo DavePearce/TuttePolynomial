@@ -315,6 +315,7 @@ int main(int argc, char *argv[]) {
   // ------------------------------
 
   #define OPT_HELP 0
+  #define OPT_QUIET 1
   #define OPT_SMALLGRAPHS 5
   #define OPT_CACHESIZE 10
   #define OPT_CACHEBUCKETS 11  
@@ -326,11 +327,13 @@ int main(int argc, char *argv[]) {
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
+    {"quiet",no_argument,NULL,OPT_QUIET},
     NULL
   };
   
   char *descriptions[]={
     "        --help                    display this information",
+    " -q     --quiet                   output stats summary as single line only (useful for generating data)"
     " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     "        --nauty-workspace=<amount> set size of nauty workspace, e.g. 10000",
@@ -341,8 +344,9 @@ int main(int argc, char *argv[]) {
   unsigned int v;
   unsigned int cache_size(50*1024*1024); // detault 50M
   unsigned int cache_buckets(10000);     // default 10,000 buckets
+  bool quiet_mode=false;
 
-  while((v=getopt_long(argc,argv,"c:",long_options,NULL)) != -1) {
+  while((v=getopt_long(argc,argv,"qc:",long_options,NULL)) != -1) {
     switch(v) {      
     case OPT_HELP:
       cout << "usage: " << argv[0] << " [options] <input graph file>" << endl;
@@ -352,6 +356,10 @@ int main(int argc, char *argv[]) {
       }    
       exit(1);
           
+    case 'q':
+    case OPT_QUIET:      
+      quiet_mode=true;
+      break;
     // --- CACHE OPTIONS ---
     case 'c':
     case OPT_CACHESIZE:
@@ -391,11 +399,13 @@ int main(int argc, char *argv[]) {
   // Register alarm signal for printing status updates
   // -------------------------------------------------
 
-  struct sigaction sa;
-  memset(&sa,0,sizeof(sa));
-  sa.sa_handler = &timer_handler;
-  if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
-  alarm(status_interval); // trigger alarm in status_interval seconds
+  if(!quiet_mode) {
+    struct sigaction sa;
+    memset(&sa,0,sizeof(sa));
+    sa.sa_handler = &timer_handler;
+    if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
+    alarm(status_interval); // trigger alarm in status_interval seconds
+  }
 
   // -----------------------------------
   // Now, begin solving the input graph!
@@ -408,37 +418,43 @@ int main(int argc, char *argv[]) {
     ifstream input(argv[optind]);
     start_graph = read_graph(input);
 
-    cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
-    
-    print_graph(cout,start_graph);    
+    if(quiet_mode) {
+      cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();
+    } else {
+      cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
+      print_graph(cout,start_graph);    
+    }   
 
     my_timer timer;
 
     Poly tuttePoly = deleteContract(start_graph,false);        
 
-    cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
-
-    cout << "Number of spanning trees: " << (long long) tuttePoly.substitute(1,1) << endl;
-
-    cout << "==================" << endl;
-    cout << "Total Steps: " << num_steps << endl;
-    cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
-    cout << endl;
-    cout << "Cache stats:" << endl << "------------" << endl;
-    cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
-    cout << "# Entries: " << cache.num_entries() << endl;
-    cout << "# Cache Hits: " << cache.num_hits() << endl;
-    cout << "# Cache Misses: " << cache.num_misses() << endl;
-    cout << "# Cache Collisions: " << cache.num_collisions() << endl;
-    cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
-    cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
-    // now, write out stats
-    
-    fstream stats_out("tutte-stats.dat",fstream::out);
-    write_bucket_lengths(stats_out);
-    write_graph_sizes(stats_out);
-    write_hit_counts(stats_out);
-    // printPoly(tuttePolynomial);
+    if(quiet_mode) {
+      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << endl;
+    } else {
+      cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
+      
+      cout << "Number of spanning trees: " << (long long) tuttePoly.substitute(1,1) << endl;
+      
+      cout << "==================" << endl;
+      cout << "Total Steps: " << num_steps << endl;
+      cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
+      cout << endl;
+      cout << "Cache stats:" << endl << "------------" << endl;
+      cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
+      cout << "# Entries: " << cache.num_entries() << endl;
+      cout << "# Cache Hits: " << cache.num_hits() << endl;
+      cout << "# Cache Misses: " << cache.num_misses() << endl;
+      cout << "# Cache Collisions: " << cache.num_collisions() << endl;
+      cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
+      cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
+      // now, write out stats
+      
+      fstream stats_out("tutte-stats.dat",fstream::out);
+      write_bucket_lengths(stats_out);
+      write_graph_sizes(stats_out);
+      write_hit_counts(stats_out);
+    }
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
   } catch(exception const &e) {
