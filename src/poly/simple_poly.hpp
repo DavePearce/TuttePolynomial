@@ -9,10 +9,10 @@
 
 class term {
 public:
-  unsigned int xpower;
-  unsigned int ypower;
+  unsigned short xpower;
+  unsigned short ypower;
 
-  term(unsigned int x, unsigned int y) : xpower(x), ypower(y) {}
+  term(unsigned short x, unsigned short y) : xpower(x), ypower(y) {}
 
   bool operator<(term const &t) const {
     return (xpower < t.xpower) || (xpower == t.xpower && ypower < t.ypower);
