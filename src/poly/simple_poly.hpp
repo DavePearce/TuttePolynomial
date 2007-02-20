@@ -89,6 +89,17 @@ public:
     return terms != g.terms;
   }
 
+  void operator+=(simple_poly const &p1) {    
+    for(std::map<term,unsigned int>::const_iterator i(p1.terms.begin());i!=p1.terms.end();++i) {      
+      std::map<term,unsigned int>::iterator j = terms.find(i->first);
+      if(j != terms.end()) {
+	j->second += i->second;
+      } else {
+	terms.insert(std::make_pair(i->first,i->second));
+      }
+    }
+  }
+
   const std::string str() const {
     std::stringstream ss;
     // start with xs

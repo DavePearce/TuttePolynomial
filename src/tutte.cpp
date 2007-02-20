@@ -61,25 +61,25 @@ simple_cache<Poly> cache(1024*1024,100);
  * in a cache; and, dynamically monitoring the "treeness" of the graph.
  */
 
-Poly deleteContract(Graph &g, bool cache_enable) { 
+void deleteContract(Graph &graph, Poly &poly) { 
 
   num_steps++;
 
   // first, eliminate any loops
-  unsigned int num_loops = g.remove_loops(); 
+  unsigned int num_loops = graph.remove_loops(); 
 
   // if the graph is a "loop tree", then we're done.
-  if(g.is_tree()) {
+  if(graph.is_tree()) {
     //    cout << "=== END BRANCH ===" << endl;
-    return Poly(g.num_edges(),num_loops);
+    poly += Poly(graph.num_edges(),num_loops);
   } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
 
     int num_pendants(0);
 
-    while(g.num_pendant_vertices() > 0) {
-      int l = g.select_pendant_vertex();
-      g.remove(l);
+    while(graph.num_pendant_vertices() > 0) {
+      int l = graph.select_pendant_vertex();
+      graph.remove(l);
       num_pendants++;
     }
 
@@ -88,11 +88,11 @@ Poly deleteContract(Graph &g, bool cache_enable) {
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
     unsigned char *key = NULL;
-    if(g.num_vertices() < small_graph_threshold) {
+    if(graph.num_vertices() < small_graph_threshold) {
       // if this is a small 
       /*
-      if(!g.is_multi_graph()) { 
-	switch(g.num_vertices()) {
+      if(!graph.is_multi_graph()) { 
+	switch(graph.num_vertices()) {
 	case 4:
 	  return evaluate_simple_fours<Graph,Poly>(g) * ys * xs; 
 	case 5:
@@ -103,36 +103,39 @@ Poly deleteContract(Graph &g, bool cache_enable) {
       }
       */
     } else {
-      key = graph_key(g);      
-      Poly p;
-      if(cache.lookup(key,p)) { return p * xys; }          
+      key = graph_key(graph);      
+      if(cache.lookup(key,poly)) { 
+	poly = poly * xys;
+	return; 
+      }          
     }
 
     // Third, perform delete contract 
-    Graph::edge_t e = g.select_nontree_edge();
+    Graph::edge_t e = graph.select_nontree_edge();
 
-    Graph g1(g);  
-    g1.remove_edge(e.first,e.second,e.third);        
-    Graph g2(g1); 
+    graph.remove_edge(e.first,e.second,e.third);        
+    Graph g2(graph); 
     g2.contract_edge(e.first,e.second); 
 
     // Fourth, recursively compute the polynomial   
-    Poly p1 = deleteContract(g1,false);
-    Poly p2 = deleteContract(g2,false);
+    Poly p2;
+
+    deleteContract(graph,poly);
+    deleteContract(g2,p2);
     
     // deal with multiple edges
     for(int i=0;i!=e.third;++i) {
-      p1 = p1 + p2;
+      poly += p2;
       p2 = p2 * term(0,1);
     }
 
+    poly = poly * xys;
+    
     // Finally, save computed polynomial
     if(key != NULL) {
-      cache.store(key,p1);
+      cache.store(key,poly);
       delete [] key;  // free space used by key
-    }
-    
-    return p1 * xys;
+    }    
   }    
 }
 
@@ -425,7 +428,9 @@ int main(int argc, char *argv[]) {
 
     my_timer timer;
 
-    Poly tuttePoly = deleteContract(start_graph,false);        
+    Poly tuttePoly;
+
+    deleteContract(start_graph,tuttePoly);        
 
     if(quiet_mode) {
       cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << endl;
