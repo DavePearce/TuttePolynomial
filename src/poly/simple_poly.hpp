@@ -100,6 +100,18 @@ public:
     }
   }
 
+  // this is gary's shift operation
+  void operator*=(term const &p2) {
+    // I don't think the STL strictly would allow this,
+    // but it doesn't hurt!
+    for(std::map<term,unsigned int>::const_iterator i(terms.begin());i!=terms.end();++i) {      
+      term &t((term &)i->first); // ouch ;)
+      t.xpower += p2.xpower;
+      t.ypower += p2.ypower;
+    }
+  }
+
+
   const std::string str() const {
     std::stringstream ss;
     // start with xs

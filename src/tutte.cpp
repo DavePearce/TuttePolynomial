@@ -105,7 +105,7 @@ void deleteContract(Graph &graph, Poly &poly) {
     } else {
       key = graph_key(graph);      
       if(cache.lookup(key,poly)) { 
-	poly = poly * xys;
+	poly *= xys;
 	return; 
       }          
     }
@@ -124,12 +124,13 @@ void deleteContract(Graph &graph, Poly &poly) {
     deleteContract(g2,p2);
     
     // deal with multiple edges
-    for(int i=0;i!=e.third;++i) {
+    for(int i=0;i!=e.third-1;++i) {
       poly += p2;
-      p2 = p2 * term(0,1);
+      p2 *= term(0,1);
     }
 
-    poly = poly * xys;
+    poly += p2;
+    poly *= xys;
     
     // Finally, save computed polynomial
     if(key != NULL) {
