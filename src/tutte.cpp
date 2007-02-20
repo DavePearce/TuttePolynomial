@@ -73,8 +73,6 @@ Poly deleteContract(Graph &g, bool cache_enable) {
     //    cout << "=== END BRANCH ===" << endl;
     return Poly(g.num_edges(),num_loops);
   } else {
-    term ys(0,num_loops);  
-
     // Now, remove any pendant vertices (i.e. vertices of degree one).
 
     int num_pendants(0);
@@ -85,7 +83,7 @@ Poly deleteContract(Graph &g, bool cache_enable) {
       num_pendants++;
     }
 
-    term xs(num_pendants,0);    
+    term xys(num_pendants,num_loops);    
 
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
@@ -107,7 +105,7 @@ Poly deleteContract(Graph &g, bool cache_enable) {
     } else {
       key = graph_key(g);      
       Poly p;
-      if(cache.lookup(key,p)) { return p * ys * xs; }          
+      if(cache.lookup(key,p)) { return p * xys; }          
     }
 
     // Third, perform delete contract 
@@ -134,7 +132,7 @@ Poly deleteContract(Graph &g, bool cache_enable) {
       delete [] key;  // free space used by key
     }
     
-    return p1 * xs * ys;
+    return p1 * xys;
   }    
 }
 
