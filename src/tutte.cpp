@@ -45,7 +45,7 @@ public:
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
-simple_cache<Poly> cache(1024*1024,100);
+simple_cache cache(1024*1024,100);
 
 // ---------------------------------------------------------------
 // Method Bodies
@@ -61,7 +61,8 @@ simple_cache<Poly> cache(1024*1024,100);
  * in a cache; and, dynamically monitoring the "treeness" of the graph.
  */
 
-void deleteContract(Graph &graph, Poly &poly) { 
+template<class G, class P>
+void deleteContract(G &graph, P &poly) { 
 
   num_steps++;
 
@@ -71,7 +72,7 @@ void deleteContract(Graph &graph, Poly &poly) {
   // if the graph is a "loop tree", then we're done.
   if(graph.is_tree()) {
     //    cout << "=== END BRANCH ===" << endl;
-    poly += Poly(graph.num_edges(),num_loops);
+    poly += P(graph.num_edges(),num_loops);
   } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
 
@@ -118,7 +119,7 @@ void deleteContract(Graph &graph, Poly &poly) {
     g2.contract_edge(e.first,e.second); 
 
     // Fourth, recursively compute the polynomial   
-    Poly p2;
+    P p2;
 
     deleteContract(graph,poly);
     deleteContract(g2,p2);
@@ -140,7 +141,9 @@ void deleteContract(Graph &graph, Poly &poly) {
   }    
 }
 
-// the following is a really simple file parser
+// ---------------------------------------------------------------
+// Input File Parser
+// ---------------------------------------------------------------
 
 int parse_number(unsigned int &pos, string const &str) {
   int s = pos;
@@ -158,7 +161,8 @@ void match(char c, unsigned int &pos, string const &str) {
   ++pos;
 }
 
-Graph read_graph(std::istream &input) {
+template<class G>
+G read_graph(std::istream &input) {
   vector<pair<unsigned int, unsigned int> > edgelist;
   unsigned int V = 0, pos = 0;
     
@@ -177,7 +181,7 @@ Graph read_graph(std::istream &input) {
     edgelist.push_back(std::make_pair(tail,head));
   }  
 
-  Graph r(V+1);
+  G r(V+1);
 
   for(vector<pair<unsigned int, unsigned int> >::iterator i(edgelist.begin());
       i!=edgelist.end();++i) {
@@ -240,7 +244,7 @@ void write_graph_sizes(fstream &out) {
   int nmgraphs=0;
   int ngraphs=0;
   // first, count the lengths
-  for(simple_cache<Poly>::iterator i(cache.begin());i!=cache.end();++i) {
+  for(simple_cache::iterator i(cache.begin());i!=cache.end();++i) {
     Graph g(graph_from_key<Graph>(i.key()));
     if(counts.size() < (g.num_vertices()+1)) {
       // need to increase size of count array
@@ -278,7 +282,7 @@ void write_hit_counts(fstream &out) {
   int nmgraphs=0;
   int ngraphs=0;
 
-  for(simple_cache<Poly>::iterator i(cache.begin());i!=cache.end();++i) {
+  for(simple_cache::iterator i(cache.begin());i!=cache.end();++i) {
     Graph g(graph_from_key<Graph>(i.key()));
     table.push_back(make_triple(g.num_vertices(),g.num_edges(),g.num_edges() - g.num_multiedges()));
     hs.insert(make_pair(i.hit_count(),table.size()-1));
@@ -304,6 +308,54 @@ void timer_handler(int signum) {
   cout << "Completed " << num_steps << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full." << endl;
   old_num_steps = num_steps;
   alarm(status_interval);
+}
+
+// ---------------------------------------------------------------
+// Run Method
+// ---------------------------------------------------------------
+
+template<class G, class P>
+void run(ifstream &input, boolean quiet_mode) {
+  G start_graph = read_graph<G>(input);
+  
+  if(quiet_mode) {
+    cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();
+  } else {
+    cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
+    print_graph(cout,start_graph);    
+  }   
+  
+  my_timer timer;
+  P tuttePoly;
+  
+  deleteContract<Graph,Poly>(start_graph,tuttePoly);        
+
+  if(quiet_mode) {
+    cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << endl;
+  } else {
+    cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
+    
+    cout << "Number of spanning trees: " << (long long) tuttePoly.substitute(1,1) << endl;
+    
+    cout << "==================" << endl;
+    cout << "Total Steps: " << num_steps << endl;
+    cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
+    cout << endl;
+    cout << "Cache stats:" << endl << "------------" << endl;
+    cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
+    cout << "# Entries: " << cache.num_entries() << endl;
+    cout << "# Cache Hits: " << cache.num_hits() << endl;
+    cout << "# Cache Misses: " << cache.num_misses() << endl;
+    cout << "# Cache Collisions: " << cache.num_collisions() << endl;
+    cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
+    cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
+    // now, write out stats
+    
+    fstream stats_out("tutte-stats.dat",fstream::out);
+    write_bucket_lengths(stats_out);
+    write_graph_sizes(stats_out);
+    write_hit_counts(stats_out);
+  }
 }
 
 // ---------------------------------------------------------------
@@ -415,50 +467,10 @@ int main(int argc, char *argv[]) {
 
   srand(time(NULL));
 
-  Graph start_graph(0);
   try {
-    ifstream input(argv[optind]);
-    start_graph = read_graph(input);
+    ifstream input(argv[optind]);    
+    run<Graph,Poly>(input,quiet_mode);
 
-    if(quiet_mode) {
-      cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();
-    } else {
-      cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
-      print_graph(cout,start_graph);    
-    }   
-
-    my_timer timer;
-
-    Poly tuttePoly;
-
-    deleteContract(start_graph,tuttePoly);        
-
-    if(quiet_mode) {
-      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << endl;
-    } else {
-      cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
-      
-      cout << "Number of spanning trees: " << (long long) tuttePoly.substitute(1,1) << endl;
-      
-      cout << "==================" << endl;
-      cout << "Total Steps: " << num_steps << endl;
-      cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
-      cout << endl;
-      cout << "Cache stats:" << endl << "------------" << endl;
-      cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
-      cout << "# Entries: " << cache.num_entries() << endl;
-      cout << "# Cache Hits: " << cache.num_hits() << endl;
-      cout << "# Cache Misses: " << cache.num_misses() << endl;
-      cout << "# Cache Collisions: " << cache.num_collisions() << endl;
-      cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
-      cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
-      // now, write out stats
-      
-      fstream stats_out("tutte-stats.dat",fstream::out);
-      write_bucket_lengths(stats_out);
-      write_graph_sizes(stats_out);
-      write_hit_counts(stats_out);
-    }
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
   } catch(exception const &e) {

@@ -22,7 +22,6 @@ struct cache_node {
   // followed by polynomial
 };
 
-template<class P>
 class simple_cache_iterator {
 private:
   struct cache_node *ptr;
@@ -39,8 +38,8 @@ public:
   }
 
   simple_cache_iterator operator++(int) { 
-    simple_cache_iterator tmp(this);
-    ++(this);
+    simple_cache_iterator tmp(*this);
+    ++(*this);
     return tmp;
   }
   
@@ -66,10 +65,9 @@ public:
   }
 };
 
-template<class P>
 class simple_cache {
 public:
-  typedef simple_cache_iterator<P> iterator;
+  typedef simple_cache_iterator iterator;
 private:
   unsigned int hits;
   unsigned int misses;
@@ -114,7 +112,7 @@ public:
   unsigned int min_bucket_size() {
     unsigned int r = UINT_MAX;
     for(unsigned int i=0;i!=nbuckets;++i) {
-      r = min(r,bucket_length(i));
+      r = std::min(r,bucket_length(i));
     }
     return r;
   }
@@ -122,7 +120,7 @@ public:
   unsigned int max_bucket_size() {
     unsigned int r = 0;
     for(unsigned int i=0;i!=nbuckets;++i) {
-      r = max(r,bucket_length(i));
+      r = std::max(r,bucket_length(i));
     }
     return r;
   }
@@ -212,6 +210,7 @@ public:
 
   }
 
+  template<class P>
   bool lookup(unsigned char const *key, P &dst) {
     // identify containing bucket
     unsigned int bucket = hash_graph_key(key) % nbuckets;
@@ -239,7 +238,8 @@ public:
     misses++;
     return false;    
   }
-  
+
+  template<class P>  
   void store(unsigned char const *key, P const &p) {
     // allocate space for new node
     unsigned int sizeof_key = sizeof_graph_key(key);
@@ -267,10 +267,6 @@ public:
   iterator end() { return iterator((struct cache_node *) next_p); }
 
 private:
-  simple_cache const &operator=(simple_cache const &src) {
-    return this;
-  }
-
   simple_cache(simple_cache const &src) {
   }  
 

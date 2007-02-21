@@ -9,12 +9,13 @@
 #include "graph/adjacency_list.hpp"
 #include "graph/spanning_graph.hpp"
 #include "poly/simple_poly.hpp"
+#include <ext/hash_map>
 
 // set the internal graph representation
 typedef spanning_graph<adjacency_list<> > Graph;
 
 // set the internal polynomial representation
-typedef simple_poly Poly;
+typedef simple_poly<> Poly;
 
 // The vertex type dicates the maximum number of
 // vertices allowed in a graph.

@@ -34,17 +34,16 @@ public:
   double substitute(double x, double y) const {
     return pow(x,(double)xpower) * pow(y,(double)ypower);
   }
+
 };
 
+template<class MAP = std::map<term,unsigned int> >
 class simple_poly {
 public:
-  friend const simple_poly operator+(simple_poly const&, simple_poly const&);
-  friend const simple_poly operator*(simple_poly const&, term const&);
-  
-  typedef std::map<term,unsigned int>::iterator iterator;
-  typedef std::map<term,unsigned int>::const_iterator const_iterator;
+  typedef typename MAP::iterator iterator;
+  typedef typename MAP::const_iterator const_iterator;
 private:
-  std::map<term,unsigned int> terms;
+  MAP terms;
 public:
   simple_poly() {}
 
@@ -90,8 +89,8 @@ public:
   }
 
   void operator+=(simple_poly const &p1) {    
-    for(std::map<term,unsigned int>::const_iterator i(p1.terms.begin());i!=p1.terms.end();++i) {      
-      std::map<term,unsigned int>::iterator j = terms.find(i->first);
+    for(const_iterator i(p1.terms.begin());i!=p1.terms.end();++i) {      
+      iterator j = terms.find(i->first);
       if(j != terms.end()) {
 	j->second += i->second;
       } else {
@@ -104,7 +103,7 @@ public:
   void operator*=(term const &p2) {
     // I don't think the STL strictly would allow this,
     // but it doesn't hurt!
-    for(std::map<term,unsigned int>::const_iterator i(terms.begin());i!=terms.end();++i) {      
+    for(const_iterator i(terms.begin());i!=terms.end();++i) {      
       term &t((term &)i->first); // ouch ;)
       t.xpower += p2.xpower;
       t.ypower += p2.ypower;
@@ -116,7 +115,7 @@ public:
     std::stringstream ss;
     // start with xs
     bool firstTime=true;
-    for(std::map<term,unsigned int>::const_iterator i(terms.begin());i!=terms.end();++i) {      
+    for(const_iterator i(terms.begin());i!=terms.end();++i) {      
       if(!firstTime) { ss << " + "; }
       firstTime=false;
       term const &t(i->first);
@@ -130,16 +129,11 @@ public:
 
   double substitute(double x, double y) const {
     double val=0;
-    for(std::map<term,unsigned int>::const_iterator i(terms.begin());i!=terms.end();++i) {   
+    for(const_iterator i(terms.begin());i!=terms.end();++i) {   
       val += i->first.substitute(x,y) * i->second;
     }
     return val;
   }
 };
-
-// useful methods
-
-const simple_poly operator+(simple_poly const &p1, simple_poly const &p2);
-const simple_poly operator*(simple_poly const &p1, term const &p2);
 
 #endif
