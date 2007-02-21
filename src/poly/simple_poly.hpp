@@ -7,18 +7,21 @@
 #include <string>
 #include <map>
 
-class term {
+#include "xy_term.hpp"
+
+class simple_poly_term {
 public:
   unsigned short xpower;
   unsigned short ypower;
 
-  term(unsigned short x, unsigned short y) : xpower(x), ypower(y) {}
-
-  bool operator<(term const &t) const {
-    return (xpower < t.xpower) || (xpower == t.xpower && ypower < t.ypower);
+  simple_poly_term(unsigned short x, unsigned short y) : xpower(x), ypower(y) {}
+  
+  bool operator<(simple_poly_term const &t) const {
+    return (xpower < t.xpower) || 
+           (xpower == t.xpower && ypower < t.ypower);
   }
 
-  bool operator==(term const &t) const {
+  bool operator==(simple_poly_term const &t) const {
     return (xpower == t.xpower && t.ypower == t.ypower);
   }
 
@@ -26,18 +29,20 @@ public:
     std::stringstream ss;
     if(xpower > 1) { ss << "x^" << xpower; }
     else if(xpower == 1) { ss << "x"; }
+
     if(ypower > 1) { ss << "y^" << ypower; }
     else if(ypower == 1) { ss << "y"; }
+
     return ss.str();
   }
 
   double substitute(double x, double y) const {
-    return pow(x,(double)xpower) * pow(y,(double)ypower);
-  }
-
+    return pow(x,(double)xpower) * pow(y,(double) ypower);
+  }  
 };
 
-template<class MAP = std::map<term,unsigned int> >
+
+template<class MAP = std::map<simple_poly_term,unsigned int> >
 class simple_poly {
 public:
   typedef typename MAP::iterator iterator;
@@ -48,11 +53,11 @@ public:
   simple_poly() {}
 
   simple_poly(unsigned int x, unsigned int y) {
-    if(x > 0 || y > 0) { terms.insert(std::make_pair(term(x,y),1)); }
+    if(x > 0 || y > 0) { terms.insert(std::make_pair(simple_poly_term(x,y),1)); }
   }
 
   simple_poly(unsigned int n, unsigned int x, unsigned int y) {
-    if(x > 0 || y > 0) { terms.insert(std::make_pair(term(x,y),n)); }
+    if(x > 0 || y > 0) { terms.insert(std::make_pair(simple_poly_term(x,y),n)); }
   }
 
   simple_poly(simple_poly const &t) {
@@ -66,11 +71,9 @@ public:
     return *this;
   }
 
-
-  void insert(unsigned int n, term const &t) {
-    terms.insert(std::make_pair(t,n)); 
+  void insert(unsigned int n, xy_term const &t) {
+    terms.insert(std::make_pair(simple_poly_term(t.xpower,t.ypower),n)); 
   }
-
 
   size_t size() const { return terms.size(); }
 
@@ -100,16 +103,27 @@ public:
   }
 
   // this is gary's shift operation
-  void operator*=(term const &p2) {
-    // I don't think the STL strictly would allow this,
-    // but it doesn't hurt!
-    for(const_iterator i(terms.begin());i!=terms.end();++i) {      
-      term &t((term &)i->first); // ouch ;)
-      t.xpower += p2.xpower;
-      t.ypower += p2.ypower;
+  void operator*=(xy_term const &p2) {
+    if(p2.ypowerend == p2.ypower) {
+      // I don't think the STL strictly would allow this,
+      // but it doesn't hurt!      
+      for(const_iterator i(terms.begin());i!=terms.end();++i) {      
+	simple_poly_term &t((simple_poly_term &)i->first); // ouch ;)
+	t.xpower += p2.xpower;
+	t.ypower += p2.ypower;
+      }
+    } else {
+      // recursive case (this is an ugly hack)
+      simple_poly p(*this);
+
+      for(unsigned int i=p2.ypower;i!=p2.ypowerend-1;++i) {
+	*this += p;
+	p *= xy_term(0,1);
+      }
+      
+      *this += p;
     }
   }
-
 
   const std::string str() const {
     std::stringstream ss;
@@ -118,7 +132,7 @@ public:
     for(const_iterator i(terms.begin());i!=terms.end();++i) {      
       if(!firstTime) { ss << " + "; }
       firstTime=false;
-      term const &t(i->first);
+      simple_poly_term const &t(i->first);
       int count = i->second;
       if(count > 1) { ss << count; }
       ss << i->first.str();

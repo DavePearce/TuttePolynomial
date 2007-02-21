@@ -42,7 +42,7 @@ T read_compact_poly(unsigned char *src) {
     unsigned int nterms = *p++;
     unsigned int xpower = *p++;
     unsigned int ypower = *p++;
-    r.insert(nterms,term(xpower,ypower));
+    r.insert(nterms,xy_term(xpower,ypower));
   }
 
   return r;
