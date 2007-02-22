@@ -1,13 +1,18 @@
+#include <stdexcept>
 #include "factor_poly.hpp"
 
 using namespace std;
+
+// ---------------------------------------------------------------
+// YTERMS CODE
+// ---------------------------------------------------------------
 
 yterms::yterms() : ptr(NULL) { }
 
 yterms::yterms(unsigned int y_min, unsigned int y_max) {
   unsigned int nyterms = (y_max - y_min) + 1;
   ptr = new unsigned int[nyterms+1];
-  unsigned int tmp = (y_max << 8) + y_min;
+  unsigned int tmp = (y_max << 16U) + y_min;
   *ptr = tmp;  
   // clear terms
   for(unsigned int i=1;i<(nyterms-1);++i) { 
@@ -20,16 +25,26 @@ yterms::~yterms() { delete [] ptr; }
 
 yterms const &yterms::operator=(yterms const &src) {
   if(&src != this) {
-    destroy();
+    delete [] ptr;
     clone(src);
   }
   return *this;
 }
 
+bool yterms::is_empty() const { return ptr == NULL; }
+
 unsigned int yterms::size() const {  
   unsigned int ystart = (*ptr) & 0xFFFF;
-  unsigned int yend = (*ptr) >> 8;
+  unsigned int yend = (*ptr) >> 16U;
   return (yend - ystart)+1;
+}
+
+unsigned int yterms::ymax() const {  
+ return (*ptr) >> 16U;
+}
+
+unsigned int yterms::ymin() const {  
+ return (*ptr) & 0xFFFF;
 }
 
 void yterms::resize(unsigned int y_min, unsigned int y_max) {
@@ -39,7 +54,7 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
     // create the yterm array
     ptr = new unsigned int[nyterms+1];    
     // set header information
-    unsigned int tmp = (nyend << 8) + nystart;
+    unsigned int tmp = (y_max << 16U) + y_min;
     *ptr = tmp;
     for(unsigned int i=1;i<=nyterms;++i) { ptr[i] = 0; }    
   } else if(ymax() < y_max) {
@@ -52,7 +67,7 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
     unsigned int *optr = ptr;
     ptr = new unsigned int[nyterms+1];    
     // set header information
-    unsigned int tmp = (nyend << 8) + nystart;
+    unsigned int tmp = (nyend << 16U) + nystart;
     *ptr = tmp;
     // copy old stuff, whilst initialising new stuff 
     for(unsigned int i=1;i<=(ystart-nystart);++i) { ptr[i] = 0; }
@@ -71,24 +86,38 @@ void yterms::operator+=(xy_term const &p) {
   // make sure enough y terms
   resize(p.ypower,p.ypowerend);
   // now, do the addition
-  for(unsigned int i=p.ypower+1;i<=p.ypowerend;++i) { ptr[i]++; }    
+  for(unsigned int i=p.ypower+1;i<=p.ypowerend+1;++i) { ptr[i]++; }    
 }
 
-void yterms::clone(yterm const &src) { 
-  unsigned int nyterms = src.size();
-  unsigned int *r = new unsigned int[nyterms+1];
-  memcpy(r,ts,(nyterms+1) * sizeof(unsigned int));
-  return r;
+unsigned int yterms::operator[](int i) const {
+  return ptr[i+1];
 }
+
+string yterms::str() const {
+  std::stringstream ss;
+  ss << "y^{" << ymin() << "-" << ymax() << "}(";
+  for(unsigned int i=0;i!=size();++i) {
+    if(i != 0) { ss << " + "; }
+    ss << (*this)[i];
+  }
+  ss << ")";
+  return ss.str();
+}
+
+void yterms::clone(yterms const &src) { 
+  unsigned int nyterms = src.size();
+  ptr = new unsigned int[nyterms+1];
+  memcpy(ptr,src.ptr,(nyterms+1) * sizeof(unsigned int));  
+}
+
+// ---------------------------------------------------------------
+// FACTOR POLY CODE
+// ---------------------------------------------------------------
 
 factor_poly::factor_poly(xy_term const &xyt) {
   nxterms = xyt.xpower;
   // create the xterm array
-  xterms = new unsigned int*[nxterms];
-  for(unsigned int i=0;i!=nxterms;++i) {
-    xterms[i] = NULL;
-  }    
-  
+  xterms = new yterms[nxterms];  
   *this += xyt;
 }
 
