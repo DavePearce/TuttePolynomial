@@ -1,6 +1,10 @@
 #ifndef XY_TERM_HPP
 #define XY_TERM_HPP
 
+#include <cmath>
+#include <string>
+#include <sstream>
+
 class xy_term {
 public:
   unsigned short xpower;
