@@ -71,8 +71,8 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
     *ptr = tmp;
     // copy old stuff, whilst initialising new stuff 
     for(unsigned int i=1;i<=(ystart-nystart);++i) { ptr[i] = 0; }
-    for(unsigned int i=(ystart-nystart+1);i<=(yend-nystart);++i) { ptr[i] = optr[i-(ystart-nystart)]; }
-    for(unsigned int i=yend-nystart+1;i<=(nyend-nystart);++i) { ptr[i] = 0; }
+    for(unsigned int i=(ystart-nystart)+1;i<=(yend-nystart)+1;++i) { ptr[i] = optr[i-(ystart-nystart)]; }
+    for(unsigned int i=(yend-nystart)+2;i<=(nyend-nystart)+1;++i) { ptr[i] = 0; }
     // free space!
     delete [] optr;
   }
