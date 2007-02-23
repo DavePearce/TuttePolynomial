@@ -79,7 +79,23 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
 }
 
 void yterms::operator*=(xy_term const &p) {
-  // complicated
+  // first, make sure there's enough space!
+  unsigned int oystart = ymin();
+  unsigned int oyend = ymax();
+  unsigned int ystart = oystart + p.ypower;
+  unsigned int yend = oyend + p.ypowerend;
+  // problem below, since resize won't copy properly?
+  resize(ystart,yend);
+  // now, go through each and do the do
+  for(unsigned int i=1;i<=yend;++i) {
+    ptr[i+1] += ptr[i];
+  }
+  // then throw in a little some subtraction
+  unsigned int nyterms = (oyend - oystart) + 1;
+  for(unsigned int i=nyterms+1;i<=yend+1;++i) {
+    ptr[i] -= ptr[i-nyterms];
+  }
+  // and we're done!
 }
 
 void yterms::operator+=(xy_term const &p) {
