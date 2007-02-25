@@ -75,7 +75,7 @@ public:
     terms.insert(std::make_pair(simple_poly_term(t.xpower,t.ypower),n)); 
   }
 
-  size_t size() const { return terms.size(); }
+  size_t nterms() const { return terms.size(); }
 
   iterator begin() { return terms.begin(); }
   iterator end() { return terms.end(); }

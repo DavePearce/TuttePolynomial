@@ -122,6 +122,15 @@ void yterms::operator+=(xy_term const &p) {
   for(unsigned int i=ystart+1;i<=yend+1;++i) { ptr[i]++; }    
 }
 
+void yterms::insert(unsigned int n, xy_term const &p) { 
+  // make sure enough y terms
+  resize(p.ypower,p.ypowerend);
+  // now, do the addition
+  unsigned int ystart = p.ypower - ymin();
+  unsigned int yend = p.ypowerend - ymin();
+  for(unsigned int i=ystart+1;i<=yend+1;++i) { ptr[i] += n; }      
+}
+
 void yterms::operator+=(yterms const &src) {
   // make sure enough y terms
   resize(src.ymin(),src.ymax());
@@ -149,6 +158,10 @@ string yterms::str() const {
   return ss.str();
 }
 
+unsigned int yterms::nterms() const {
+  return (ymax() - ymin()) + 1;
+}
+
 void yterms::clone(yterms const &src) { 
   unsigned int nyterms = src.size();
   ptr = new unsigned int[nyterms+1];
@@ -158,6 +171,12 @@ void yterms::clone(yterms const &src) {
 // ---------------------------------------------------------------
 // FACTOR POLY CODE
 // ---------------------------------------------------------------
+
+factor_poly::factor_poly() {
+  nxterms = 5; // arbitrary ?
+  // create the xterm array
+  xterms = new yterms[nxterms];  
+}
 
 factor_poly::factor_poly(xy_term const &xyt) {
   nxterms = xyt.xpower+1;
@@ -194,9 +213,24 @@ void factor_poly::operator+=(xy_term const &p) {
   xterms[p.xpower] += p;
 }
 
+void factor_poly::insert(unsigned int n, xy_term const &p) {
+  // make sure enough x terms
+  if(p.xpower >= nxterms) { resize_xterms(p.xpower); }
+  // now, do the addition
+  xterms[p.xpower].insert(n,p);
+}
+
 void factor_poly::operator*=(xy_term const &p) {
   if(p.xpower != 0) { throw std::runtime_error("factor_poly cannot currently handle multiplication by x^n"); }
   for(unsigned int i=0;i!=nxterms;++i) { xterms[i] *= p; }
+}
+
+unsigned int factor_poly::nterms() const {
+  unsigned int r;
+  for(unsigned int i=0;i!=nxterms;++i) {
+    r += xterms[i].nterms();
+  }
+  return r;
 }
 
 string factor_poly::str() const {

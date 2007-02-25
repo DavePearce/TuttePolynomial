@@ -9,7 +9,7 @@
 
 template<class T>
 size_t sizeof_compact_poly(T const &poly) {
-  return ((poly.size() * 3) + 1) * sizeof(unsigned int);
+  return ((poly.nterms() * 3) + 1) * sizeof(unsigned int);
 }
 
 size_t sizeof_compact_poly(unsigned char *poly) {
@@ -22,12 +22,12 @@ size_t sizeof_compact_poly(unsigned char *poly) {
 template<class T>
 void write_compact_poly(unsigned char *dst, T const &poly) {
   unsigned int *p = (unsigned int *) dst;
-  *p++ = poly.size();
+  *p++ = poly.nterms();
   typename T::const_iterator iend(poly.end());
   for(typename T::const_iterator i(poly.begin());i!=iend;++i) {
-    *p++ = i->second;
-    *p++ = i->first.xpower;
-    *p++ = i->first.ypower;
+    *p++ = (*i).second;
+    *p++ = (*i).first.xpower;
+    *p++ = (*i).first.ypower;
   }
 }
 
