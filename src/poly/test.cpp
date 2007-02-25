@@ -4,11 +4,11 @@
 using namespace std;
 
 int main(unsigned int argc, char *argv[]) {
-  yterms y1s(0,5);
-  cout << y1s.str() << endl;
-  y1s += xy_term(0,1,2);
-  y1s *= xy_term(0,1,1);
+  factor_poly fp1(xy_term(1,1,3));
+  factor_poly fp2(xy_term(1,3,4));
+  fp1 += fp2;
 
-  cout << y1s.str() << endl;
+  cout << fp1.str() << endl;
+
   return 0;
 }

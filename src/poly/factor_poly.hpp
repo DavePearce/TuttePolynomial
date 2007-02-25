@@ -22,6 +22,7 @@ public:
 
   yterms const &operator=(yterms const &src);
   void operator+=(xy_term const &p);
+  void operator+=(yterms const &src);
   void operator*=(xy_term const &p);
   unsigned int operator[](int) const;
   

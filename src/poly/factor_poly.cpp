@@ -40,11 +40,13 @@ unsigned int yterms::size() const {
 }
 
 unsigned int yterms::ymax() const {  
- return (*ptr) >> 16U;
+  if(ptr == NULL) { return 0; }
+  else return (*ptr) >> 16U;
 }
 
 unsigned int yterms::ymin() const {  
- return (*ptr) & 0xFFFF;
+  if(ptr == NULL) { return 0; }
+  else return (*ptr) & 0xFFFF;
 }
 
 void yterms::resize(unsigned int y_min, unsigned int y_max) {
@@ -62,7 +64,7 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
     unsigned int ystart = ymin();
     unsigned int yend = ymax();
     unsigned int nystart = min(ystart,y_min); 
-    unsigned int nyend = max(yend,y_max);
+    unsigned int nyend = max(yend,y_max);    
     unsigned int nyterms = (nyend - nystart)+1;    
     unsigned int *optr = ptr;
     ptr = new unsigned int[nyterms+1];    
@@ -80,20 +82,33 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
 
 void yterms::operator*=(xy_term const &p) {
   // first, make sure there's enough space!
-  unsigned int oystart = ymin();
-  unsigned int oyend = ymax();
-  unsigned int ystart = oystart + p.ypower;
-  unsigned int yend = oyend + p.ypowerend;
-  // problem below, since resize won't copy properly?
-  resize(ystart,yend);
-  // now, go through each and do the do
-  for(unsigned int i=1;i<=yend;++i) {
-    ptr[i+1] += ptr[i];
-  }
-  // then throw in a little some subtraction
-  unsigned int nyterms = (oyend - oystart) + 1;
-  for(unsigned int i=nyterms+1;i<=yend+1;++i) {
-    ptr[i] -= ptr[i-nyterms];
+  unsigned int ystart = ymin();
+  unsigned int yend = ymax();
+  unsigned int nystart = ystart + p.ypower;
+  unsigned int nyend = yend + p.ypowerend;
+
+  if(p.ypower == p.ypowerend) {
+    // easy case, only a shift required
+    unsigned int tmp = (nyend << 16U) + nystart;
+    *ptr = tmp;    
+  } else {
+    // harder case
+    unsigned int nyterms = (nyend - nystart)+1;
+    unsigned int *nptr = new unsigned int[nyterms+1];
+    unsigned int tmp = (nyend << 16U) + nystart;
+    *nptr = tmp;    
+    
+    // I'm pretty sure it's possible to make a linear
+    // verison of this loop
+    memset(nptr+1,0,sizeof(unsigned int)*nyterms);  // why is this needed ?
+    for(unsigned int j=0;j<=p.ypowerend-p.ypower;++j) {
+      for(unsigned int i=1;i<=yend;++i) {
+	nptr[i+j] += ptr[i];
+      }
+    }
+
+    delete [] ptr;
+    ptr = nptr;
   }
   // and we're done!
 }
@@ -102,7 +117,21 @@ void yterms::operator+=(xy_term const &p) {
   // make sure enough y terms
   resize(p.ypower,p.ypowerend);
   // now, do the addition
-  for(unsigned int i=p.ypower+1;i<=p.ypowerend+1;++i) { ptr[i]++; }    
+  unsigned int ystart = p.ypower - ymin();
+  unsigned int yend = p.ypowerend - ymin();
+  for(unsigned int i=ystart+1;i<=yend+1;++i) { ptr[i]++; }    
+}
+
+void yterms::operator+=(yterms const &src) {
+  // make sure enough y terms
+  resize(src.ymin(),src.ymax());
+  // now, do the addition
+  unsigned int ystart = src.ymin() - ymin();
+  unsigned int yend = src.ymax() - ymin();
+  unsigned int j=1;
+  for(unsigned int i=ystart+1;i<=yend+1;++i,++j) { 
+    ptr[i] += src.ptr[j]; 
+  }    
 }
 
 unsigned int yterms::operator[](int i) const {
@@ -131,7 +160,7 @@ void yterms::clone(yterms const &src) {
 // ---------------------------------------------------------------
 
 factor_poly::factor_poly(xy_term const &xyt) {
-  nxterms = xyt.xpower;
+  nxterms = xyt.xpower+1;
   // create the xterm array
   xterms = new yterms[nxterms];  
   *this += xyt;
@@ -149,7 +178,13 @@ factor_poly const &factor_poly::operator=(factor_poly const &src) {
 }
 
 void factor_poly::operator+=(factor_poly const &p) {
-  // to do
+  // make sure enough x terms
+  if(p.nxterms > nxterms) { resize_xterms(p.nxterms); }
+  for(unsigned int i=0;i!=p.nxterms;++i) {
+    if(!p.xterms[i].is_empty()) {
+      xterms[i] += p.xterms[i];
+    }
+  }
 }
 
 void factor_poly::operator+=(xy_term const &p) {
@@ -165,7 +200,16 @@ void factor_poly::operator*=(xy_term const &p) {
 }
 
 string factor_poly::str() const {
-  return "FACTOR_POLY::STR INCOMPLETE!";
+  string r="";
+  bool first_time=true;
+  for(unsigned int i=0;i!=nxterms;++i) {
+    if(!xterms[i].is_empty()) {
+      if(!first_time) { r += " + "; }
+      first_time=false;
+      r += xterms[i].str();
+    }
+  }
+  return r;
 }
 
 double factor_poly::substitute(double x, double y) const {
