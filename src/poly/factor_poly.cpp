@@ -21,7 +21,9 @@ yterms::yterms(unsigned int y_min, unsigned int y_max) {
 }
 
 yterms::yterms(yterms const &src) { clone(src); }
-yterms::~yterms() { delete [] ptr; }
+yterms::~yterms() {
+  delete [] ptr; 
+}
 
 yterms const &yterms::operator=(yterms const &src) {
   if(&src != this) {
@@ -29,6 +31,14 @@ yterms const &yterms::operator=(yterms const &src) {
     clone(src);
   }
   return *this;
+}
+
+void yterms::swap(yterms &src) {
+  if(&src != this) {
+    unsigned int *tmp = ptr;
+    ptr = src.ptr;
+    src.ptr = tmp;
+  }
 }
 
 bool yterms::is_empty() const { return ptr == NULL; }
@@ -81,7 +91,9 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
 }
 
 void yterms::operator*=(xy_term const &p) {
-  // first, make sure there's enough space!
+  // if this poly is empty do nothing!
+  if(is_empty()) { ;return;}
+  // Ok, it's not empty ...
   unsigned int ystart = ymin();
   unsigned int yend = ymax();
   unsigned int nystart = ystart + p.ypower;
@@ -106,7 +118,6 @@ void yterms::operator*=(xy_term const &p) {
 	nptr[i+j] += ptr[i];
       }
     }
-
     delete [] ptr;
     ptr = nptr;
   }
@@ -222,7 +233,13 @@ void factor_poly::insert(unsigned int n, xy_term const &p) {
 }
 
 void factor_poly::operator*=(xy_term const &p) {
-  if(p.xpower != 0) { throw std::runtime_error("factor_poly cannot currently handle multiplication by x^n"); }
+  if(p.xpower > 0) { 
+    // need to shift the x's
+    resize_xterms(p.xpower + nxterms); 
+    for(unsigned int i=nxterms;i>p.xpower;--i) {
+      xterms[i-1].swap(xterms[i-(p.xpower+1)]);
+    }
+  }
   for(unsigned int i=0;i!=nxterms;++i) { xterms[i] *= p; }
 }
 
@@ -241,7 +258,9 @@ string factor_poly::str() const {
     if(!xterms[i].is_empty()) {
       if(!first_time) { r += " + "; }
       first_time=false;
-      r += xterms[i].str();
+      std::stringstream ss;
+      ss << i;
+      r += "x^" + ss.str() + xterms[i].str();
     }
   }
   return r;
@@ -266,7 +285,13 @@ void factor_poly::clone(factor_poly const &p) {
 void factor_poly::resize_xterms(unsigned int ns) {
   // PRE: ns > nxterms
   yterms *xs = new yterms[ns];
-  memcpy(xs,xterms,nxterms*sizeof(yterms*)); 
+  // need to use swap here, because
+  // I don't want the following delete []
+  // call to call destructors on my yterms
+  for(unsigned int i=0;i!=nxterms;++i) {
+    xs[i].swap(xterms[i]);
+  }
   delete [] xterms;
   xterms = xs;
+  nxterms = ns;  
 }

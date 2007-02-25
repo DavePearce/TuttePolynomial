@@ -7,7 +7,7 @@
 #include "xy_term.hpp"
 
 class yterms {
-private:
+public:
   unsigned int *ptr; // first 2 bytes = start, second 2 = end, remainder are actual terms
 public:
   yterms();
@@ -16,6 +16,7 @@ public:
   ~yterms();
 
   void resize(unsigned int y_min, unsigned int y_max);
+  void swap(yterms &src);
   unsigned int size() const;
   unsigned int ymin() const;
   unsigned int ymax() const;
@@ -66,6 +67,7 @@ public:
 
   // crikey, this is ugly
   std::pair<xy_term, unsigned int> operator*() const {
+    std::cout << "X = " << x << ", Y = " << (y-xterms[x].ymin()) << ", YMAX = " << xterms[x].ymax() << std::endl;
     return std::make_pair(xy_term(x,y),xterms[x][y-xterms[x].ymin()]);
   }
 
