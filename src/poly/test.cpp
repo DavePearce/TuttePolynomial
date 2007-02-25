@@ -15,13 +15,12 @@ int main(unsigned int argc, char *argv[]) {
 
   cout << fp1.str() << endl;
 
-  fp1 *= xy_term(1,1,2);
+  fp1 *= xy_term(3,1,1);
 
   cout << fp1.str() << endl;
 
   for(factor_poly::const_iterator i(fp1.begin());
       i!=fp1.end();++i) {
-    cout << "GOING AROUND" << endl;
     cout << (*i).second << (*i).first.str() << " + ";
   }
 

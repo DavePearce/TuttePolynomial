@@ -43,7 +43,8 @@ void yterms::swap(yterms &src) {
 
 bool yterms::is_empty() const { return ptr == NULL; }
 
-unsigned int yterms::size() const {  
+unsigned int yterms::size() const {
+  if(ptr == NULL) { return 0; }
   unsigned int ystart = (*ptr) & 0xFFFF;
   unsigned int yend = (*ptr) >> 16U;
   return (yend - ystart)+1;
@@ -69,7 +70,7 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
     unsigned int tmp = (y_max << 16U) + y_min;
     *ptr = tmp;
     for(unsigned int i=1;i<=nyterms;++i) { ptr[i] = 0; }    
-  } else if(ymax() < y_max) {
+  } else if(ymax() < y_max || ymin() > y_min) {
     // no, there definitely aren't enough y-terms
     unsigned int ystart = ymin();
     unsigned int yend = ymax();
@@ -143,6 +144,7 @@ void yterms::insert(unsigned int n, xy_term const &p) {
 }
 
 void yterms::operator+=(yterms const &src) {
+  if(src.is_empty()) { return; }
   // make sure enough y terms
   resize(src.ymin(),src.ymax());
   // now, do the addition
@@ -175,9 +177,14 @@ unsigned int yterms::nterms() const {
 }
 
 void yterms::clone(yterms const &src) { 
-  unsigned int nyterms = src.size();
-  ptr = new unsigned int[nyterms+1];
-  memcpy(ptr,src.ptr,(nyterms+1) * sizeof(unsigned int));  
+  if(src.is_empty()) { 
+    ptr = NULL; 
+    return;
+  } else {
+    unsigned int nyterms = src.size();
+    ptr = new unsigned int[nyterms+1];
+    memcpy(ptr,src.ptr,(nyterms+1) * sizeof(unsigned int));  
+  }
 }
 
 // ---------------------------------------------------------------
@@ -271,7 +278,7 @@ double factor_poly::substitute(double x, double y) const {
 }
 
 void factor_poly::destroy() {
-  delete [] xterms; // should invoke yterms destructors 
+  delete [] xterms; // will invoke yterms destructors 
 }
 
 void factor_poly::clone(factor_poly const &p) {

@@ -67,7 +67,6 @@ public:
 
   // crikey, this is ugly
   std::pair<xy_term, unsigned int> operator*() const {
-    std::cout << "X = " << x << ", Y = " << (y-xterms[x].ymin()) << ", YMAX = " << xterms[x].ymax() << std::endl;
     return std::make_pair(xy_term(x,y),xterms[x][y-xterms[x].ymin()]);
   }
 
