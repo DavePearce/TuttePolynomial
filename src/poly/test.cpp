@@ -1,5 +1,6 @@
 #include <iostream>
 #include "factor_poly.hpp"
+#include "algorithms.hpp"
 
 using namespace std;
 
@@ -16,5 +17,12 @@ int main(unsigned int argc, char *argv[]) {
   }
 
   cout << endl;
+
+  cout << "NTERMS: " << fp1.nterms() << endl;
+
+  unsigned char *dst = new unsigned char[sizeof_compact_poly(fp1)];
+  write_compact_poly(dst,fp1);
+  factor_poly fp3 = read_compact_poly<factor_poly>(dst);
+  cout << "READ: " << fp3.str() << endl;
   return 0;
 }

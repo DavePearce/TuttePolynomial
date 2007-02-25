@@ -159,6 +159,7 @@ string yterms::str() const {
 }
 
 unsigned int yterms::nterms() const {
+  if(ptr == NULL) { return 0; }
   return (ymax() - ymin()) + 1;
 }
 
@@ -226,7 +227,7 @@ void factor_poly::operator*=(xy_term const &p) {
 }
 
 unsigned int factor_poly::nterms() const {
-  unsigned int r;
+  unsigned int r=0;
   for(unsigned int i=0;i!=nxterms;++i) {
     r += xterms[i].nterms();
   }

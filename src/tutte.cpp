@@ -72,7 +72,7 @@ void deleteContract(G &graph, P &poly) {
   // if the graph is a "loop tree", then we're done.
   if(graph.is_tree()) {
     //    cout << "=== END BRANCH ===" << endl;
-    poly += P(graph.num_edges(),num_loops);
+    poly += P(xy_term(graph.num_edges(),num_loops));
   } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
 
