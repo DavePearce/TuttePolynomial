@@ -85,8 +85,8 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
     *ptr = tmp;
     // copy old stuff, whilst initialising new stuff 
     for(unsigned int i=1;i<=(ystart-nystart);++i) { ptr[i] = 0; }
-    for(unsigned int i=(ystart-nystart)+1;i<=(yend-nystart)+1;++i) { assert((i-(ystart-nystart)) >= 1); ptr[i] = optr[i-(ystart-nystart)]; }
-    for(unsigned int i=(yend-nystart)+2;i<=(nyend-nystart)+1;++i) { ptr[i] = 0; }
+    for(unsigned int i=(ystart-nystart)+1;i<=(yend-nystart)+1;++i) { ptr[i] = optr[i-(ystart-nystart)]; }
+    for(unsigned int i=(yend-nystart)+2;i<=nyterms;++i) { ptr[i] = 0; }
     // free space!
     delete [] optr;
   }
@@ -103,8 +103,7 @@ void yterms::operator*=(xy_term const &p) {
 
   if(p.ypower == p.ypowerend) {
     // easy case, only a shift required
-    unsigned int tmp = (nyend << 16U) + nystart;
-    *ptr = tmp;    
+    *ptr = (nyend << 16U) + nystart;
   } else {
     // harder case
     unsigned int nyterms = (nyend - nystart)+1;
@@ -114,8 +113,9 @@ void yterms::operator*=(xy_term const &p) {
     // I'm pretty sure it's possible to make a linear
     // verison of this loop
     memset(nptr+1,0,sizeof(unsigned int)*nyterms);  // why is this needed ?
+
     for(unsigned int j=0;j<=p.ypowerend-p.ypower;++j) {
-      for(unsigned int i=1;i<=yend;++i) {
+      for(unsigned int i=1;i<=(yend-ystart)+1;++i) {
 	nptr[i+j] += ptr[i];
       }
     }
@@ -144,7 +144,6 @@ void yterms::insert(unsigned int n, xy_term const &p) {
 }
 
 void yterms::operator+=(yterms const &src) {
-  if(src.is_empty()) { return; }
   // make sure enough y terms
   resize(src.ymin(),src.ymax());
   // now, do the addition
@@ -154,9 +153,7 @@ void yterms::operator+=(yterms const &src) {
   for(unsigned int i=ystart+1;i<=yend+1;++i,++j) { ptr[i] += src.ptr[j]; }    
 }
 
-unsigned int yterms::operator[](int i) const {
-  return ptr[i+1];
-}
+unsigned int yterms::operator[](int i) const { return ptr[i+1]; }
 
 string yterms::str() const {
   std::stringstream ss;
@@ -186,7 +183,6 @@ unsigned int yterms::nterms() const {
 void yterms::clone(yterms const &src) { 
   if(src.is_empty()) { 
     ptr = NULL; 
-    return;
   } else {
     unsigned int nyterms = src.size();
     ptr = new unsigned int[nyterms+1];
@@ -224,7 +220,7 @@ factor_poly const &factor_poly::operator=(factor_poly const &src) {
 
 void factor_poly::operator+=(factor_poly const &p) {
   // make sure enough x terms
-  if(p.nxterms > nxterms) { resize_xterms(p.nxterms); }
+  resize_xterms(p.nxterms); 
   for(unsigned int i=0;i<p.nxterms;++i) {
     if(!p.xterms[i].is_empty()) {
       xterms[i] += p.xterms[i];
@@ -234,14 +230,14 @@ void factor_poly::operator+=(factor_poly const &p) {
 
 void factor_poly::operator+=(xy_term const &p) {
   // make sure enough x terms
-  if(p.xpower >= nxterms) { resize_xterms(p.xpower+1); }
+  resize_xterms(p.xpower+1); 
   // now, do the addition
   xterms[p.xpower] += p;
 }
 
 void factor_poly::insert(unsigned int n, xy_term const &p) {
   // make sure enough x terms
-  if(p.xpower >= nxterms) { resize_xterms(p.xpower+1); }
+  resize_xterms(p.xpower+1); 
   // now, do the addition
   xterms[p.xpower].insert(n,p);
 }
@@ -300,7 +296,7 @@ void factor_poly::clone(factor_poly const &p) {
 }
 
 void factor_poly::resize_xterms(unsigned int ns) {
-  // PRE: ns > nxterms
+  if(ns < nxterms) { return; }  
   yterms *xs = new yterms[ns];
   // need to use swap here, because
   // I don't want the following delete []

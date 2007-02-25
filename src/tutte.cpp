@@ -67,19 +67,14 @@ void deleteContract(G &graph, P &poly) {
   num_steps++;
 
   // first, eliminate any loops
-  unsigned int num_loops = graph.remove_loops(); 
-  
-  cout << "STAGE 1" << endl;
+  unsigned int num_loops = graph.remove_loops();  
 
   // if the graph is a "loop tree", then we're done.
   if(graph.is_tree()) {
     poly += P(xy_term(graph.num_edges(),num_loops));
-    cout << "STAGE 2" << endl;
   } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
 
-    cout << "STAGE 2.5" << endl;
-    
     int num_pendants(0);
 
     while(graph.num_pendant_vertices() > 0) {
@@ -117,8 +112,6 @@ void deleteContract(G &graph, P &poly) {
       */         
     }
 
-    cout << "STAGE 3" << endl;
-
     // Third, perform delete contract 
     Graph::edge_t e = graph.select_nontree_edge();
 
@@ -126,16 +119,11 @@ void deleteContract(G &graph, P &poly) {
     Graph g2(graph); 
     g2.contract_edge(e.first,e.second); 
 
-    cout << "STAGE 4" << endl;
-
     // Fourth, recursively compute the polynomial   
     P p2;
 
     deleteContract(graph,poly);
-    cout << "STAGE 4.5" << endl;
     deleteContract(g2,p2);
-
-    cout << "STAGE 5" << endl;
 
     if(e.third > 1) { p2 *= xy_term(0,1,e.third-1); }
 
@@ -147,7 +135,6 @@ void deleteContract(G &graph, P &poly) {
       cache.store(key,poly);
       delete [] key;  // free space used by key
     }    
-    cout << "STAGE 6" << endl;
   }    
 }
 
