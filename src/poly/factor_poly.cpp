@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <cassert>
 #include "factor_poly.hpp"
 
 using namespace std;
@@ -84,7 +85,7 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
     *ptr = tmp;
     // copy old stuff, whilst initialising new stuff 
     for(unsigned int i=1;i<=(ystart-nystart);++i) { ptr[i] = 0; }
-    for(unsigned int i=(ystart-nystart)+1;i<=(yend-nystart)+1;++i) { ptr[i] = optr[i-(ystart-nystart)]; }
+    for(unsigned int i=(ystart-nystart)+1;i<=(yend-nystart)+1;++i) { assert((i-(ystart-nystart)) >= 1); ptr[i] = optr[i-(ystart-nystart)]; }
     for(unsigned int i=(yend-nystart)+2;i<=(nyend-nystart)+1;++i) { ptr[i] = 0; }
     // free space!
     delete [] optr;
@@ -93,7 +94,7 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
 
 void yterms::operator*=(xy_term const &p) {
   // if this poly is empty do nothing!
-  if(is_empty()) { ;return;}
+  if(is_empty()) { return;}
   // Ok, it's not empty ...
   unsigned int ystart = ymin();
   unsigned int yend = ymax();
@@ -108,8 +109,7 @@ void yterms::operator*=(xy_term const &p) {
     // harder case
     unsigned int nyterms = (nyend - nystart)+1;
     unsigned int *nptr = new unsigned int[nyterms+1];
-    unsigned int tmp = (nyend << 16U) + nystart;
-    *nptr = tmp;    
+    *nptr = (nyend << 16U) + nystart;
     
     // I'm pretty sure it's possible to make a linear
     // verison of this loop
@@ -151,9 +151,7 @@ void yterms::operator+=(yterms const &src) {
   unsigned int ystart = src.ymin() - ymin();
   unsigned int yend = src.ymax() - ymin();
   unsigned int j=1;
-  for(unsigned int i=ystart+1;i<=yend+1;++i,++j) { 
-    ptr[i] += src.ptr[j]; 
-  }    
+  for(unsigned int i=ystart+1;i<=yend+1;++i,++j) { ptr[i] += src.ptr[j]; }    
 }
 
 unsigned int yterms::operator[](int i) const {
@@ -172,7 +170,7 @@ string yterms::str() const {
     return "";
   }
   ss << "(";
-  for(unsigned int i=0;i!=size();++i) {
+  for(unsigned int i=0;i<size();++i) {
     if(i != 0) { ss << " + "; }
     ss << (*this)[i];
   }
@@ -227,7 +225,7 @@ factor_poly const &factor_poly::operator=(factor_poly const &src) {
 void factor_poly::operator+=(factor_poly const &p) {
   // make sure enough x terms
   if(p.nxterms > nxterms) { resize_xterms(p.nxterms); }
-  for(unsigned int i=0;i!=p.nxterms;++i) {
+  for(unsigned int i=0;i<p.nxterms;++i) {
     if(!p.xterms[i].is_empty()) {
       xterms[i] += p.xterms[i];
     }
@@ -236,14 +234,14 @@ void factor_poly::operator+=(factor_poly const &p) {
 
 void factor_poly::operator+=(xy_term const &p) {
   // make sure enough x terms
-  if(p.xpower >= nxterms) { resize_xterms(p.xpower); }
+  if(p.xpower >= nxterms) { resize_xterms(p.xpower+1); }
   // now, do the addition
   xterms[p.xpower] += p;
 }
 
 void factor_poly::insert(unsigned int n, xy_term const &p) {
   // make sure enough x terms
-  if(p.xpower >= nxterms) { resize_xterms(p.xpower); }
+  if(p.xpower >= nxterms) { resize_xterms(p.xpower+1); }
   // now, do the addition
   xterms[p.xpower].insert(n,p);
 }
@@ -251,17 +249,17 @@ void factor_poly::insert(unsigned int n, xy_term const &p) {
 void factor_poly::operator*=(xy_term const &p) {
   if(p.xpower > 0) { 
     // need to shift the x's
-    resize_xterms(p.xpower + nxterms); 
+    resize_xterms(p.xpower + nxterms + 1); 
     for(unsigned int i=nxterms;i>p.xpower;--i) {
       xterms[i-1].swap(xterms[i-(p.xpower+1)]);
     }
   }
-  for(unsigned int i=0;i!=nxterms;++i) { xterms[i] *= p; }
+  for(unsigned int i=0;i<nxterms;++i) { xterms[i] *= p; }
 }
 
 unsigned int factor_poly::nterms() const {
   unsigned int r=0;
-  for(unsigned int i=0;i!=nxterms;++i) {
+  for(unsigned int i=0;i<nxterms;++i) {
     r += xterms[i].nterms();
   }
   return r;
@@ -270,7 +268,7 @@ unsigned int factor_poly::nterms() const {
 string factor_poly::str() const {
   string r="";
   bool first_time=true;
-  for(unsigned int i=0;i!=nxterms;++i) {    
+  for(unsigned int i=0;i<nxterms;++i) {    
     if(!xterms[i].is_empty()) {
       if(!first_time) { r += " + "; }
       first_time=false;    
@@ -296,7 +294,7 @@ void factor_poly::destroy() {
 void factor_poly::clone(factor_poly const &p) {
   nxterms = p.nxterms;
   xterms = new yterms[nxterms];
-  for(unsigned int i=0;i!=nxterms;++i) {
+  for(unsigned int i=0;i<nxterms;++i) {
     xterms[i] = p.xterms[i];
   }
 }
@@ -307,7 +305,7 @@ void factor_poly::resize_xterms(unsigned int ns) {
   // need to use swap here, because
   // I don't want the following delete []
   // call to call destructors on my yterms
-  for(unsigned int i=0;i!=nxterms;++i) {
+  for(unsigned int i=0;i<nxterms;++i) {
     xs[i].swap(xterms[i]);
   }
   delete [] xterms;
