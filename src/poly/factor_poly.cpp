@@ -162,7 +162,16 @@ unsigned int yterms::operator[](int i) const {
 
 string yterms::str() const {
   std::stringstream ss;
-  ss << "y^{" << ymin() << "-" << ymax() << "}(";
+  if(ymin() != ymax()) {
+    ss << "y^{" << ymin() << "-" << ymax() << "}";
+  } else if(ymin() == 1) {
+    ss << "y";
+  } else if(ymin() != 0) {
+    ss << "y^" << ymin();
+  } else if(ymin() == 0) {
+    return "";
+  }
+  ss << "(";
   for(unsigned int i=0;i!=size();++i) {
     if(i != 0) { ss << " + "; }
     ss << (*this)[i];
@@ -261,13 +270,16 @@ unsigned int factor_poly::nterms() const {
 string factor_poly::str() const {
   string r="";
   bool first_time=true;
-  for(unsigned int i=0;i!=nxterms;++i) {
+  for(unsigned int i=0;i!=nxterms;++i) {    
     if(!xterms[i].is_empty()) {
       if(!first_time) { r += " + "; }
-      first_time=false;
-      std::stringstream ss;
-      ss << i;
-      r += "x^" + ss.str() + xterms[i].str();
+      first_time=false;    
+      if(i > 0) {
+	std::stringstream ss;
+	ss << i;
+	r += "x^" + ss.str();
+      }
+      r += xterms[i].str();
     }
   }
   return r;
