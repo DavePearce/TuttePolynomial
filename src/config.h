@@ -12,13 +12,6 @@
 #include "poly/factor_poly.hpp"
 #include <ext/hash_map>
 
-// set the internal graph representation
-typedef spanning_graph<adjacency_list<> > Graph;
-
-// set the internal polynomial representation
-// typedef simple_poly<> Poly;
-typedef factor_poly Poly;
-
 // The vertex type dicates the maximum number of
 // vertices allowed in a graph.
 typedef unsigned short vertex_t;

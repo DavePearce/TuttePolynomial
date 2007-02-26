@@ -52,8 +52,8 @@ private:
 public:
   simple_poly() {}
 
-  simple_poly(unsigned int x, unsigned int y) {
-    if(x > 0 || y > 0) { terms.insert(std::make_pair(simple_poly_term(x,y),1)); }
+  simple_poly(xy_term const &t) {
+    if(t.xpower > 0 || t.ypower > 0) { terms.insert(std::make_pair(simple_poly_term(t.xpower,t.ypower),1)); }
   }
 
   simple_poly(unsigned int n, unsigned int x, unsigned int y) {

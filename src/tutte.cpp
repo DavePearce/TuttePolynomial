@@ -112,10 +112,10 @@ void deleteContract(G &graph, P &poly) {
     }
 
     // Third, perform delete contract 
-    Graph::edge_t e = graph.select_nontree_edge();
+    typename G::edge_t e = graph.select_nontree_edge();
 
     graph.remove_edge(e.first,e.second,e.third);        
-    Graph g2(graph); 
+    G g2(graph); 
     g2.contract_edge(e.first,e.second); 
 
     // Fourth, recursively compute the polynomial   
@@ -241,7 +241,7 @@ void write_graph_sizes(fstream &out) {
   int ngraphs=0;
   // first, count the lengths
   for(simple_cache::iterator i(cache.begin());i!=cache.end();++i) {
-    Graph g(graph_from_key<Graph>(i.key()));
+    adjacency_list<> g(graph_from_key<adjacency_list<> >(i.key()));
     if(counts.size() < (g.num_vertices()+1)) {
       // need to increase size of count array
       counts.resize(g.num_vertices()+1,0);
@@ -279,7 +279,7 @@ void write_hit_counts(fstream &out) {
   int ngraphs=0;
 
   for(simple_cache::iterator i(cache.begin());i!=cache.end();++i) {
-    Graph g(graph_from_key<Graph>(i.key()));
+    adjacency_list<> g(graph_from_key<adjacency_list<> >(i.key()));
     table.push_back(make_triple(g.num_vertices(),g.num_edges(),g.num_edges() - g.num_multiedges()));
     hs.insert(make_pair(i.hit_count(),table.size()-1));
   }
@@ -324,7 +324,7 @@ void run(ifstream &input, boolean quiet_mode) {
   my_timer timer;
   P tuttePoly;
   
-  deleteContract<Graph,Poly>(start_graph,tuttePoly);        
+  deleteContract<G,P>(start_graph,tuttePoly);        
 
   if(quiet_mode) {
     cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << endl;
@@ -370,6 +370,8 @@ int main(int argc, char *argv[]) {
   #define OPT_CACHESIZE 10
   #define OPT_CACHEBUCKETS 11  
   #define OPT_NAUTYWORKSPACE 20
+  #define OPT_SIMPLE_POLY 30
+  #define OPT_FACTOR_POLY 31
 
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
@@ -377,6 +379,7 @@ int main(int argc, char *argv[]) {
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
+    {"simple-poly",no_argument,NULL,OPT_SIMPLE_POLY},
     {"quiet",no_argument,NULL,OPT_QUIET},
     NULL
   };
@@ -394,6 +397,7 @@ int main(int argc, char *argv[]) {
   unsigned int v;
   unsigned int cache_size(50*1024*1024); // detault 50M
   unsigned int cache_buckets(10000);     // default 10,000 buckets
+  unsigned int poly_rep(OPT_FACTOR_POLY);
   bool quiet_mode=false;
 
   while((v=getopt_long(argc,argv,"qc:",long_options,NULL)) != -1) {
@@ -423,6 +427,10 @@ int main(int argc, char *argv[]) {
       break;
     case OPT_SMALLGRAPHS:
       small_graph_threshold = parse_amount(optarg);      
+      break;
+    // --- POLY OPTIONS ---
+    case OPT_SIMPLE_POLY:
+      poly_rep = OPT_SIMPLE_POLY;
       break;
     }
   }
@@ -465,7 +473,11 @@ int main(int argc, char *argv[]) {
 
   try {
     ifstream input(argv[optind]);    
-    run<Graph,Poly>(input,quiet_mode);
+    if(poly_rep == OPT_FACTOR_POLY) {
+      run<spanning_graph<adjacency_list<> >,factor_poly>(input,quiet_mode);
+    } else {
+      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,quiet_mode);
+    }
 
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
