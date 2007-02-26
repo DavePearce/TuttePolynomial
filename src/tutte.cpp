@@ -103,13 +103,12 @@ void deleteContract(G &graph, P &poly) {
       }
       */
     } else {
-      /*
+      
       key = graph_key(graph);      
       if(cache.lookup(key,poly)) { 
 	poly *= xys;
 	return; 
-      } 
-      */         
+      }                
     }
 
     // Third, perform delete contract 
@@ -125,7 +124,7 @@ void deleteContract(G &graph, P &poly) {
     deleteContract(graph,poly);
     deleteContract(g2,p2);
 
-    if(e.third > 1) { p2 *= xy_term(0,1,e.third-1); }
+    if(e.third > 1) { p2 *= xy_term(0,0,e.third-1); }
 
     poly += p2;
     poly *= xys;
