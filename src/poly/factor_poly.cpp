@@ -155,6 +155,20 @@ void yterms::operator+=(yterms const &src) {
 
 unsigned int yterms::operator[](int i) const { return ptr[i+1]; }
 
+double yterms::substitute(double y) const {
+  if(ptr != NULL) {
+    unsigned int ystart = ymin();
+    unsigned int yend = ymax();
+    double r = 0.0;
+    for(unsigned int i=ystart;i<=yend;++i) {
+      r += pow(y,(double)i) * ptr[(i-ystart)+1];
+    }
+    return r;
+  } else {
+    return 0.0;
+  }
+}
+
 string yterms::str() const {
   std::stringstream ss;
   if(ymin() != ymax()) {
@@ -280,7 +294,11 @@ string factor_poly::str() const {
 }
 
 double factor_poly::substitute(double x, double y) const {
-  return 0.0;
+  double r = 0.0;
+  for(unsigned int i=0;i<nxterms;++i) {
+    r += pow(x,(double)i) * xterms[i].substitute(y);
+  }
+  return r;
 }
 
 void factor_poly::destroy() {

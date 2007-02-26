@@ -29,7 +29,8 @@ public:
   void operator*=(xy_term const &p);
   unsigned int operator[](int) const;
   unsigned int nterms() const;
-  
+
+  double substitute(double y) const;
   std::string str() const;
 private:  
   void clone(yterms const &src);  
