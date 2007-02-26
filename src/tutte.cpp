@@ -7,6 +7,7 @@
 #include <csignal>
 #include <getopt.h>
 #include <sys/time.h>
+#include <sys/resource.h>
 
 #include "config.h"
 #include "eval_simple_fours.hpp" // auto-generated solutions for simple graphs of size 4
@@ -46,6 +47,9 @@ unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
 simple_cache cache(1024*1024,100);
+static bool status_flag=false;
+
+void print_status();
 
 // ---------------------------------------------------------------
 // Method Bodies
@@ -63,7 +67,7 @@ simple_cache cache(1024*1024,100);
 
 template<class G, class P>
 void deleteContract(G &graph, P &poly) { 
-
+  if(status_flag) { print_status(); }
   num_steps++;
 
   // first, eliminate any loops
@@ -107,6 +111,7 @@ void deleteContract(G &graph, P &poly) {
       key = graph_key(graph);      
       if(cache.lookup(key,poly)) { 
 	poly *= xys;
+	delete [] key; // free space used by key
 	return; 
       }                
     }
@@ -298,12 +303,17 @@ void write_hit_counts(fstream &out) {
 static int status_interval = 5; // in seconds
 
 void timer_handler(int signum) {
+  status_flag=true;
+  alarm(status_interval);
+}
+
+void print_status() {
+  status_flag=false;
   double rate = (num_steps - old_num_steps);
   double cf = (100*((double)cache.size())) / cache.capacity();
   rate /= status_interval;
   cout << "Completed " << num_steps << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full." << endl;
-  old_num_steps = num_steps;
-  alarm(status_interval);
+  old_num_steps = num_steps;  
 }
 
 // ---------------------------------------------------------------
@@ -478,6 +488,9 @@ int main(int argc, char *argv[]) {
     } else {
       run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,quiet_mode);
     }
+    struct rusage ru;
+    cout << "GOT " << getrusage(RUSAGE_SELF,&ru) << endl;
+    cout << "RSS = " << ru.ru_maxrss << " " << ru.ru_idrss << endl;
 
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;

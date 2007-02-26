@@ -13,6 +13,7 @@ yterms::yterms() : ptr(NULL) { }
 yterms::yterms(unsigned int y_min, unsigned int y_max) {
   unsigned int nyterms = (y_max - y_min) + 1;
   ptr = new unsigned int[nyterms+1];
+
   unsigned int tmp = (y_max << 16U) + y_min;
   *ptr = tmp;  
   // clear terms
@@ -195,9 +196,8 @@ unsigned int yterms::nterms() const {
 }
 
 void yterms::clone(yterms const &src) { 
-  if(src.is_empty()) { 
-    ptr = NULL; 
-  } else {
+  if(src.is_empty()) { ptr = NULL; }
+  else {
     unsigned int nyterms = src.size();
     ptr = new unsigned int[nyterms+1];
     memcpy(ptr,src.ptr,(nyterms+1) * sizeof(unsigned int));  
