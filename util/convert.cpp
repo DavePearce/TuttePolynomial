@@ -45,13 +45,17 @@ vector<pair<unsigned int, unsigned int> > read_graph(std::istream &input) {
 }
 
 int main(int argc, char *argv[]) {
-  vector<pair<unsigned int, unsigned int> > g = read_graph(cin);
-  bool firstTime=true;
-  for(vector<pair<unsigned int, unsigned int> >::iterator i(g.begin());i!=g.end();++i) {
-    if(i->first == 0 && i->second == 0) { break; }
-    if(!firstTime) { cout << ","; }
-    firstTime=false;
-    cout << (i->first-1) << "--" << (i->second-1);
+  bool first_time=true;
+  while(!cin.eof()) {
+    if(!first_time) { cout << endl; }
+    first_time=false;
+    vector<pair<unsigned int, unsigned int> > g = read_graph(cin);
+    bool firstTime=true;
+    for(vector<pair<unsigned int, unsigned int> >::iterator i(g.begin());i!=g.end();++i) {
+      if(i->first == 0 && i->second == 0) { break; }
+      if(!firstTime) { cout << ","; }
+      firstTime=false;
+      cout << (i->first-1) << "--" << (i->second-1);
+    }
   }
-  cout << endl;
 }

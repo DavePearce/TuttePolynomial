@@ -1,8 +1,8 @@
 #include "algorithms.hpp"
 
 setword nauty_graph_buf[(MAXN*MAXM)];
-setword *nauty_workspace = new setword[50*MAXM];
-size_t _nauty_workspace_size = 50*MAXM;
+setword *nauty_workspace = new setword[100*MAXM];
+size_t _nauty_workspace_size = 100*MAXM;
 
 extern "C" {
 uint32_t hashlittle( const void *key, size_t length, uint32_t initval);

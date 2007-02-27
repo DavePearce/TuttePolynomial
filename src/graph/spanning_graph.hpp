@@ -144,6 +144,7 @@ public:
     // interesting observation is that picking the edge with least
     // underlying edges on either vertex is the best strategy.
 
+    
     edge_t cur(0,0,0);
     unsigned int min=UINT_MAX;
     unsigned int max=0;
@@ -159,8 +160,9 @@ public:
     }
     
     return cur;
+    
 
-    // return nontree_edges.back();
+    //return nontree_edges.back();
   }
 
   int select_pendant_vertex() const {

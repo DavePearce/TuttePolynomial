@@ -79,6 +79,8 @@ private:
   unsigned char *start_p;        // buffer start ptr
   unsigned char *next_p;         // buffer next ptr
   unsigned int bufsize;
+  float replacement;
+  bool random_replacement;
 public:
   // max_size in bytes
   simple_cache(size_t max_size, size_t nbs = 10000) {
@@ -91,6 +93,8 @@ public:
     buckets = create_bucket_array(nbs);
     start_p = new unsigned char[max_size];
     next_p = start_p;
+    random_replacement=false;
+    replacement=0.3;
   }
   
   ~simple_cache() { 
@@ -147,6 +151,25 @@ public:
   double density() {
     size_t used = next_p - start_p;
     return ((double)numentries) / used;
+  }
+
+  void clear() {
+    // reset next pointer
+    next_p = start_p;
+    // empty all buckets
+    for(int i=0;i!=nbuckets;++i) { 
+      buckets[i].next=NULL; 
+      buckets[i].prev=NULL; 
+    }    
+    // done
+  }
+
+  void set_replacement(float f) {
+    replacement = f;
+  }
+
+  void set_random_replacement() {
+    random_replacement=true;
   }
 
   void resize(size_t max_size) {
@@ -275,8 +298,11 @@ private:
     if(size >= bufsize) { throw std::bad_alloc();  }
     // if there's not enough space left, free up some!
     while(((next_p-start_p)+size) >= bufsize) { 
-      // randomly_remove_nodes(0.3);  
-      remove_unused_nodes(0.3);
+      if(random_replacement) {
+	randomly_remove_nodes(replacement);  
+      } else {
+	remove_unused_nodes(replacement);
+      }
       pack_buffer();
     }
     unsigned char *r = next_p;

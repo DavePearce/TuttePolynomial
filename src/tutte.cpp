@@ -182,6 +182,8 @@ G read_graph(std::istream &input) {
     edgelist.push_back(std::make_pair(tail,head));
   }  
 
+  if(V == 0) { return G(0); }
+
   G r(V+1);
 
   for(vector<pair<unsigned int, unsigned int> >::iterator i(edgelist.begin());
@@ -322,45 +324,49 @@ void print_status() {
 
 template<class G, class P>
 void run(ifstream &input, boolean quiet_mode) {
-  G start_graph = read_graph<G>(input);
-  
-  if(quiet_mode) {
-    cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();
-  } else {
-    cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
-    print_graph(cout,start_graph);    
-  }   
-  
-  my_timer timer;
-  P tuttePoly;
-  
-  deleteContract<G,P>(start_graph,tuttePoly);        
 
-  if(quiet_mode) {
-    cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << endl;
-  } else {
-    cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
+  while(!input.eof()) {
+    cache.clear();    
+    G start_graph = read_graph<G>(input);
+    if(start_graph.num_vertices() == 0) { break; }
+    if(quiet_mode) {
+      cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();
+    } else {
+      cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
+      print_graph(cout,start_graph);    
+    }   
     
-    cout << "Number of spanning trees: " << (long long) tuttePoly.substitute(1,1) << endl;
+    my_timer timer;
+    P tuttePoly;
     
-    cout << "==================" << endl;
-    cout << "Total Steps: " << num_steps << endl;
-    cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
-    cout << endl;
-    cout << "Cache stats:" << endl << "------------" << endl;
-    cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
-    cout << "# Entries: " << cache.num_entries() << endl;
-    cout << "# Cache Hits: " << cache.num_hits() << endl;
-    cout << "# Cache Misses: " << cache.num_misses() << endl;
-    cout << "# Cache Collisions: " << cache.num_collisions() << endl;
-    cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
-    cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
-    // now, write out stats
+    deleteContract<G,P>(start_graph,tuttePoly);        
     
-    fstream stats_out("tutte-stats.dat",fstream::out);
-    write_bucket_lengths(stats_out);
-    write_graph_sizes(stats_out);
-    write_hit_counts(stats_out);
+    if(quiet_mode) {
+      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << (long long) tuttePoly.substitute(1,1) << endl;
+    } else {
+      cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
+      
+      cout << "Number of spanning trees: " << (long long) tuttePoly.substitute(1,1) << endl;
+      
+      cout << "==================" << endl;
+      cout << "Total Steps: " << num_steps << endl;
+      cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
+      cout << endl;
+      cout << "Cache stats:" << endl << "------------" << endl;
+      cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
+      cout << "# Entries: " << cache.num_entries() << endl;
+      cout << "# Cache Hits: " << cache.num_hits() << endl;
+      cout << "# Cache Misses: " << cache.num_misses() << endl;
+      cout << "# Cache Collisions: " << cache.num_collisions() << endl;
+      cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
+      cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
+      // now, write out stats
+      
+      fstream stats_out("tutte-stats.dat",fstream::out);
+      write_bucket_lengths(stats_out);
+      write_graph_sizes(stats_out);
+      write_hit_counts(stats_out);
+    }
   }
 }
 
@@ -379,6 +385,8 @@ int main(int argc, char *argv[]) {
   #define OPT_SMALLGRAPHS 5
   #define OPT_CACHESIZE 10
   #define OPT_CACHEBUCKETS 11  
+  #define OPT_CACHEREPLACEMENT 12
+  #define OPT_CACHERANDOM 13
   #define OPT_NAUTYWORKSPACE 20
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
@@ -387,6 +395,8 @@ int main(int argc, char *argv[]) {
     {"help",no_argument,NULL,OPT_HELP},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
+    {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
+    {"cache-random-replacement",required_argument,NULL,OPT_CACHERANDOM},    
     {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
     {"simple-poly",no_argument,NULL,OPT_SIMPLE_POLY},
@@ -432,6 +442,13 @@ int main(int argc, char *argv[]) {
     case OPT_CACHEBUCKETS:
       cache_buckets = parse_amount(optarg);
       break;
+    case OPT_CACHEREPLACEMENT:
+      cache.set_replacement(strtof(optarg,NULL));
+      break;
+    case OPT_CACHERANDOM:
+      cache.set_random_replacement();
+      break;
+    // --- OTHER OPTIONS ---
     case OPT_NAUTYWORKSPACE:
       resize_nauty_workspace(parse_amount(optarg));
       break;
@@ -488,10 +505,6 @@ int main(int argc, char *argv[]) {
     } else {
       run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,quiet_mode);
     }
-    struct rusage ru;
-    cout << "GOT " << getrusage(RUSAGE_SELF,&ru) << endl;
-    cout << "RSS = " << ru.ru_maxrss << " " << ru.ru_idrss << endl;
-
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
   } catch(exception const &e) {
