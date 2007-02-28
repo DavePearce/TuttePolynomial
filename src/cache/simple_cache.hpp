@@ -164,6 +164,12 @@ public:
     // done
   }
 
+  void reset_stats() {
+    hits = 0;
+    misses = 0;
+    collisions = 0;
+  }
+
   void set_replacement(float f) {
     replacement = f;
   }

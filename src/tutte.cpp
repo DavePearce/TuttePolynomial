@@ -326,7 +326,12 @@ template<class G, class P>
 void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
   unsigned int ngraphs_completed=0;
   while(!input.eof() && ngraphs_completed < ngraphs) {
-    cache.clear();    
+    // first, reset all stats information
+    cache.clear();  
+    cache.reset_stats();
+    num_steps = 0;
+
+    // now, do stuff!
     G start_graph = read_graph<G>(input);
     if(start_graph.num_vertices() == 0) { break; }
     if(quiet_mode) {
