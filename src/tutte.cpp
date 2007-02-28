@@ -323,9 +323,9 @@ void print_status() {
 // ---------------------------------------------------------------
 
 template<class G, class P>
-void run(ifstream &input, boolean quiet_mode) {
-
-  while(!input.eof()) {
+void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
+  unsigned int ngraphs_completed=0;
+  while(!input.eof() && ngraphs_completed < ngraphs) {
     cache.clear();    
     G start_graph = read_graph<G>(input);
     if(start_graph.num_vertices() == 0) { break; }
@@ -367,6 +367,8 @@ void run(ifstream &input, boolean quiet_mode) {
       write_graph_sizes(stats_out);
       write_hit_counts(stats_out);
     }
+    
+    ++ngraphs_completed;
   }
 }
 
@@ -381,8 +383,9 @@ int main(int argc, char *argv[]) {
   // ------------------------------
 
   #define OPT_HELP 0
-  #define OPT_QUIET 1
+  #define OPT_QUIET 1  
   #define OPT_SMALLGRAPHS 5
+  #define OPT_NGRAPHS 6
   #define OPT_CACHESIZE 10
   #define OPT_CACHEBUCKETS 11  
   #define OPT_CACHEREPLACEMENT 12
@@ -400,6 +403,7 @@ int main(int argc, char *argv[]) {
     {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
     {"simple-poly",no_argument,NULL,OPT_SIMPLE_POLY},
+    {"ngraphs",required_argument,NULL,OPT_NGRAPHS},
     {"quiet",no_argument,NULL,OPT_QUIET},
     NULL
   };
@@ -411,6 +415,7 @@ int main(int argc, char *argv[]) {
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     "        --nauty-workspace=<amount> set size of nauty workspace, e.g. 10000",
     "        --small-graphs=size        set threshold for small graphs, e.g. 7",
+    "        --ngraphs=n               number of graphs to process from input file",
     NULL
   };
 
@@ -418,6 +423,7 @@ int main(int argc, char *argv[]) {
   unsigned int cache_size(50*1024*1024); // detault 50M
   unsigned int cache_buckets(10000);     // default 10,000 buckets
   unsigned int poly_rep(OPT_FACTOR_POLY);
+  unsigned int ngraphs(UINT_MAX);
   bool quiet_mode=false;
 
   while((v=getopt_long(argc,argv,"qc:",long_options,NULL)) != -1) {
@@ -433,6 +439,9 @@ int main(int argc, char *argv[]) {
     case 'q':
     case OPT_QUIET:      
       quiet_mode=true;
+      break;
+    case OPT_NGRAPHS:
+      ngraphs = atoi(optarg);
       break;
     // --- CACHE OPTIONS ---
     case 'c':
@@ -501,9 +510,9 @@ int main(int argc, char *argv[]) {
   try {
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
-      run<spanning_graph<adjacency_list<> >,factor_poly>(input,quiet_mode);
+      run<spanning_graph<adjacency_list<> >,factor_poly>(input,ngraphs,quiet_mode);
     } else {
-      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,quiet_mode);
+      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,quiet_mode);
     }
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
