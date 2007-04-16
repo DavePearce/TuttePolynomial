@@ -110,16 +110,49 @@ void yterms::operator*=(xy_term const &p) {
     unsigned int nyterms = (nyend - nystart)+1;
     unsigned int *nptr = new unsigned int[nyterms+1];
     *nptr = (nyend << 16U) + nystart;
-    
-    // I'm pretty sure it's possible to make a linear
-    // verison of this loop
-    memset(nptr+1,0,sizeof(unsigned int)*nyterms);  // why is this needed ?
 
-    for(unsigned int j=0;j<=p.ypowerend-p.ypower;++j) {
-      for(unsigned int i=1;i<=(yend-ystart)+1;++i) {
-	nptr[i+j] += ptr[i];
-      }
+    unsigned int acc = 0;
+    unsigned int depth = (p.ypowerend-p.ypower)+1;
+    unsigned int width = (yend-ystart)+1;
+
+    memset(nptr+1,0,sizeof(unsigned int)*nyterms);  // why is this needed?
+
+    // going up the triangle
+    for(unsigned int i=1;i<=depth;++i) {
+      acc += ptr[i];
+      nptr[i] = acc;
     }
+
+    cout << "=== TOP ===" << endl;
+
+    // going along the top (if there is one)
+    unsigned int sub = 0;
+    for(unsigned int i=depth+1;i<=width;++i) {
+      sub += ptr[i-depth];
+      acc += ptr[i];
+      cout << "i = " << i << " acc-sub = " << (acc-sub) << endl;
+      nptr[i] = acc - sub;      
+    }    
+
+    cout << "=== DOWN ===" << endl;
+
+    // going down the triangle
+    for(unsigned int i=max(depth,width)+1;i<=nyterms;++i) {
+      sub += ptr[i-depth];
+      cout << "i = " << i << " acc-sub = " << (acc-sub) << endl;
+      nptr[i] = acc - sub;      
+    }
+
+    /* previous (non-linear) implementation:
+     *
+     *    memset(nptr+1,0,sizeof(unsigned int)*nyterms);  // why is this needed ?
+     *
+     *    for(unsigned int j=0;j<=p.ypowerend-p.ypower;++j) {
+     *     for(unsigned int i=1;i<=(yend-ystart)+1;++i) {
+     *	     nptr[i+j] += ptr[i];
+     *      }
+     *    }
+     */
     delete [] ptr;
     ptr = nptr;
   }

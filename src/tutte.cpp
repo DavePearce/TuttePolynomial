@@ -46,14 +46,50 @@ public:
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
+unsigned int xml_id = 1;
 simple_cache cache(1024*1024,100);
 static bool status_flag=false;
+static bool xml_flag=false;
 
 void print_status();
 
 // ---------------------------------------------------------------
 // Method Bodies
 // ---------------------------------------------------------------
+
+/* XML output methods.  Currently needed to interface with the visualisation
+ * tool being developed by Bennett Thompson.
+ */
+
+template<class G>
+void write_xml_match(int my_id, G const &graph) {
+  cout << "<graphnode>" << endl;
+  cout << "<id>" << my_id << "</id>" << endl;
+  cout << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
+  cout << "<edges>" << graph.num_edges() << "</edges>" << endl;
+  cout << "<match>0</match>" << endl;
+  cout << "</graphnode>" << endl;
+}
+
+template<class G>
+void write_xml_nonleaf(int my_id, int left_id, int right_id, G const &graph) {
+  cout << "<graphnode>" << endl;
+  cout << "<id>" << my_id << "</id>" << endl;
+  cout << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
+  cout << "<edges>" << graph.num_edges() << "</edges>" << endl;
+  cout << "<left>" << left_id << "</left>" << endl;
+  cout << "<right>" << right_id << "</right>" << endl;
+  cout << "</graphnode>" << endl;
+}
+
+template<class G>
+void write_xml_leaf(int my_id, G const &graph) {
+  cout << "<graphnode>" << endl;
+  cout << "<id>" << my_id << "</id>" << endl;
+  cout << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
+  cout << "<edges>" << graph.num_edges() << "</edges>" << endl;
+  cout << "</graphnode>" << endl;
+}
 
 /* deleteContract is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
@@ -66,8 +102,9 @@ void print_status();
  */
 
 template<class G, class P>
-void deleteContract(G &graph, P &poly) { 
+void deleteContract(G &graph, P &poly, int my_id) { 
   if(status_flag) { print_status(); }
+
   num_steps++;
 
   // first, eliminate any loops
@@ -75,6 +112,7 @@ void deleteContract(G &graph, P &poly) {
 
   // if the graph is a "loop tree", then we're done.
   if(graph.is_tree()) {
+    if(xml_flag) { write_xml_leaf(my_id, graph); }
     poly += P(xy_term(graph.num_edges(),num_loops));
   } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
@@ -106,15 +144,25 @@ void deleteContract(G &graph, P &poly) {
 	}
       }
       */
-    } else {
-      
+    } else {     
       key = graph_key(graph);      
       if(cache.lookup(key,poly)) { 
+	if(xml_flag) { write_xml_match(my_id,graph); }
+
 	poly *= xys;
 	delete [] key; // free space used by key
 	return; 
       }                
     }
+    
+    // === XML OUTPUT STUFF ===
+    
+    int left_id = xml_id;
+    int right_id = xml_id+1;
+    xml_id = xml_id + 2; // allocate id's now so I know them!
+    if(xml_flag) { write_xml_nonleaf(my_id,left_id,right_id,graph); }
+
+    // === END ===
 
     // Third, perform delete contract 
     typename G::edge_t e = graph.select_nontree_edge();
@@ -126,8 +174,8 @@ void deleteContract(G &graph, P &poly) {
     // Fourth, recursively compute the polynomial   
     P p2;
 
-    deleteContract(graph,poly);
-    deleteContract(g2,p2);
+    deleteContract(graph,poly, left_id);
+    deleteContract(g2,p2, right_id);
 
     if(e.third > 1) { p2 *= xy_term(0,0,e.third-1); }
 
@@ -344,7 +392,7 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
     my_timer timer;
     P tuttePoly;
     
-    deleteContract<G,P>(start_graph,tuttePoly);        
+    deleteContract<G,P>(start_graph,tuttePoly,0);        
     
     if(quiet_mode) {
       cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << (long long) tuttePoly.substitute(1,1) << endl;
@@ -398,6 +446,7 @@ int main(int argc, char *argv[]) {
   #define OPT_NAUTYWORKSPACE 20
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
+  #define OPT_XML_OUT 31
 
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
@@ -408,6 +457,7 @@ int main(int argc, char *argv[]) {
     {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
     {"simple-poly",no_argument,NULL,OPT_SIMPLE_POLY},
+    {"xml-tree",no_argument,NULL,OPT_XML_OUT},
     {"ngraphs",required_argument,NULL,OPT_NGRAPHS},
     {"quiet",no_argument,NULL,OPT_QUIET},
     NULL
@@ -415,7 +465,7 @@ int main(int argc, char *argv[]) {
   
   char *descriptions[]={
     "        --help                    display this information",
-    " -q     --quiet                   output stats summary as single line only (useful for generating data)"
+    " -q     --quiet                   output stats summary as single line only (useful for generating data)",
     " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     "        --nauty-workspace=<amount> set size of nauty workspace, e.g. 10000",
@@ -447,6 +497,9 @@ int main(int argc, char *argv[]) {
       break;
     case OPT_NGRAPHS:
       ngraphs = atoi(optarg);
+      break;
+    case OPT_XML_OUT:
+      xml_flag=true;
       break;
     // --- CACHE OPTIONS ---
     case 'c':

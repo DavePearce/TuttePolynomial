@@ -1,12 +1,13 @@
 Things to do!
 =============
-
+* Complete support for Bennett's XML output
 * Add y-shifting optimisation
+* Add support for integer overflow + optimise Poly
+* Eliminate need to retree based on Gary's idea.
 * Investigate the multi-edge matching idea, where number of multiple edges is not important.
 * Removing "lines" by checking that one of their vertices is not on the spanning tree.  Adjust spanning tree to pick "bushy" vertices.
 * Add support for cache replacement policies and garbage collection
 * Add Gary's small graph isomorphism tests
-* Add support for integer overflow
 * Add support for decent stats reporting [breakdown of bucket length, proportion of memory used by graphs vs polynomial]
 
 Alternative Implementations
