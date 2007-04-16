@@ -46,7 +46,7 @@ public:
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
-unsigned int xml_id = 1;
+unsigned int xml_id = 2;
 simple_cache cache(1024*1024,100);
 static bool status_flag=false;
 static bool xml_flag=false;
@@ -67,7 +67,7 @@ void write_xml_match(int my_id, G const &graph) {
   cout << "<id>" << my_id << "</id>" << endl;
   cout << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
   cout << "<edges>" << graph.num_edges() << "</edges>" << endl;
-  cout << "<match>0</match>" << endl;
+  cout << "<match>1</match>" << endl;
   cout << "</graphnode>" << endl;
 }
 

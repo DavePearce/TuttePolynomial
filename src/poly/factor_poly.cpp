@@ -150,7 +150,7 @@ void yterms::operator*=(xy_term const &p) {
       sub += ptr[i-depth];
       nptr[i] = acc - sub;      
     }
-
+    
     delete [] ptr;
     ptr = nptr;
   }
