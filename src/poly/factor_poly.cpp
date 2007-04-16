@@ -111,38 +111,6 @@ void yterms::operator*=(xy_term const &p) {
     unsigned int *nptr = new unsigned int[nyterms+1];
     *nptr = (nyend << 16U) + nystart;
 
-    unsigned int acc = 0;
-    unsigned int depth = (p.ypowerend-p.ypower)+1;
-    unsigned int width = (yend-ystart)+1;
-
-    memset(nptr+1,0,sizeof(unsigned int)*nyterms);  // why is this needed?
-
-    // going up the triangle
-    for(unsigned int i=1;i<=depth;++i) {
-      acc += ptr[i];
-      nptr[i] = acc;
-    }
-
-    cout << "=== TOP ===" << endl;
-
-    // going along the top (if there is one)
-    unsigned int sub = 0;
-    for(unsigned int i=depth+1;i<=width;++i) {
-      sub += ptr[i-depth];
-      acc += ptr[i];
-      cout << "i = " << i << " acc-sub = " << (acc-sub) << endl;
-      nptr[i] = acc - sub;      
-    }    
-
-    cout << "=== DOWN ===" << endl;
-
-    // going down the triangle
-    for(unsigned int i=max(depth,width)+1;i<=nyterms;++i) {
-      sub += ptr[i-depth];
-      cout << "i = " << i << " acc-sub = " << (acc-sub) << endl;
-      nptr[i] = acc - sub;      
-    }
-
     /* previous (non-linear) implementation:
      *
      *    memset(nptr+1,0,sizeof(unsigned int)*nyterms);  // why is this needed ?
@@ -153,6 +121,36 @@ void yterms::operator*=(xy_term const &p) {
      *      }
      *    }
      */
+
+    unsigned int acc = 0;
+    unsigned int depth = (p.ypowerend-p.ypower)+1;
+    unsigned int width = (yend-ystart)+1;
+
+    // going up the triangle
+    for(unsigned int i=1;i<=min(width,depth);++i) {
+      acc += ptr[i];
+      nptr[i] = acc;
+    }
+
+    // free fall (if there is any)
+    for(unsigned int i=width+1;i<=depth;++i) {
+      nptr[i] = acc;      
+    }    
+
+    // going along the top (if there is one)
+    unsigned int sub = 0;
+    for(unsigned int i=depth+1;i<=width;++i) {
+      sub += ptr[i-depth];
+      acc += ptr[i];
+      nptr[i] = acc - sub;      
+    }    
+
+    // going down the triangle
+    for(unsigned int i=max(depth,width)+1;i<=nyterms;++i) {
+      sub += ptr[i-depth];
+      nptr[i] = acc - sub;      
+    }
+
     delete [] ptr;
     ptr = nptr;
   }
@@ -206,7 +204,7 @@ double yterms::substitute(double y) const {
 string yterms::str() const {
   std::stringstream ss;
   if(ymin() != ymax()) {
-    ss << "y^{" << ymin() << "-" << ymax() << "}";
+    ss << "y^{" << ymin() << ".." << ymax() << "}";
   } else if(ymin() == 1) {
     ss << "y";
   } else if(ymin() != 0) {
