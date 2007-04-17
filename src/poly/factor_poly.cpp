@@ -55,7 +55,7 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
     int d_end = y_max - ptr->ymax;
     int d_beg = ptr->ymin - y_min;
 
-    if(d_beg < ptr->front_padding && d_end < ptr->back_padding) {
+    if(d_beg <= (int) ptr->front_padding && d_end <= (int) ptr->back_padding) {
       // in this case, there is enough padding to cover it
       if(d_end > 0) {
 	ptr->ymax = y_max;      
@@ -73,9 +73,7 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
       header *optr = ptr;
       ptr = alloc(min(ystart,y_min),max(yend,y_max));
       // copy old stuff over
-      cout << "IN COPY" << endl;
       for(unsigned int i=ystart;i<yend;++i) { set(i,get(i,optr),ptr); }
-      cout << "DONE COPY" << endl;
       // free space!
       unalloc(optr);
     }
@@ -100,19 +98,17 @@ void yterms::operator*=(xy_term const &p) {
     header *nptr = alloc(nystart,nyend);     // COULD MAKE USE OF PADDING!!!
     unsigned int depth = (p.ypowerend-p.ypower)+1;
     unsigned int width = (yend-ystart)+1;
-    cout << "=== F ===" << endl;
+
     // going up the triangle
     unsigned int acc = 0;    
     for(unsigned int i=0;i<min(width,depth);++i) {
       acc += get(i+ystart,ptr);
       set(i+nystart,acc,nptr);
     }
-    cout << "=== 1 ===" << endl;
     // free fall (if there is any)
     for(unsigned int i=width;i<depth;++i) {
       set(i+nystart,acc,nptr);      
     }    
-    cout << "=== 2 ===" << endl;
     // going along the top (if there is one)
     unsigned int sub = 0;
     for(unsigned int i=depth;i<width;++i) {
@@ -120,13 +116,11 @@ void yterms::operator*=(xy_term const &p) {
       acc += get(i+ystart,ptr);
       set(i+nystart,acc - sub,nptr);
     }    
-    cout << "=== 3 ===" << endl;
     // going down the triangle
     for(unsigned int i=max(depth,width);i < (nyend-nystart)+1;++i) {
       sub += get(i+ystart-depth,ptr);
       set(i+nystart,acc - sub,nptr);    
     }
-    cout << "=== END F ===" << endl;
     unalloc(ptr);
     ptr = nptr;
   }
@@ -134,29 +128,24 @@ void yterms::operator*=(xy_term const &p) {
 }
 
 void yterms::operator+=(xy_term const &p) {
-  cout << "=== B ===" << endl;
   // make sure enough y terms
   resize(p.ypower,p.ypowerend);
   // now, do the addition
   for(unsigned int i=p.ypower;i<=p.ypowerend;++i) { 
     add(i,1,ptr);
   }    
-  cout << "=== END B ===" << endl;
 }
 
 void yterms::insert(unsigned int n, xy_term const &p) { 
-  cout << "=== A ===" << endl;
   // make sure enough y terms
   resize(p.ypower,p.ypowerend);
   // now, do the addition
   for(unsigned int i=p.ypower;i<=p.ypowerend;++i) { 
     add(i,n,ptr);
   }    
-  cout << "=== END A ===" << endl;
 }
 
 void yterms::operator+=(yterms const &src) {
-  cout << "=== C ===" << endl;
   // make sure enough y terms
   resize(src.ptr->ymin,src.ptr->ymax);
   assert(ptr->ymin <= src.ptr->ymin && ptr->ymax >= src.ptr->ymax);
@@ -164,10 +153,8 @@ void yterms::operator+=(yterms const &src) {
   unsigned int start = src.ptr->ymin;
   unsigned int end = src.ptr->ymax;
   for(unsigned int i=start;i<=end;++i) { 
-    cout << "I=" << i << ", YMIN = " << ptr->ymin << ", YMAX = " << ptr->ymax << endl;
     add(i,get(i,src.ptr),ptr);
   }
-  cout << "=== END C ===" << endl;
 }
 
 unsigned int yterms::operator[](int i) const { return 0; }
@@ -175,11 +162,9 @@ unsigned int yterms::operator[](int i) const { return 0; }
 double yterms::substitute(double y) const {
   if(ptr != NULL) {
     double r = 0.0;
-    cout << "=== D ===" << endl;
     for(unsigned int i=ptr->ymin;i<=ptr->ymax;++i) {
       r += pow(y,(double)i) * get(i,ptr);
     }
-    cout << "=== END D ===" << endl;
     return r;
   } else {
     return 0.0;
@@ -198,12 +183,10 @@ string yterms::str() const {
     return "";
   }
   ss << "(";
-  cout << "=== E ===" << endl;
   for(unsigned int i=ptr->ymin;i<=ptr->ymax;++i) {
     if(i != ptr->ymin) { ss << " + "; }
     ss << get(i,ptr);
   }
-  cout << "=== END E ===" << endl;
   ss << ")";
   return ss.str();
 }
@@ -225,20 +208,20 @@ void yterms::clone(yterms const &src) {
 
 void yterms::set(unsigned int y, unsigned int v, header *h) {
   assert(y >= h->ymin && y<=h->ymax);
-  unsigned int *p = (unsigned int *) (++h);
-  p[y-(h->ymin + h->front_padding)] = v;
+  unsigned int *p = (unsigned int *) (h+1);
+  p[(y - h->ymin) + h->front_padding] = v;
 }
 
 void yterms::add(unsigned int y, unsigned int v, header *h) {
   assert(y >= h->ymin && y <= h->ymax);
-  unsigned int *p = (unsigned int *) (++h);
-  p[y-(h->ymin + h->front_padding)] += v;
+  unsigned int *p = (unsigned int *) (h+1);
+  p[(y - h->ymin) + h->front_padding] += v;
 }
 
 unsigned int yterms::get(unsigned int y, header *h) const {
   assert(y >= h->ymin && y <= h->ymax);
-  unsigned int *p = (unsigned int *) (++h);
-  return p[y-(h->ymin + h->front_padding)];
+  unsigned int *p = (unsigned int *) (h+1);
+  return p[(y - h->ymin) + h->front_padding];
 }
 
 yterms::header *yterms::alloc(unsigned int ymin, unsigned int ymax) {
