@@ -46,6 +46,7 @@ private:
   void set(unsigned int y, unsigned int v, header *h);
   void add(unsigned int y, unsigned int v, header *h);
   header *alloc(unsigned int ymin, unsigned int ymax);
+  void unalloc(header *ptr);
 };
 
 // This iterator is a temporary structure

@@ -21,12 +21,12 @@ yterms::yterms(unsigned int y_min, unsigned int y_max) {
 
 yterms::yterms(yterms const &src) { clone(src); }
 yterms::~yterms() {
-  delete [] ptr; 
+  unalloc(ptr); 
 }
 
 yterms const &yterms::operator=(yterms const &src) {
   if(&src != this) {
-    delete [] ptr;
+    unalloc(ptr);
     clone(src);
   }
   return *this;
@@ -55,28 +55,29 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
     int d_end = y_max - ptr->ymax;
     int d_beg = ptr->ymin - y_min;
 
-    // PUT IN FRONT PADDING CODE
-
-    if(d_beg <= 0 && d_end > 0 && d_end < ptr->back_padding) {
-      // in this case, there aren't enough y-terms
-      // but we have enough back padding, so it's OK.     
-      ptr->ymax = y_max;      
-      ptr->back_padding -= d_end;
+    if(d_beg < ptr->front_padding && d_end < ptr->back_padding) {
+      // in this case, there is enough padding to cover it
+      if(d_end > 0) {
+	ptr->ymax = y_max;      
+	ptr->back_padding -= d_end;
+      }
+      if(d_beg > 0) {
+	ptr->ymin = y_min;      
+	ptr->front_padding -= d_beg;
+      }
     } else {
       resize_stats++;
-      if(d_end > 0 || d_beg > 0) {
-	// no, there definitely aren't enough y-terms
-	unsigned int ystart = ptr->ymin;
-	unsigned int yend = ptr->ymax;
-	unsigned int nystart = min(ptr->ymin,y_min); 
-	unsigned int nyend = max(yend,y_max);        
-	header *optr = ptr;
-	ptr = alloc(nystart,nyend);
-	// copy old stuff over
-	for(unsigned int i=ystart;i<yend;++i) { set(i,get(i,optr),ptr); }
-	// free space!
-	delete [] optr;
-      }
+      // no, there definitely aren't enough y-terms
+      unsigned int ystart = ptr->ymin;
+      unsigned int yend = ptr->ymax;
+      header *optr = ptr;
+      ptr = alloc(min(ystart,y_min),max(yend,y_max));
+      // copy old stuff over
+      cout << "IN COPY" << endl;
+      for(unsigned int i=ystart;i<yend;++i) { set(i,get(i,optr),ptr); }
+      cout << "DONE COPY" << endl;
+      // free space!
+      unalloc(optr);
     }
   }
 }
@@ -99,66 +100,74 @@ void yterms::operator*=(xy_term const &p) {
     header *nptr = alloc(nystart,nyend);     // COULD MAKE USE OF PADDING!!!
     unsigned int depth = (p.ypowerend-p.ypower)+1;
     unsigned int width = (yend-ystart)+1;
-
+    cout << "=== F ===" << endl;
     // going up the triangle
     unsigned int acc = 0;    
-    for(unsigned int i=ptr->ymin;i<ptr->ymin + min(width,depth);++i) {
-      acc += get(i,ptr);
-      set(i,acc,nptr);
+    for(unsigned int i=0;i<min(width,depth);++i) {
+      acc += get(i+ystart,ptr);
+      set(i+nystart,acc,nptr);
     }
-
+    cout << "=== 1 ===" << endl;
     // free fall (if there is any)
-    for(unsigned int i=ptr->ymin + width;i<=ptr->ymin + depth;++i) {
-      set(i,acc,nptr);      
+    for(unsigned int i=width;i<depth;++i) {
+      set(i+nystart,acc,nptr);      
     }    
-
+    cout << "=== 2 ===" << endl;
     // going along the top (if there is one)
     unsigned int sub = 0;
-    for(unsigned int i=ptr->ymin+depth;i<ptr->ymin+width;++i) {
-      sub += get(i-depth,ptr);
-      acc += get(i,ptr);
-      set(i,acc - sub,nptr);
+    for(unsigned int i=depth;i<width;++i) {
+      sub += get(i+ystart-depth,ptr);
+      acc += get(i+ystart,ptr);
+      set(i+nystart,acc - sub,nptr);
     }    
-
+    cout << "=== 3 ===" << endl;
     // going down the triangle
-    for(unsigned int i=ptr->ymin+max(depth,width);i <= nyend;++i) {
-      sub += get(i=depth,ptr);
-      set(i,acc - sub,nptr);    
+    for(unsigned int i=max(depth,width);i < (nyend-nystart)+1;++i) {
+      sub += get(i+ystart-depth,ptr);
+      set(i+nystart,acc - sub,nptr);    
     }
-    
-    delete [] ptr;
+    cout << "=== END F ===" << endl;
+    unalloc(ptr);
     ptr = nptr;
   }
   // and we're done!
 }
 
 void yterms::operator+=(xy_term const &p) {
+  cout << "=== B ===" << endl;
   // make sure enough y terms
   resize(p.ypower,p.ypowerend);
   // now, do the addition
   for(unsigned int i=p.ypower;i<=p.ypowerend;++i) { 
     add(i,1,ptr);
   }    
+  cout << "=== END B ===" << endl;
 }
 
 void yterms::insert(unsigned int n, xy_term const &p) { 
+  cout << "=== A ===" << endl;
   // make sure enough y terms
   resize(p.ypower,p.ypowerend);
   // now, do the addition
   for(unsigned int i=p.ypower;i<=p.ypowerend;++i) { 
     add(i,n,ptr);
   }    
+  cout << "=== END A ===" << endl;
 }
 
 void yterms::operator+=(yterms const &src) {
+  cout << "=== C ===" << endl;
   // make sure enough y terms
-  resize(src.ymin(),src.ymax());
+  resize(src.ptr->ymin,src.ptr->ymax);
+  assert(ptr->ymin <= src.ptr->ymin && ptr->ymax >= src.ptr->ymax);
   // now, do the addition
   unsigned int start = src.ptr->ymin;
   unsigned int end = src.ptr->ymax;
   for(unsigned int i=start;i<=end;++i) { 
+    cout << "I=" << i << ", YMIN = " << ptr->ymin << ", YMAX = " << ptr->ymax << endl;
     add(i,get(i,src.ptr),ptr);
-  }    
+  }
+  cout << "=== END C ===" << endl;
 }
 
 unsigned int yterms::operator[](int i) const { return 0; }
@@ -166,9 +175,11 @@ unsigned int yterms::operator[](int i) const { return 0; }
 double yterms::substitute(double y) const {
   if(ptr != NULL) {
     double r = 0.0;
+    cout << "=== D ===" << endl;
     for(unsigned int i=ptr->ymin;i<=ptr->ymax;++i) {
       r += pow(y,(double)i) * get(i,ptr);
     }
+    cout << "=== END D ===" << endl;
     return r;
   } else {
     return 0.0;
@@ -187,10 +198,12 @@ string yterms::str() const {
     return "";
   }
   ss << "(";
+  cout << "=== E ===" << endl;
   for(unsigned int i=ptr->ymin;i<=ptr->ymax;++i) {
-    if(i != 0) { ss << " + "; }
+    if(i != ptr->ymin) { ss << " + "; }
     ss << get(i,ptr);
   }
+  cout << "=== END E ===" << endl;
   ss << ")";
   return ss.str();
 }
@@ -205,41 +218,46 @@ void yterms::clone(yterms const &src) {
   else {
     unsigned int nints = (src.ptr->ymax-src.ptr->ymin)+1;
     nints += src.ptr->front_padding + src.ptr->back_padding;    
-    ptr = (header*) new unsigned char[(nints*sizeof(unsigned int)) + sizeof(header)];
+    ptr = (header*) malloc((nints*sizeof(unsigned int)) + sizeof(header));
     memcpy(ptr,src.ptr,(nints*sizeof(unsigned int)) + sizeof(header));  
   }
 }
 
 void yterms::set(unsigned int y, unsigned int v, header *h) {
-  assert(y >= h->ymin);
-  unsigned int *p = (unsigned int *) h + sizeof(header);
-  p[y-(h->ymin+h->front_padding)] = v;
+  assert(y >= h->ymin && y<=h->ymax);
+  unsigned int *p = (unsigned int *) (++h);
+  p[y-(h->ymin + h->front_padding)] = v;
 }
 
 void yterms::add(unsigned int y, unsigned int v, header *h) {
-  assert(y >= h->ymin);
-  unsigned int *p = (unsigned int *) h + sizeof(header);
-  p[y-(h->ymin+h->front_padding)] += v;
+  assert(y >= h->ymin && y <= h->ymax);
+  unsigned int *p = (unsigned int *) (++h);
+  p[y-(h->ymin + h->front_padding)] += v;
 }
 
 unsigned int yterms::get(unsigned int y, header *h) const {
-  assert(y >= h->ymin);
-  unsigned int *p = (unsigned int *) h + sizeof(header);
+  assert(y >= h->ymin && y <= h->ymax);
+  unsigned int *p = (unsigned int *) (++h);
   return p[y-(h->ymin + h->front_padding)];
 }
 
 yterms::header *yterms::alloc(unsigned int ymin, unsigned int ymax) {
   unsigned int nyterms = (ymax-ymin)+1;
-  unsigned int padding = nyterms * FPOLY_PADDING_FACTOR;
-  header *p = (header*) new unsigned char[(nyterms+padding+padding)*sizeof(unsigned int) + sizeof(header)];
+  unsigned int back_padding = nyterms * FPOLY_PADDING_FACTOR;
+  unsigned int front_padding = min(ymin,nyterms * FPOLY_PADDING_FACTOR);
+  header *p = (header*) malloc(((front_padding+nyterms+back_padding)*sizeof(unsigned int)) + sizeof(header));
   // initialise all elements
-  memset(p,0,(nyterms+padding+padding)*sizeof(unsigned int) + sizeof(header)); // why is this needed?
+  memset(p,0,((front_padding+nyterms+back_padding)*sizeof(unsigned int)) + sizeof(header)); // why is this needed?
   // initialise header
-  p->back_padding = padding;
-  p->front_padding = padding;
-  p->ymin=ymin;
-  p->ymax=ymax;
+  p->back_padding = back_padding;
+  p->front_padding = front_padding;
+  p->ymin = ymin;
+  p->ymax = ymax;
   return p;
+}
+
+void yterms::unalloc(header *ptr) {
+  free(ptr);
 }
 
 // ---------------------------------------------------------------
