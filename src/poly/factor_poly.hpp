@@ -7,8 +7,15 @@
 #include "xy_term.hpp"
 
 class yterms {
+private:
+  typedef struct header {
+    unsigned int ymin;
+    unsigned int ymax;
+    unsigned int front_padding;
+    unsigned int back_padding;
+  } header;
 public:
-  unsigned int *ptr; // first 2 bytes = start, second 2 = end, remainder are actual terms
+  header *ptr; // header first, then front padding, followed by data, then back padding
 public:
   yterms();
   yterms(unsigned int y_min, unsigned int y_max);
@@ -18,9 +25,9 @@ public:
   void resize(unsigned int y_min, unsigned int y_max);
   void swap(yterms &src);
   unsigned int size() const;
-  unsigned int ymin() const;
-  unsigned int ymax() const;
-  bool is_empty() const;
+  unsigned int ymin() const { return ptr->ymin; }
+  unsigned int ymax() const { return ptr->ymax; }
+  bool is_empty() const;  
 
   yterms const &operator=(yterms const &src);
   void operator+=(xy_term const &p);
@@ -34,6 +41,11 @@ public:
   std::string str() const;
 private:  
   void clone(yterms const &src);  
+  // low level operations
+  unsigned int get(unsigned int y, header *h) const;
+  void set(unsigned int y, unsigned int v, header *h);
+  void add(unsigned int y, unsigned int v, header *h);
+  header *alloc(unsigned int ymin, unsigned int ymax);
 };
 
 // This iterator is a temporary structure

@@ -43,6 +43,7 @@ public:
 // Global Variables
 // ---------------------------------------------------------------
 
+unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
@@ -572,6 +573,8 @@ int main(int argc, char *argv[]) {
     } else {
       run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,quiet_mode);
     }
+    
+    cout << "# RESIZES = " << resize_stats << endl;
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
   } catch(exception const &e) {

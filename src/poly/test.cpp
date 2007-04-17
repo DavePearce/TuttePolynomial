@@ -4,6 +4,8 @@
 
 using namespace std;
 
+unsigned int resize_stats=0;
+
 int main(unsigned int argc, char *argv[]) {
   //  factor_poly fp1(xy_term(1,1,3));
   //  factor_poly fp2(xy_term(1,3,4));
