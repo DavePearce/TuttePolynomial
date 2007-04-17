@@ -95,7 +95,10 @@ void yterms::operator*=(xy_term const &p) {
     ptr->ymax = nyend;
   } else {
     // harder case
-    header *nptr = alloc(nystart,nyend);     // COULD MAKE USE OF PADDING!!!
+
+    // The following could use padding, since it currently doesn't!
+
+    header *nptr = alloc(nystart,nyend);     
     unsigned int depth = (p.ypowerend-p.ypower)+1;
     unsigned int width = (yend-ystart)+1;
 
@@ -215,6 +218,10 @@ void yterms::set(unsigned int y, unsigned int v, header *h) {
 void yterms::add(unsigned int y, unsigned int v, header *h) {
   assert(y >= h->ymin && y <= h->ymax);
   unsigned int *p = (unsigned int *) (h+1);
+
+  unsigned int tmp = p[(y - h->ymin) + h->front_padding];
+  if(tmp >= (UINT_MAX-v)) {     
+    throw runtime_error("Overflow error!"); }
   p[(y - h->ymin) + h->front_padding] += v;
 }
 
