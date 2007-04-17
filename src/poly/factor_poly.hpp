@@ -81,7 +81,7 @@ public:
 
   // crikey, this is ugly
   std::pair<xy_term, unsigned int> operator*() const {
-    return std::make_pair(xy_term(x,y),xterms[x][y-xterms[x].ymin()]);
+    return std::make_pair(xy_term(x,y),xterms[x][y]);
   }
 
   std::string str() const {

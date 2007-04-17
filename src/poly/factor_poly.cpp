@@ -73,7 +73,7 @@ void yterms::resize(unsigned int y_min, unsigned int y_max) {
       header *optr = ptr;
       ptr = alloc(min(ystart,y_min),max(yend,y_max));
       // copy old stuff over
-      for(unsigned int i=ystart;i<yend;++i) { set(i,get(i,optr),ptr); }
+      for(unsigned int i=ystart;i<=yend;++i) { set(i,get(i,optr),ptr); }
       // free space!
       unalloc(optr);
     }
@@ -118,7 +118,7 @@ void yterms::operator*=(xy_term const &p) {
     }    
     // going down the triangle
     for(unsigned int i=max(depth,width);i < (nyend-nystart)+1;++i) {
-      sub += get(i+ystart-depth,ptr);
+      sub += get((i + ystart) - depth,ptr);
       set(i+nystart,acc - sub,nptr);    
     }
     unalloc(ptr);
@@ -157,7 +157,7 @@ void yterms::operator+=(yterms const &src) {
   }
 }
 
-unsigned int yterms::operator[](int i) const { return 0; }
+unsigned int yterms::operator[](int i) const { return get(i,ptr); }
 
 double yterms::substitute(double y) const {
   if(ptr != NULL) {
