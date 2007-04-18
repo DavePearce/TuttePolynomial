@@ -151,9 +151,15 @@ bool biguint::operator==(biguint const &v) {
   return true;
 }
 
-  /* =============================== */
-  /* ======== ARITHMETIC OPS ======= */
-  /* =============================== */
+bool biguint::operator!=(unsigned int v) { return !((*this) == v); }
+bool biguint::operator!=(unsigned long v) { return !((*this) == v); }
+bool biguint::operator!=(unsigned long long v) { return !((*this) == v); }
+bool biguint::operator!=(biguint const &v) { return !((*this) == v); }
+
+
+/* =============================== */
+/* ======== ARITHMETIC OPS ======= */
+/* =============================== */
 
 void biguint::operator+=(unsigned int w) {
   unsigned int carry = 0;

@@ -48,6 +48,11 @@ public:
   bool operator==(unsigned long long v);
   bool operator==(biguint const &v);
 
+  bool operator!=(unsigned int v);
+  bool operator!=(unsigned long v);
+  bool operator!=(unsigned long long v);
+  bool operator!=(biguint const &v);
+
   /* =============================== */
   /* ======== ARITHMETIC OPS ======= */
   /* =============================== */
