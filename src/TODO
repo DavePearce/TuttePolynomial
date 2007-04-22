@@ -4,6 +4,7 @@ Things to do!
 * Add y-shifting optimisation
 * Add support for integer overflow + optimise Poly
 * Eliminate need to retree based on Gary's idea.
+* Adde support for matching multi-trees since we can terminate immediately with them.
 * Investigate the multi-edge matching idea, where number of multiple edges is not important.
 * Removing "lines" by checking that one of their vertices is not on the spanning tree.  Adjust spanning tree to pick "bushy" vertices.
 * Add support for cache replacement policies and garbage collection

@@ -63,7 +63,7 @@ void print_status();
  */
 
 template<class G>
-void write_xml_match(int my_id, G const &graph) {
+void write_xml_match(unsigned int my_id, G const &graph) {
   cout << "<graphnode>" << endl;
   cout << "<id>" << my_id << "</id>" << endl;
   cout << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
@@ -73,7 +73,7 @@ void write_xml_match(int my_id, G const &graph) {
 }
 
 template<class G>
-void write_xml_nonleaf(int my_id, int left_id, int right_id, G const &graph) {
+void write_xml_nonleaf(unsigned int my_id, int left_id, int right_id, G const &graph) {
   cout << "<graphnode>" << endl;
   cout << "<id>" << my_id << "</id>" << endl;
   cout << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
@@ -84,7 +84,7 @@ void write_xml_nonleaf(int my_id, int left_id, int right_id, G const &graph) {
 }
 
 template<class G>
-void write_xml_leaf(int my_id, G const &graph) {
+void write_xml_leaf(unsigned int my_id, G const &graph) {
   cout << "<graphnode>" << endl;
   cout << "<id>" << my_id << "</id>" << endl;
   cout << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
@@ -103,7 +103,7 @@ void write_xml_leaf(int my_id, G const &graph) {
  */
 
 template<class G, class P>
-void deleteContract(G &graph, P &poly, int my_id) { 
+void deleteContract(G &graph, P &poly, unsigned int my_id) { 
   if(status_flag) { print_status(); }
 
   num_steps++;
@@ -158,8 +158,8 @@ void deleteContract(G &graph, P &poly, int my_id) {
     
     // === XML OUTPUT STUFF ===
     
-    int left_id = xml_id;
-    int right_id = xml_id+1;
+    unsigned int left_id = xml_id;
+    unsigned int right_id = xml_id+1;
     xml_id = xml_id + 2; // allocate id's now so I know them!
     if(xml_flag) { write_xml_nonleaf(my_id,left_id,right_id,graph); }
 
@@ -393,7 +393,7 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
     my_timer timer;
     P tuttePoly;
     
-    deleteContract<G,P>(start_graph,tuttePoly,0);        
+    deleteContract<G,P>(start_graph,tuttePoly,1);        
     
     if(quiet_mode) {
       cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << (long long) tuttePoly.substitute(1,1) << endl;
