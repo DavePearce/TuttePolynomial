@@ -59,11 +59,15 @@ public:
 
   void operator+=(unsigned int w);
   void operator+=(biguint const &src);
+  void operator-=(unsigned int w);
+  void operator-=(biguint const &src);
 
   void operator/=(unsigned int v);
 
   biguint operator+(biguint const &w) const;
   biguint operator+(unsigned int w) const;
+  biguint operator-(biguint const &w) const;
+  biguint operator-(unsigned int w) const;
 
 
   /* =============================== */

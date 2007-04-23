@@ -198,21 +198,14 @@ void biguint::operator+=(biguint const &src) {
   for(bui_word i=0;i!=depth;++i) {
     bui_word v = ptr[i+1];
     bui_word w = src.ptr[i+1];
-    
+
+    ptr[i+1] = v + w + carry;   
+
     if(carry == 0) {
-      if((BUI_WORD_MAX - v) < w) {
-	// overflow
-	carry = 1;
-	v = w - 1U - (BUI_WORD_MAX - v);
-      } else { v = v + w; }
+      carry = (BUI_WORD_MAX - v) < w ? 1 : 0;
     } else {
-      if((BUI_WORD_MAX - v) <= w) {
-	// overflow
-	carry = 1;
-	v = w - (BUI_WORD_MAX - v);
-      } else { v = v + w + 1; }
+      carry = (BUI_WORD_MAX - v) <= w ? 1 : 0;
     }
-    ptr[i+1] = v;
   }
   
   if(carry == 1) {      
@@ -233,6 +226,80 @@ biguint biguint::operator+(unsigned int w) const {
   r += w;
   return r;
 }
+
+void biguint::operator-=(unsigned int w) {
+  unsigned int carry = 0;
+  bui_word v = ptr[1];
+  
+  if((BUI_WORD_MAX-v) < w) {
+    // overflow
+    ptr[1] = w - 1U - (BUI_WORD_MAX - v);
+    // ripple carry
+    bui_word depth = ptr[0];
+    for(bui_word i=1;i<depth;++i) {
+      v = ptr[i+1];
+      if(v == BUI_WORD_MAX) {
+	carry = 1; v = 0;
+	ptr[i+1] = 0;
+      } else {
+	carry = 0;
+	ptr[i+1] = v + 1;
+	return;
+      }	
+    }
+    // if we get here, then we ran out of space!
+    resize(depth+1);
+    ptr[depth+1]=1U;
+  } else { 
+    v = v + w; 
+    ptr[1] = v;
+  }
+}
+
+void biguint::operator-=(biguint const &src) {
+  bui_word depth = src.ptr[0];
+  resize(depth);
+  unsigned int borrow = 0;
+  
+  for(bui_word i=0;i!=depth;++i) {
+    bui_word v = ptr[i+1];
+    bui_word w = src.ptr[i+1];
+    
+    if(borrow == 0) {
+      if(v < w) {
+	// underflow
+	borrow = 1;
+	v -= w;
+      } else { v = v - w; }
+    } else {
+      if(v <= w) {
+	// underflow
+	borrow = 1;
+	v = v - w - 1 ;
+      } else { v = v - w - 1; }
+    }
+
+    ptr[i+1] = v;
+  }
+  
+  if(borrow == 1) {      
+    // this is a negative number!
+    throw std::runtime_error("biguint cannot go negative"); 
+  }
+}
+
+biguint biguint::operator-(biguint const &w) const {
+  biguint r(*this);
+  r -= w;
+  return r;
+}
+
+biguint biguint::operator-(unsigned int w) const {
+  biguint r(*this);
+  r -= w;
+  return r;
+}
+
 
 void biguint::operator/=(unsigned int v) {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
