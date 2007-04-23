@@ -83,7 +83,7 @@ public:
   /* =============================== */
   
 private:
-  void resize(bui_word ndepth);
+  inline void resize(bui_word ndepth);
 };
 
 #endif

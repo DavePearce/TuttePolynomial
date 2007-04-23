@@ -26,36 +26,33 @@ void primitive_test(unsigned int count, aop op) {
   for(unsigned int i=0;i!=count;++i) {
     unsigned int w1(random_word());
     unsigned int w2(random_word());
-    if(op == SUB && w1 > w2) { swap(w1,w2); }
+    if(op == SUB && w1 < w2) { swap(w1,w2); }
     biguint r1(w1);
-    biguint r2(w2);
-    unsigned long long r3(w2);
+    biguint r2(w1);
+    unsigned long long r3(w1);
+
     if(op == ADD) {
-      r2 += r1; // bigint bigint
-      r1 += w2; // bigint uint
-      r3 += w1;    
+      r1 += biguint(w2); // bigint bigint
+      r2 += w2;          // bigint uint
+      r3 += w2;    
     } else if(op == SUB) {
-      r2 -= r1; // bigint bigint
-      r1 -= w2; // bigint uint
-      r3 -= w1;    
+      r1 -= biguint(w2); // bigint bigint
+      r2 -= w2; // bigint uint
+      r3 -= w2;    
     } else if(op == MUL) {
 
     } else if(op == DIV) {
 
     }
-    /*
+
     if(r1 != r3) {
       // error
-      cout << "ERROR: " << w2 << " " << op2str(op) << " " << w1 << " gives " << r1.c_ulonglong() << ", not " << r3 << endl;
-    } 
-    
-    else 
-      */
-      if(r2 != r3) {
+      cout << "ERROR: " << w1 << " " << op2str(op) << " " << w2 << " gives " << r1.c_ulonglong() << ", not " << r3 << endl;
+    } else if(r2 != r3) {
       // error
       cout << "ERROR: " << w1 << " " << op2str(op) << " " << w2 << " gives " << r2.c_ulonglong() << ", not " << r3 << endl;
     } 
- 
+
   }
 }
 
@@ -101,5 +98,5 @@ int main(int argc, char *argv[]) {
 
   // seed random number generator
   srand(time(NULL));  
-  primitive_test(count,ADD);
+  primitive_test(count,SUB);
 }

@@ -162,21 +162,18 @@ bool biguint::operator!=(biguint const &v) { return !((*this) == v); }
 /* =============================== */
 
 void biguint::operator+=(unsigned int w) {
-  unsigned int carry = 0;
   bui_word v = ptr[1];
+
+  ptr[1] = v + w;
   
   if((BUI_WORD_MAX-v) < w) {
-    // overflow
-    ptr[1] = w - 1U - (BUI_WORD_MAX - v);
     // ripple carry
     bui_word depth = ptr[0];
     for(bui_word i=1;i<depth;++i) {
       v = ptr[i+1];
       if(v == BUI_WORD_MAX) {
-	carry = 1; v = 0;
 	ptr[i+1] = 0;
       } else {
-	carry = 0;
 	ptr[i+1] = v + 1;
 	return;
       }	
@@ -184,10 +181,7 @@ void biguint::operator+=(unsigned int w) {
     // if we get here, then we ran out of space!
     resize(depth+1);
     ptr[depth+1]=1U;
-  } else { 
-    v = v + w; 
-    ptr[1] = v;
-  }
+  } 
 }
 
 void biguint::operator+=(biguint const &src) {
@@ -228,31 +222,24 @@ biguint biguint::operator+(unsigned int w) const {
 }
 
 void biguint::operator-=(unsigned int w) {
-  unsigned int carry = 0;
   bui_word v = ptr[1];
-  
-  if((BUI_WORD_MAX-v) < w) {
-    // overflow
-    ptr[1] = w - 1U - (BUI_WORD_MAX - v);
+
+  ptr[1] = v - w;
+
+  if(v < w) {
     // ripple carry
     bui_word depth = ptr[0];
     for(bui_word i=1;i<depth;++i) {
       v = ptr[i+1];
-      if(v == BUI_WORD_MAX) {
-	carry = 1; v = 0;
-	ptr[i+1] = 0;
+      if(v == 0) {
+	ptr[i+1] = BUI_WORD_MAX;
       } else {
-	carry = 0;
-	ptr[i+1] = v + 1;
+	ptr[i+1] = v - 1;
 	return;
       }	
-    }
-    // if we get here, then we ran out of space!
-    resize(depth+1);
-    ptr[depth+1]=1U;
-  } else { 
-    v = v + w; 
-    ptr[1] = v;
+    }    
+    // this is a negative number!
+    throw std::runtime_error("biguint cannot go negative"); 
   }
 }
 
@@ -264,22 +251,14 @@ void biguint::operator-=(biguint const &src) {
   for(bui_word i=0;i!=depth;++i) {
     bui_word v = ptr[i+1];
     bui_word w = src.ptr[i+1];
-    
-    if(borrow == 0) {
-      if(v < w) {
-	// underflow
-	borrow = 1;
-	v -= w;
-      } else { v = v - w; }
-    } else {
-      if(v <= w) {
-	// underflow
-	borrow = 1;
-	v = v - w - 1 ;
-      } else { v = v - w - 1; }
-    }
 
-    ptr[i+1] = v;
+    ptr[i+1] = v - w - borrow;    
+
+    if(borrow == 0) {
+      borrow = v < w ? 1 : 0;
+    } else {
+      borrow = v <= w ? 1 : 0;
+    }
   }
   
   if(borrow == 1) {      
