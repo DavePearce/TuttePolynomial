@@ -283,12 +283,17 @@ void biguint::operator*=(unsigned int v) {
   unsigned int depth(ptr[0]);
   bui_word overflow = 0;
 
-  for(bui_word i=0;i<depth;++i) {
+  for(bui_word i=1;i<=depth;++i) {
     bui_dword w = ptr[i] + overflow;
     w = w * v;
     ptr[i] = w;
     overflow = w >> BUI_WORD_WIDTH;
-  }    
+  }
+  if(overflow > 0) {
+    // need additional space
+    resize(depth+1);
+    ptr[depth+1]=overflow;
+  }
 }
 
 biguint biguint::operator*(unsigned int w) const {
@@ -320,18 +325,18 @@ biguint biguint::operator/(unsigned int w) const {
 /* =============================== */
 
 unsigned int biguint::c_uint() const {
-  if(ptr[0] > 1) { throw runtime_error("biguint too large for unsigned int"); }
+  if(ptr[0] > BUI_UINT_SIZE) { throw runtime_error("biguint too large for unsigned int"); }
   return ptr[1];
 }  
 
 unsigned long biguint::c_ulong() const {
-  if(ptr[0] > 1) { throw runtime_error("biguint too large for unsigned long"); }
+  if(ptr[0] > BUI_ULONG_SIZE) { throw runtime_error("biguint too large for unsigned long"); }
   return ptr[1];
 }  
 
 unsigned long long biguint::c_ulonglong() const {
   bui_word depth = ptr[0];
-  if(depth > 2) { throw runtime_error("biguint too large for unsigned long long"); }
+  if(depth > BUI_ULONGLONG_SIZE) { throw runtime_error("biguint too large for unsigned long long"); }
   unsigned long long r=0;
   for(bui_word i=depth;i>0;--i) {
     r <<= BUI_WORD_WIDTH;
