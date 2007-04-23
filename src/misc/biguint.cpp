@@ -279,6 +279,23 @@ biguint biguint::operator-(unsigned int w) const {
   return r;
 }
 
+void biguint::operator*=(unsigned int v) {
+  unsigned int depth(ptr[0]);
+  bui_word overflow = 0;
+
+  for(bui_word i=0;i<depth;++i) {
+    bui_dword w = ptr[i] + overflow;
+    w = w * v;
+    ptr[i] = w;
+    overflow = w >> BUI_WORD_WIDTH;
+  }    
+}
+
+biguint biguint::operator*(unsigned int w) const {
+  biguint r(*this);
+  r *= w;
+  return r;
+}
 
 void biguint::operator/=(unsigned int v) {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
@@ -292,6 +309,12 @@ void biguint::operator/=(unsigned int v) {
   }    
 }
 
+biguint biguint::operator/(unsigned int w) const {
+  biguint r(*this);
+  r /= w;
+  return r;
+}
+
 /* =============================== */
 /* ======== CONVERSION OPS ======= */
 /* =============================== */
@@ -302,13 +325,13 @@ unsigned int biguint::c_uint() const {
 }  
 
 unsigned long biguint::c_ulong() const {
-  if(ptr[0] > 1) { throw runtime_error("biguint too large for unsigned int"); }
+  if(ptr[0] > 1) { throw runtime_error("biguint too large for unsigned long"); }
   return ptr[1];
 }  
 
 unsigned long long biguint::c_ulonglong() const {
   bui_word depth = ptr[0];
-  if(depth > 2) { throw runtime_error("biguint too large for unsigned int"); }
+  if(depth > 2) { throw runtime_error("biguint too large for unsigned long long"); }
   unsigned long long r=0;
   for(bui_word i=depth;i>0;--i) {
     r <<= BUI_WORD_WIDTH;

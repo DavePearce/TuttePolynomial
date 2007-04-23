@@ -22,6 +22,30 @@ string op2str(aop op) {
   else { return "/"; }
 }
 
+void commutative_add_test(unsigned int count, unsigned int length) {
+  for(unsigned int i=0;i!=count;++i) {
+    unsigned int ws[length];
+    for(unsigned int j=0;j!=length;++j) {
+      ws[j] = random_word();
+    }
+
+    biguint v(0U);
+    for(unsigned int j=0;j!=length;++j) {
+      v += ws[j];
+    }
+    
+    // now for the commutative part
+    for(unsigned int j=0;j!=length;++j) {
+      v -= ws[j];
+    }
+    
+    if(v != 0U) {
+      // error
+      cout << "ERROR: commutative add test failed!" << endl;
+    } 
+  }
+}
+
 void primitive_test(unsigned int count, aop op) {
   for(unsigned int i=0;i!=count;++i) {
     unsigned int w1(random_word());
@@ -40,9 +64,13 @@ void primitive_test(unsigned int count, aop op) {
       r2 -= w2; // bigint uint
       r3 -= w2;    
     } else if(op == MUL) {
-
+      r1 *= w2;
+      r2 *= w2;
+      r3 *= w2;
     } else if(op == DIV) {
-
+      r1 /= w2;
+      r2 /= w2;
+      r3 /= w2;
     }
 
     if(r1 != r3) {
@@ -98,5 +126,6 @@ int main(int argc, char *argv[]) {
 
   // seed random number generator
   srand(time(NULL));  
-  primitive_test(count,SUB);
+  //  primitive_test(count,SUB);
+  primitive_test(count,MUL);
 }

@@ -63,12 +63,14 @@ public:
   void operator-=(biguint const &src);
 
   void operator/=(unsigned int v);
+  void operator*=(unsigned int v);
 
   biguint operator+(biguint const &w) const;
   biguint operator+(unsigned int w) const;
   biguint operator-(biguint const &w) const;
   biguint operator-(unsigned int w) const;
-
+  biguint operator*(unsigned int w) const;
+  biguint operator/(unsigned int w) const;
 
   /* =============================== */
   /* ======== CONVERSION OPS ======= */
