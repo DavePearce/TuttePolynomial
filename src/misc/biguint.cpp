@@ -9,31 +9,17 @@ using namespace std;
 /* ========= CONSTRUCTORS ======== */
 /* =============================== */
 
-biguint::biguint(unsigned int v) {
-  ptr = new bui_word[BUI_UINT_SIZE];
-  ptr[0] = BUI_UINT_SIZE;
-  
-  for(unsigned int i=1;i<=BUI_UINT_SIZE;i++) {
-    ptr[i] = (bui_word) v;
-    v >>= BUI_WORD_WIDTH;
-  }    
+biguint::biguint(bui_word v) {
+  ptr = new bui_word[1];
+  ptr[0] = 1;
+  ptr[1] = v;
 }
 
-biguint::biguint(unsigned long v) {
-    ptr = new bui_word[BUI_ULONG_SIZE];
-    ptr[0] = BUI_ULONG_SIZE;
+biguint::biguint(bui_dword v) {
+    ptr = new bui_word[2];
+    ptr[0] = 2;
 
-    for(unsigned int i=1;i<=BUI_ULONG_SIZE;i++) {
-      ptr[i] = (bui_word) v;
-      v >>= BUI_WORD_WIDTH;
-    }    
-  }
-
-biguint::biguint(unsigned long long v) {
-    ptr = new bui_word[BUI_ULONGLONG_SIZE];
-    ptr[0] = BUI_ULONGLONG_SIZE;
-
-    for(unsigned int i=1;i<=BUI_ULONGLONG_SIZE;i++) {
+    for(unsigned int i=1;i<=2;i++) {
       ptr[i] = (bui_word) v;
       v >>= BUI_WORD_WIDTH;
     }    
@@ -47,35 +33,19 @@ biguint::biguint(biguint const &src) {
     
 biguint::~biguint() { delete [] ptr; }
 
-  /* =============================== */
-  /* ======== ASSIGNMENT OPS ======= */
-  /* =============================== */
+/* =============================== */
+/* ======== ASSIGNMENT OPS ======= */
+/* =============================== */
   
-biguint const &biguint::operator=(unsigned int v) {
+biguint const &biguint::operator=(bui_word v) {
   delete [] ptr;
-  ptr = new bui_word[BUI_UINT_SIZE];
-  ptr[0] = BUI_UINT_SIZE;
-  
-  for(unsigned int i=1;i<=BUI_UINT_SIZE;i++) {
-    ptr[i] = (bui_word) v;
-    v >>= BUI_WORD_WIDTH;
-  }    
+  ptr = new bui_word[1];
+  ptr[0] = 1;
+  ptr[1] = v;
   return *this;
 }
 
-biguint const &biguint::operator=(unsigned long v) {
-  delete [] ptr;
-  ptr = new bui_word[BUI_ULONG_SIZE];
-  ptr[0] = BUI_ULONG_SIZE;
-  
-  for(unsigned int i=1;i<=BUI_ULONG_SIZE;i++) {
-    ptr[i] = (bui_word) v;
-    v >>= BUI_WORD_WIDTH;
-  }    
-  return *this;
-}
-
-biguint const &biguint::operator=(unsigned long long v) {
+biguint const &biguint::operator=(bui_dword v) {
   delete [] ptr;
   ptr = new bui_word[BUI_ULONGLONG_SIZE];
   ptr[0] = BUI_ULONGLONG_SIZE;
@@ -101,32 +71,16 @@ biguint const &biguint::operator=(biguint const &src) {
 /* ======== COMPARISON OPS ======= */
 /* =============================== */
 
-bool biguint::operator==(unsigned int v) {
+bool biguint::operator==(bui_word v) {
+  return ptr[1] == v;
+}
+
+bool biguint::operator==(bui_dword v) {
   bui_word depth(ptr[0]);
   for(bui_word i=1;i<=depth;i++) {
     if(ptr[i] != (bui_word) v) { return false; }
     v >>= BUI_WORD_WIDTH;
   }    
-  if(v != 0) { return false; }
-  return true;
-}
-
-bool biguint::operator==(unsigned long v) {
-  bui_word depth(ptr[0]);
-  for(bui_word i=1;i<=depth;i++) {
-    if(ptr[i] != (bui_word) v) { return false; }
-    v >>= BUI_WORD_WIDTH;
-  }    
-  if(v != 0) { return false; }
-  return true;
-}
-
-bool biguint::operator==(unsigned long long v) {
-  bui_word depth(ptr[0]);
-  for(bui_word i=1;i<=depth;i++) {
-    if(ptr[i] != (bui_word) v) { return false; }
-    v >>= BUI_WORD_WIDTH;
-    }    
   if(v != 0) { return false; }
   return true;
 }
@@ -151,9 +105,8 @@ bool biguint::operator==(biguint const &v) {
   return true;
 }
 
-bool biguint::operator!=(unsigned int v) { return !((*this) == v); }
-bool biguint::operator!=(unsigned long v) { return !((*this) == v); }
-bool biguint::operator!=(unsigned long long v) { return !((*this) == v); }
+bool biguint::operator!=(bui_word v) { return !((*this) == v); }
+bool biguint::operator!=(bui_dword v) { return !((*this) == v); }
 bool biguint::operator!=(biguint const &v) { return !((*this) == v); }
 
 
@@ -161,7 +114,7 @@ bool biguint::operator!=(biguint const &v) { return !((*this) == v); }
 /* ======== ARITHMETIC OPS ======= */
 /* =============================== */
 
-void biguint::operator+=(unsigned int w) {
+void biguint::operator+=(bui_word w) {
   bui_word v = ptr[1];
 
   ptr[1] = v + w;
@@ -215,13 +168,13 @@ biguint biguint::operator+(biguint const &w) const {
   return r;
 }
 
-biguint biguint::operator+(unsigned int w) const {
+biguint biguint::operator+(bui_word w) const {
   biguint r(*this);
   r += w;
   return r;
 }
 
-void biguint::operator-=(unsigned int w) {
+void biguint::operator-=(bui_word w) {
   bui_word v = ptr[1];
 
   ptr[1] = v - w;
@@ -273,14 +226,14 @@ biguint biguint::operator-(biguint const &w) const {
   return r;
 }
 
-biguint biguint::operator-(unsigned int w) const {
+biguint biguint::operator-(bui_word w) const {
   biguint r(*this);
   r -= w;
   return r;
 }
 
-void biguint::operator*=(unsigned int v) {
-  unsigned int depth(ptr[0]);
+void biguint::operator*=(bui_word v) {
+  bui_word depth(ptr[0]);
   bui_word overflow = 0;
 
   for(bui_word i=1;i<=depth;++i) {
@@ -296,17 +249,17 @@ void biguint::operator*=(unsigned int v) {
   }
 }
 
-biguint biguint::operator*(unsigned int w) const {
+biguint biguint::operator*(bui_word w) const {
   biguint r(*this);
   r *= w;
   return r;
 }
 
-void biguint::operator/=(unsigned int v) {
+void biguint::operator/=(bui_word v) {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
   bui_word remainder=0;
   
-  for(bui_word i=ptr[0];i>0;++i) {
+  for(bui_word i=ptr[0];i>0;--i) {
     bui_dword w = remainder;
     w = (w << BUI_WORD_WIDTH) + ptr[i];
     ptr[i] = w / v;
@@ -314,10 +267,37 @@ void biguint::operator/=(unsigned int v) {
   }    
 }
 
-biguint biguint::operator/(unsigned int w) const {
+biguint biguint::operator/(bui_word w) const {
   biguint r(*this);
   r /= w;
   return r;
+}
+
+void biguint::operator%=(bui_word v) {
+  if(v == 0) { throw new std::runtime_error("divide by zero"); }
+  bui_word remainder=0;
+  
+  for(bui_word i=ptr[0];i>0;--i) {
+    bui_dword w = remainder;
+    w = (w << BUI_WORD_WIDTH) + ptr[i];
+    remainder = w % v;
+  }    
+
+  resize(1);
+  ptr[1] = remainder;
+}
+
+bui_word biguint::operator%(bui_word v) const {
+  if(v == 0) { throw new std::runtime_error("divide by zero"); }
+  bui_word remainder=0;
+  
+  for(bui_word i=ptr[0];i>0;--i) {
+    bui_dword w = remainder;
+    w = (w << BUI_WORD_WIDTH) + ptr[i];
+    remainder = w % v;
+  }    
+
+  return remainder;
 }
 
 /* =============================== */
@@ -360,3 +340,21 @@ void biguint::resize(bui_word ndepth) {
   ptr = nptr;
 }
 
+/* =============================== */
+/* ======== FRIEND METHODS ======= */
+/* =============================== */
+
+std::ostream& operator<<(ostream &out, biguint val) {
+  std::string r;
+
+  if(val == 0U) { return out << "0"; }
+  
+  while(val != 0U) {
+    unsigned int digit = val % 10;
+    char d = digit + '0'; // YUK
+    r = d + r;
+    val = val / 10;
+  }
+
+  return out << r;
+}

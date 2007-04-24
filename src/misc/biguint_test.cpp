@@ -22,6 +22,42 @@ string op2str(aop op) {
   else { return "/"; }
 }
 
+void commutative_mul_test(unsigned int count, unsigned int length) {
+  for(unsigned int i=0;i!=count;++i) {
+    unsigned int ws[length];
+    for(unsigned int j=0;j!=length;++j) {
+      ws[j] = random_word();
+    }
+
+    biguint v(1U);
+    for(unsigned int j=0;j!=length;++j) {
+      v *= ws[j];
+    }
+
+    biguint w(v);
+
+    // now for the commutative part
+    for(unsigned int j=length;j>0;--j) {
+      v /= ws[j-1];
+    }
+    
+    if(v != 1U) {
+      // error
+      cout << "ERROR: commutative mul test failed! " << endl;
+      for(unsigned int j=0;j!=length;++j) {
+	if(j != 0) { cout << "*"; }
+	cout << ws[j];
+      }
+      cout << " = " << w << endl;
+      cout << w;
+      for(unsigned int j=length;j!=0;--j) {
+	cout << " / " << ws[j-1];
+      }
+      cout << " = " << v << endl;
+    } 
+  }
+}
+
 void commutative_add_test(unsigned int count, unsigned int length) {
   for(unsigned int i=0;i!=count;++i) {
     unsigned int ws[length];
@@ -50,7 +86,7 @@ void primitive_test(unsigned int count, aop op) {
   for(unsigned int i=0;i!=count;++i) {
     unsigned int w1(random_word());
     unsigned int w2(random_word());
-    if(op == SUB && w1 < w2) { swap(w1,w2); }
+    if((op == SUB || op == DIV) && w1 < w2) { swap(w1,w2); }
     biguint r1(w1);
     biguint r2(w1);
     unsigned long long r3(w1);
@@ -126,6 +162,11 @@ int main(int argc, char *argv[]) {
 
   // seed random number generator
   srand(time(NULL));  
-  //  primitive_test(count,SUB);
+  // do the tests!
+  primitive_test(count,ADD);
+  primitive_test(count,SUB);
+  commutative_add_test(count,10);
   primitive_test(count,MUL);
+  primitive_test(count,DIV);
+  commutative_mul_test(count,3);
 }

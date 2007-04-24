@@ -1,6 +1,7 @@
 #ifndef BIGUINT_HPP
 #define BIGUINT_HPP
 
+#include <iostream>
 #include <climits>
 
 // this class provides arbitrary sized integers
@@ -24,9 +25,8 @@ public:
   /* ========= CONSTRUCTORS ======== */
   /* =============================== */
 
-  biguint(unsigned int v);
-  biguint(unsigned long v);
-  biguint(unsigned long long v);
+  biguint(bui_word v);
+  biguint(bui_dword v);
   biguint(biguint const &src);
   ~biguint();
 
@@ -34,43 +34,43 @@ public:
   /* ======== ASSIGNMENT OPS ======= */
   /* =============================== */
   
-  biguint const &operator=(unsigned int v);
-  biguint const &operator=(unsigned long v);
-  biguint const &operator=(unsigned long long v);
+  biguint const &operator=(bui_word v);
+  biguint const &operator=(bui_dword v);
   biguint const &operator=(biguint const &src);
 
   /* =============================== */
   /* ======== COMPARISON OPS ======= */
   /* =============================== */
 
-  bool operator==(unsigned int v);
-  bool operator==(unsigned long v);
-  bool operator==(unsigned long long v);
+  bool operator==(bui_word v);
+  bool operator==(bui_dword v);
   bool operator==(biguint const &v);
 
-  bool operator!=(unsigned int v);
-  bool operator!=(unsigned long v);
-  bool operator!=(unsigned long long v);
+  bool operator!=(bui_word v);
+  bool operator!=(bui_dword v);
   bool operator!=(biguint const &v);
 
   /* =============================== */
   /* ======== ARITHMETIC OPS ======= */
   /* =============================== */
 
-  void operator+=(unsigned int w);
+  void operator+=(bui_word w);
   void operator+=(biguint const &src);
-  void operator-=(unsigned int w);
+  void operator-=(bui_word w);
   void operator-=(biguint const &src);
 
-  void operator/=(unsigned int v);
-  void operator*=(unsigned int v);
+  void operator/=(bui_word v);
+  void operator%=(bui_word v);
+  void operator*=(bui_word v);
 
+  biguint operator+(bui_word w) const;
   biguint operator+(biguint const &w) const;
-  biguint operator+(unsigned int w) const;
+  biguint operator-(bui_word w) const;
   biguint operator-(biguint const &w) const;
-  biguint operator-(unsigned int w) const;
-  biguint operator*(unsigned int w) const;
-  biguint operator/(unsigned int w) const;
+
+  biguint operator*(bui_word w) const;
+  biguint operator/(bui_word w) const;
+  bui_word operator%(bui_word w) const;
 
   /* =============================== */
   /* ======== CONVERSION OPS ======= */
@@ -78,8 +78,8 @@ public:
 
   unsigned int c_uint() const;
   unsigned long c_ulong() const;
-  unsigned long long c_ulonglong() const;
-
+  bui_dword c_ulonglong() const;
+  
   /* =============================== */
   /* ======== HELPER METHODS ======= */
   /* =============================== */
@@ -87,5 +87,11 @@ public:
 private:
   inline void resize(bui_word ndepth);
 };
+
+/* ===================================== */
+/* ======== OTHER USEFUL METHODS ======= */
+/* ===================================== */
+
+std::ostream& operator<<(std::ostream &out, biguint val);
 
 #endif
