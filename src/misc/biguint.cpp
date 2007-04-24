@@ -237,8 +237,8 @@ void biguint::operator*=(bui_word v) {
   bui_word overflow = 0;
 
   for(bui_word i=1;i<=depth;++i) {
-    bui_dword w = ptr[i] + overflow;
-    w = w * v;
+    bui_dword w = ptr[i];
+    w = (w * v) + overflow;
     ptr[i] = w;
     overflow = w >> BUI_WORD_WIDTH;
   }
