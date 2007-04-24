@@ -168,5 +168,5 @@ int main(int argc, char *argv[]) {
   commutative_add_test(count,10);
   primitive_test(count,MUL);
   primitive_test(count,DIV);
-  commutative_mul_test(count,3);
+  commutative_mul_test(count,10);
 }
