@@ -9,6 +9,12 @@ using namespace std;
 /* ========= CONSTRUCTORS ======== */
 /* =============================== */
 
+biguint::biguint() {
+  ptr = new bui_word[1];
+  ptr[0] = 1;
+  ptr[1] = 0U;
+}
+
 biguint::biguint(bui_word v) {
   ptr = new bui_word[1];
   ptr[0] = 1;

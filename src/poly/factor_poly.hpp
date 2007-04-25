@@ -103,7 +103,7 @@ public:
       unsigned int width = (yend-ystart)+1;
       
       // going up the triangle
-      T acc = 0;    
+      T acc = 0U;    
       for(unsigned int i=0;i<std::min(width,depth);++i) {
 	acc += o_coefficients[i+ypadding];
 	coefficients[i+nystart+fpadding-ymin] = acc;
@@ -113,7 +113,7 @@ public:
 	coefficients[i+nystart+fpadding-ymin] = acc;
       }    
       // going along the top (if there is one)
-      T sub = 0;
+      T sub = 0U;
       for(unsigned int i=depth;i<width;++i) {
 	sub += o_coefficients[i+ypadding-depth];
 	acc += o_coefficients[i+ypadding];

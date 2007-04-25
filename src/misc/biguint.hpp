@@ -25,6 +25,7 @@ public:
   /* ========= CONSTRUCTORS ======== */
   /* =============================== */
 
+  biguint();
   biguint(bui_word v);
   biguint(bui_dword v);
   biguint(biguint const &src);
