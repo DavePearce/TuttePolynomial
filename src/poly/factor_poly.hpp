@@ -238,7 +238,7 @@ private:
       coefficients = new T[ncoeffs];
 
       // copy old stuff over
-      for(unsigned int i=ymin;i<=ymax;++i) { 
+      for(unsigned int i=0;i<ncoeffs;++i) { 
 	coefficients[i+fpadding-ymin] = src[i];
       }
     }
