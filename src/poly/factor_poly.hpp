@@ -30,7 +30,7 @@ public:
 
   yterms(yterms<T> const &src)  { clone(src); }
 
-  ~yterms();
+  ~yterms() { delete [] coefficients; }
 
   /* =============================== */
   /* ======== ASSIGNMENT OP ======== */
@@ -44,7 +44,7 @@ public:
     return *this;
   }
 
-  void yterms::swap(yterms<T> &src) {
+  void swap(yterms<T> &src) {
     if(&src != this) {
       std::swap(ymin,src.ymin);
       std::swap(ymax,src.ymax);
@@ -104,7 +104,7 @@ public:
       
       // going up the triangle
       T acc = 0;    
-      for(unsigned int i=0;i<min(width,depth);++i) {
+      for(unsigned int i=0;i<std::min(width,depth);++i) {
 	acc += o_coefficients[i+ypadding];
 	coefficients[i+nystart+fpadding-ymin] = acc;
       }
@@ -121,7 +121,7 @@ public:
       }    
 
       // going down the triangle
-      for(unsigned int i=max(depth,width);i < (nyend-nystart)+1;++i) {
+      for(unsigned int i=std::max(depth,width);i < (nyend-nystart)+1;++i) {
 	sub += o_coefficients[i+ypadding - depth];
 	coefficients[i+fpadding] = acc - sub;
       }
@@ -139,9 +139,9 @@ public:
     return (ymax - ymin) + 1;
   }
 
-  bool is_empty() const { return ptr == NULL; }
+  bool is_empty() const { return coefficients == NULL; }
 
-  T operator[](int) const { return coefficients[i + fpadding - ymin]; }
+  T operator[](int i) const { return coefficients[i + fpadding - ymin]; }
 
   double substitute(double y) const {
     return 0.0;
@@ -186,8 +186,8 @@ private:
       // special case when optr == NULL
       alloc(y_min,y_max);
     } else {
-      int d_end = y_max - ptr->ymax;
-      int d_beg = ptr->ymin - y_min;
+      int d_end = y_max - ymax;
+      int d_beg = ymin - y_min;
       
       if(d_beg <= (int) fpadding && d_end <= (int) bpadding) {
 	// in this case, there is enough padding to cover it
@@ -205,7 +205,7 @@ private:
 	unsigned int yend = ymax;
 	unsigned int ypadding = fpadding;
 	T *o_coefficients = coefficients;	
-	ptr = alloc(min(ystart,y_min),max(yend,y_max));
+	alloc(std::min(ystart,y_min),std::max(yend,y_max));
 	// copy old stuff over
 	for(unsigned int i=ystart;i<=yend;++i) { 
 	  coefficients[i+fpadding-ymin] = o_coefficients[i+ypadding-ystart];
@@ -229,7 +229,7 @@ private:
       coefficients = new T[ncoeffs];
 
       // copy old stuff over
-      for(unsigned int i=ystart;i<=yend;++i) { 
+      for(unsigned int i=ymin;i<=ymax;++i) { 
 	coefficients[i+fpadding-ymin] = src.coefficients[i+fpadding-ymin];
       }
     }
@@ -238,9 +238,10 @@ private:
   void alloc(unsigned int _ymin, unsigned int _ymax) {
     unsigned int nyterms = (_ymax-_ymin)+1;
     bpadding = nyterms * FPOLY_PADDING_FACTOR;
-    fpadding = min(_ymin,nyterms * FPOLY_PADDING_FACTOR);
+    fpadding = std::min(_ymin,nyterms * FPOLY_PADDING_FACTOR);
     ymin = _ymin;
     ymax = _ymax;
+    coefficients = new T[nyterms + bpadding + fpadding];
   }
 };
 
