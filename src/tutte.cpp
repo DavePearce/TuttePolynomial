@@ -114,7 +114,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
   // if the graph is a "loop tree", then we're done.
   if(graph.is_tree()) {
     if(xml_flag) { write_xml_leaf(my_id, graph); }
-    poly += P(xy_term(graph.num_edges(),num_loops));
+    poly += xy_term(graph.num_edges(),num_loops);
   } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
 

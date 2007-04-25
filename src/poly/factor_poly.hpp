@@ -22,7 +22,7 @@ public:
   /* ========= CONSTRUCTORS ======== */
   /* =============================== */
 
-  yterms() : coefficients(NULL) { };
+  yterms() : ymin(0), ymax(-1), coefficients(NULL) {}
 
   yterms(unsigned int y_min, unsigned int y_max) {
     alloc(y_min,y_max);
@@ -63,7 +63,7 @@ public:
     resize(p.ypower,p.ypowerend);
     // now, do the addition
     for(unsigned int i=p.ypower;i<=p.ypowerend;++i) { 
-      coefficients[i - ymin + fpadding] += 1;
+      (*this)[i] += 1;
     }    
   }
 
@@ -74,8 +74,8 @@ public:
     unsigned int start = src.ymin;
     unsigned int end = src.ymax;
     for(unsigned int i=start;i<=end;++i) { 
-      T c(src.coefficients[i - src.ymin + src.fpadding]);
-      coefficients[i - ymin + fpadding] += c;
+      T c(src[i]);
+      (*this)[i] += c;
     }
   }
 
@@ -141,15 +141,25 @@ public:
 
   bool is_empty() const { return coefficients == NULL; }
 
-  T operator[](int i) const { return coefficients[i + fpadding - ymin]; }
+  T &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
 
   double substitute(double y) const {
-    return 0.0;
+    if(coefficients != NULL) {
+      double r = 0.0;
+      for(unsigned int i=ymin;i<=ymax;++i) {
+	r += pow(y,(double)i) * (*this)[i];
+      }
+      return r;
+    } else {
+      return 0.0;
+    }
   }
 
   std::string str() const {
     std::stringstream ss;
-    if(ymin != ymax) {
+    if(coefficients == NULL) { 
+      return "";
+    } else if(ymin != ymax) {
       ss << "y^{" << ymin << ".." << ymax << "}";
     } else if(ymin == 1) {
       ss << "y";
@@ -161,7 +171,7 @@ public:
     ss << "(";
     for(unsigned int i=ymin;i<=ymax;++i) {
       if(i != ymin) { ss << " + "; }
-      ss << coefficients[i + fpadding - ymin];
+      ss << (*this)[i];
     }
     ss << ")";
     return ss.str();
@@ -172,7 +182,7 @@ public:
     resize(p.ypower,p.ypowerend);
     // now, do the addition
     for(unsigned int i=p.ypower;i<=p.ypowerend;++i) { 
-      coefficients[i + fpadding - ymin] += n;
+      (*this)[i] += n;
     }    
   }
   
@@ -181,33 +191,33 @@ private:
   /* ======== HELPERS ======= */
   /* =============================== */
 
-  void resize(unsigned int y_min, unsigned int y_max)  {
+  void resize(unsigned int n_ymin, unsigned int n_ymax)  {
     if(is_empty()) {
-      alloc(y_min,y_max);
+      alloc(n_ymin,n_ymax);
     } else {
-      int d_end = y_max - ymax;
-      int d_beg = ymin - y_min;
+      int d_end = n_ymax - ymax;
+      int d_beg = ymin - n_ymin;
       
       if(d_beg <= (int) fpadding && d_end <= (int) bpadding) {
 	// in this case, there is enough padding to cover it
 	if(d_end > 0) {
-	  ymax = y_max;      
+	  ymax = n_ymax;      
 	  bpadding -= d_end;
 	}
 	if(d_beg > 0) {
-	  ymin = y_min;      
+	  ymin = n_ymin;      
 	  fpadding -= d_beg;
 	}
       } else {
 	// no, there definitely aren't enough y-terms
-	unsigned int ystart = ymin;
-	unsigned int yend = ymax;
-	unsigned int ypadding = fpadding;
+	unsigned int o_ymin = ymin;
+	unsigned int o_ymax = ymax;
+	unsigned int o_fpadding = fpadding;
 	T *o_coefficients = coefficients;	
-	alloc(std::min(ystart,y_min),std::max(yend,y_max));
+	alloc(std::min(o_ymin,n_ymin),std::max(o_ymax,n_ymax));
 	// copy old stuff over
-	for(unsigned int i=ystart;i<=yend;++i) { 
-	  coefficients[i+fpadding-ymin] = o_coefficients[i+ypadding-ystart];
+	for(unsigned int i=o_ymin;i<=o_ymax;++i) { 
+	  (*this)[i] = o_coefficients[(i+o_fpadding)-o_ymin];
 	}
 	// free space!
 	delete [] o_coefficients;
@@ -216,7 +226,7 @@ private:
   }  
 
   void clone(yterms<T> const &src) { 
-    if(src.is_empty()) { coefficients = NULL; }
+    if(src.is_empty()) { coefficients = NULL; ymin = 0; ymax=0; }
     else {
       ymin = src.ymin;
       ymax = src.ymax;
@@ -229,7 +239,7 @@ private:
 
       // copy old stuff over
       for(unsigned int i=ymin;i<=ymax;++i) { 
-	coefficients[i+fpadding-ymin] = src.coefficients[i+fpadding-ymin];
+	coefficients[i+fpadding-ymin] = src[i];
       }
     }
   }
@@ -241,6 +251,11 @@ private:
     ymin = _ymin;
     ymax = _ymax;
     coefficients = new T[nyterms + bpadding + fpadding];
+    // why the following line is needed is just plain
+    // wierd.
+    for(unsigned int i=0;i<nyterms+fpadding+bpadding;++i) {
+      coefficients[i] = 0U;
+    }
   }
 };
 

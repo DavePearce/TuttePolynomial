@@ -8,10 +8,11 @@ using namespace std;
 unsigned int resize_stats=0;
 
 int main(unsigned int argc, char *argv[]) {
-  factor_poly<unsigned int> fp1(xy_term(1,1,1));
+  factor_poly<unsigned int> fp1(xy_term(0,1,1));
 
-  fp1 += xy_term(1,1,2);
-  fp1 += xy_term(2,1,1);
+  xy_term xys(0,0);
+  
+  fp1 *= xys;
 
   cout << fp1.str() << endl;
 }
