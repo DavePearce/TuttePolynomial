@@ -569,7 +569,7 @@ int main(int argc, char *argv[]) {
   try {
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
-      run<spanning_graph<adjacency_list<> >,factor_poly>(input,ngraphs,quiet_mode);
+      run<spanning_graph<adjacency_list<> >,factor_poly<unsigned int> >(input,ngraphs,quiet_mode);
     } else {
       run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,quiet_mode);
     }

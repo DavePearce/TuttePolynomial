@@ -69,10 +69,10 @@ public:
 
   void operator+=(yterms<T> const &src) {
     // make sure enough y terms
-    resize(src.ptr->ymin,src.ptr->ymax);
+    resize(src.ymin,src.ymax);
     // now, do the addition
-    unsigned int start = src.ptr->ymin;
-    unsigned int end = src.ptr->ymax;
+    unsigned int start = src.ymin;
+    unsigned int end = src.ymax;
     for(unsigned int i=start;i<=end;++i) { 
       T c(src.coefficients[i - src.ymin + src.fpadding]);
       coefficients[i - ymin + fpadding] += c;
@@ -409,7 +409,7 @@ public:
   unsigned int nterms() const {
     unsigned int r=0;
     for(unsigned int i=0;i<nxterms;++i) {
-      r += xterms[i].nterms();
+      r += xterms[i].size();
     }
     return r;
   }
