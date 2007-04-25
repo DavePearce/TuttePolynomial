@@ -183,7 +183,6 @@ private:
 
   void resize(unsigned int y_min, unsigned int y_max)  {
     if(is_empty()) {
-      // special case when optr == NULL
       alloc(y_min,y_max);
     } else {
       int d_end = y_max - ymax;
@@ -245,28 +244,29 @@ private:
   }
 };
 
-/*
+
 // This iterator is a temporary structure
+template<class T>
 class factor_poly_iterator {
 private:
   unsigned int x;
   unsigned int x_max;
   unsigned int y;
-  yterms *xterms;
+  yterms<T> *xterms;
 public:
-  factor_poly_iterator(unsigned int _x, unsigned int xm, yterms *_xterms) 
+  factor_poly_iterator(unsigned int _x, unsigned int xm, yterms<T> *_xterms) 
     : x(_x), x_max(xm), xterms(_xterms) {
     while(x < x_max && xterms[x].is_empty()) { ++x; }      
     if(x >= x_max) { y = 0; }
-    else { y = xterms[x].ymin(); }
+    else { y = xterms[x].ymin; }
   }
 
   void operator++() { 
-    if(++y > xterms[x].ymax()) {
+    if(++y > xterms[x].ymax) {
       do { ++x; }
       while(x < x_max && xterms[x].is_empty());
       if(x >= x_max) { y = 0; }
-      else { y = xterms[x].ymin(); }
+      else { y = xterms[x].ymin; }
     } 
   }
 
@@ -277,7 +277,7 @@ public:
   }
 
   // crikey, this is ugly
-  std::pair<xy_term, unsigned int> operator*() const {
+  std::pair<xy_term, T> operator*() const {
     return std::make_pair(xy_term(x,y),xterms[x][y]);
   }
 
@@ -296,34 +296,152 @@ public:
   }
 };
 
+template<class T>
 class factor_poly {
 public:
-  typedef factor_poly_iterator const_iterator;
+  typedef factor_poly_iterator<T> const_iterator;
 private:
-  yterms* xterms; 
+  yterms<T> *xterms; 
   unsigned int nxterms;
 public:
-  factor_poly();
-  factor_poly(xy_term const &t);
-  factor_poly(factor_poly const &p);
-  ~factor_poly();
+  /* =============================== */
+  /* ========= CONSTRUCTORS ======== */
+  /* =============================== */
 
-  factor_poly const &operator=(factor_poly const &src);
+  factor_poly() {
+    nxterms = 5; // arbitrary ?
+    // create the xterm array
+    xterms = new yterms<T>[nxterms];  
+  }
 
-  void operator+=(factor_poly const &p);
-  void operator+=(xy_term const &p);
-  void operator*=(xy_term const &t);
-  void insert(unsigned int n, xy_term const &p);
-  std::string str() const;  
-  double substitute(double x, double y) const;
-  unsigned int nterms() const;
+  factor_poly(xy_term const &xyt) {
+    nxterms = xyt.xpower+1;
+    // create the xterm array
+    xterms = new yterms<T>[nxterms];  
+    *this += xyt;
+  }
+
+  factor_poly(factor_poly<T> const &fp) { clone(fp); }
+
+  ~factor_poly() { destroy(); }
+
+  /* =============================== */
+  /* ======== ASSIGNMENT OP ======== */
+  /* =============================== */
+
+  factor_poly const &operator=(factor_poly const &src) {
+    if(&src != this) {
+      destroy();
+      clone(src);
+    }
+    return *this;  
+  }
+
+  /* =============================== */
+  /* ======== ARITHMETIC OPS ======= */
+  /* =============================== */
+
+  void operator+=(factor_poly const &p) {
+    // make sure enough x terms
+    resize_xterms(p.nxterms); 
+    for(unsigned int i=0;i<p.nxterms;++i) {
+      if(!p.xterms[i].is_empty()) {
+	xterms[i] += p.xterms[i];
+      }
+    }
+  }
+
+  void operator+=(xy_term const &p) {
+    // make sure enough x terms
+    resize_xterms(p.xpower+1); 
+    // now, do the addition
+    xterms[p.xpower] += p;
+  }
+
+  void operator*=(xy_term const &p) {
+    if(p.xpower > 0) { 
+      // need to shift the x's
+      resize_xterms(p.xpower + nxterms + 1); 
+      for(unsigned int i=nxterms;i>p.xpower;--i) {
+	xterms[i-1].swap(xterms[i-(p.xpower+1)]);
+      }
+    }
+    for(unsigned int i=0;i<nxterms;++i) { xterms[i] *= p; }
+  }  
+
+  /* ========================== */
+  /* ======== OTHER OPS ======= */
+  /* ========================== */
+
+  void insert(unsigned int n, xy_term const &p) {
+    // make sure enough x terms
+    resize_xterms(p.xpower+1); 
+    // now, do the addition
+    xterms[p.xpower].insert(n,p);
+  }
   
-  const_iterator begin() const { return factor_poly_iterator(0,nxterms,xterms); }
-  const_iterator end() const { return factor_poly_iterator(nxterms,nxterms,xterms); }
+  std::string str() const {
+    std::string r="";
+    bool first_time=true;
+    for(unsigned int i=0;i<nxterms;++i) {    
+      if(!xterms[i].is_empty()) {
+	if(!first_time) { r += " + "; }
+	first_time=false;    
+	if(i > 0) {
+	  std::stringstream ss;
+	  ss << i;
+	  r += "x^" + ss.str();
+	}
+	r += xterms[i].str();
+      }
+    }
+    return r;
+  }
+
+  double substitute(double x, double y) const {
+    double r = 0.0;
+    for(unsigned int i=0;i<nxterms;++i) {
+      r += pow(x,(double)i) * xterms[i].substitute(y);
+    }
+    return r;
+  }
+
+  unsigned int nterms() const {
+    unsigned int r=0;
+    for(unsigned int i=0;i<nxterms;++i) {
+      r += xterms[i].nterms();
+    }
+    return r;
+  }
+  
+  const_iterator begin() const { return factor_poly_iterator<T>(0,nxterms,xterms); }
+  const_iterator end() const { return factor_poly_iterator<T>(nxterms,nxterms,xterms); }
 private:
-  void destroy();
-  void clone(factor_poly const &p);
-  void resize_xterms(unsigned int ns);
+  void destroy() {
+    delete [] xterms; // will invoke yterms destructors 
+  }
+  
+  void clone(factor_poly const &p) {
+    nxterms = p.nxterms;
+    xterms = new yterms<T>[nxterms];
+    for(unsigned int i=0;i<nxterms;++i) {
+      xterms[i] = p.xterms[i];
+    }
+  }
+
+  void resize_xterms(unsigned int ns) {
+    if(ns < nxterms) { return; }  
+    yterms<T> *xs = new yterms<T>[ns];
+    // need to use swap here, because
+    // I don't want the following delete []
+    // call to call destructors on my yterms
+    for(unsigned int i=0;i<nxterms;++i) {
+      xs[i].swap(xterms[i]);
+    }
+    delete [] xterms;
+    xterms = xs;
+    nxterms = ns;  
+  }  
 };
-*/
+
 #endif
