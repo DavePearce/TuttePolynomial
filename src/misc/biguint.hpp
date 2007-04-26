@@ -74,6 +74,7 @@ public:
   biguint operator-(biguint const &w) const;
 
   biguint operator*(bui_word w) const;
+  biguint operator*(biguint const &w) const;
   biguint operator/(bui_word w) const;
   bui_word operator%(bui_word w) const;
   biguint operator^(bui_word v) const;

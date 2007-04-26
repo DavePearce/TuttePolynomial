@@ -268,6 +268,40 @@ biguint biguint::operator*(bui_word w) const {
   return r;
 }
 
+biguint biguint::operator*(biguint const &v) const {
+  // this could probably be optimised ...
+  bui_word depth(v.ptr[0]);
+  biguint ans(0U);
+
+  for(unsigned int j=0;j<depth;++j) {
+    biguint tmp(*this);
+    tmp *= v.ptr[j+1];
+
+    unsigned int t_depth(tmp.ptr[0]);
+    unsigned int carry = 0;
+
+    ans.resize(j + t_depth); 
+    
+    // standard add, although slightly modified
+    // to give the base shift for free.
+    for(bui_word i=0;i!=t_depth;++i) {
+      bui_word v = ans.ptr[j+i+1];
+      bui_word w = tmp.ptr[i+1];
+      
+      ans.ptr[j+i+1] = v + w + carry;   
+      
+      if(carry == 0) {
+	carry = (BUI_WORD_MAX - v) < w ? 1 : 0;
+      } else {
+	carry = (BUI_WORD_MAX - v) <= w ? 1 : 0;
+      }
+    }
+    
+    if(carry == 1) { ans.ripple_carry(t_depth+j); }     
+  }
+  return ans;
+}
+
 void biguint::operator/=(bui_word v) {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
   bui_word remainder=0;
