@@ -73,6 +73,10 @@ biguint const &biguint::operator=(biguint const &src) {
   return *this;
 }
 
+void biguint::swap(biguint &src) {
+  std::swap(ptr,src.ptr);
+}
+
 /* =============================== */
 /* ======== COMPARISON OPS ======= */
 /* =============================== */
@@ -122,33 +126,17 @@ bool biguint::operator!=(biguint const &v) { return !((*this) == v); }
 
 void biguint::operator+=(bui_word w) {
   bui_word v = ptr[1];
-
   ptr[1] = v + w;
-  
-  if((BUI_WORD_MAX-v) < w) {
-    // ripple carry
-    bui_word depth = ptr[0];
-    for(bui_word i=1;i<depth;++i) {
-      v = ptr[i+1];
-      if(v == BUI_WORD_MAX) {
-	ptr[i+1] = 0;
-      } else {
-	ptr[i+1] = v + 1;
-	return;
-      }	
-    }
-    // if we get here, then we ran out of space!
-    resize(depth+1);
-    ptr[depth+1]=1U;
-  } 
+  if((BUI_WORD_MAX-v) < w) { ripple_carry(1); }
 }
 
 void biguint::operator+=(biguint const &src) {
   bui_word depth = src.ptr[0];
   resize(depth);
+
   unsigned int carry = 0;
   
-  for(bui_word i=0;i!=depth;++i) {
+  for(bui_word i=0;i<depth;++i) {
     bui_word v = ptr[i+1];
     bui_word w = src.ptr[i+1];
 
@@ -160,12 +148,8 @@ void biguint::operator+=(biguint const &src) {
       carry = (BUI_WORD_MAX - v) <= w ? 1 : 0;
     }
   }
-  
-  if(carry == 1) {      
-    // not enough space to hold answer!
-    resize(depth+1);
-    ptr[depth+1]=1U;
-  }
+    
+  if(carry == 1) { ripple_carry(depth); }
 }
 
 biguint biguint::operator+(biguint const &w) const {
@@ -182,24 +166,9 @@ biguint biguint::operator+(bui_word w) const {
 
 void biguint::operator-=(bui_word w) {
   bui_word v = ptr[1];
-
   ptr[1] = v - w;
 
-  if(v < w) {
-    // ripple carry
-    bui_word depth = ptr[0];
-    for(bui_word i=1;i<depth;++i) {
-      v = ptr[i+1];
-      if(v == 0) {
-	ptr[i+1] = BUI_WORD_MAX;
-      } else {
-	ptr[i+1] = v - 1;
-	return;
-      }	
-    }    
-    // this is a negative number!
-    throw std::runtime_error("biguint cannot go negative"); 
-  }
+  if(v < w) { ripple_borrow(1); }
 }
 
 void biguint::operator-=(biguint const &src) {
@@ -220,10 +189,7 @@ void biguint::operator-=(biguint const &src) {
     }
   }
   
-  if(borrow == 1) {      
-    // this is a negative number!
-    throw std::runtime_error("biguint cannot go negative"); 
-  }
+  if(borrow == 1) { ripple_borrow(depth); }
 }
 
 biguint biguint::operator-(biguint const &w) const {
@@ -253,6 +219,39 @@ void biguint::operator*=(bui_word v) {
     resize(depth+1);
     ptr[depth+1]=overflow;
   }
+}
+
+void biguint::operator*=(biguint const &v) {
+  // this could probably be optimised ...
+  bui_word depth(v.ptr[0]);
+  biguint ans(0U);
+
+  for(unsigned int j=0;j<depth;++j) {
+    biguint tmp(*this);
+    tmp *= v.ptr[j+1];
+
+    unsigned int t_depth(tmp.ptr[0]);
+    unsigned int carry = 0;
+
+    ans.resize(j + t_depth); 
+
+    for(bui_word i=0;i!=t_depth;++i) {
+      bui_word v = ans.ptr[j+i+1];
+      bui_word w = tmp.ptr[i+1];
+      
+      ans.ptr[j+i+1] = v + w + carry;   
+      
+      if(carry == 0) {
+	carry = (BUI_WORD_MAX - v) < w ? 1 : 0;
+      } else {
+	carry = (BUI_WORD_MAX - v) <= w ? 1 : 0;
+      }
+    }
+    
+    if(carry == 1) { ans.ripple_carry(t_depth+j); }     
+  }
+
+  swap(ans);
 }
 
 biguint biguint::operator*(bui_word w) const {
@@ -306,6 +305,20 @@ bui_word biguint::operator%(bui_word v) const {
   return remainder;
 }
 
+void biguint::operator^=(bui_word v) {
+  biguint p(*this);
+
+  for(unsigned int i=1;i<v;++i) {
+    (*this) *= p;
+  }
+}
+
+biguint biguint::operator^(bui_word v) const {
+  biguint r(*this);
+  r ^= v;
+  return r;
+}
+
 /* =============================== */
 /* ======== CONVERSION OPS ======= */
 /* =============================== */
@@ -344,6 +357,39 @@ void biguint::resize(bui_word ndepth) {
   memcpy(nptr+1,ptr+1,depth*sizeof(bui_word));
   delete [] ptr;
   ptr = nptr;
+}
+
+void biguint::ripple_carry(bui_word level) {
+  unsigned int depth(ptr[0]);
+
+  for(unsigned int i(level);i<depth;++i) {
+    bui_word v = ptr[i+1];
+    
+    if(v == BUI_WORD_MAX) { ptr[i+1] = 0; } 
+    else {
+      ptr[i+1] = v + 1;
+      return;
+    }	
+  }
+  
+  // not enough space to hold answer!
+  resize(depth+1);
+  ptr[depth+1]=1U;
+}
+
+void biguint::ripple_borrow(bui_word level) {  
+  bui_word depth = ptr[0];
+  for(bui_word i(level);i<depth;++i) {
+    bui_word v = ptr[i+1];
+    if(v == 0) {
+      ptr[i+1] = BUI_WORD_MAX;
+    } else {
+      ptr[i+1] = v - 1;
+      return;
+    }	
+  }    
+  // this is a negative number!
+  throw std::runtime_error("biguint cannot go negative"); 
 }
 
 /* =============================== */

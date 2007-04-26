@@ -39,6 +39,8 @@ public:
   biguint const &operator=(bui_dword v);
   biguint const &operator=(biguint const &src);
 
+  void swap(biguint &v);
+
   /* =============================== */
   /* ======== COMPARISON OPS ======= */
   /* =============================== */
@@ -60,9 +62,11 @@ public:
   void operator-=(bui_word w);
   void operator-=(biguint const &src);
 
+  void operator*=(bui_word v);
+  void operator*=(biguint const &v);
   void operator/=(bui_word v);
   void operator%=(bui_word v);
-  void operator*=(bui_word v);
+  void operator^=(bui_word v);   
 
   biguint operator+(bui_word w) const;
   biguint operator+(biguint const &w) const;
@@ -72,6 +76,7 @@ public:
   biguint operator*(bui_word w) const;
   biguint operator/(bui_word w) const;
   bui_word operator%(bui_word w) const;
+  biguint operator^(bui_word v) const;
 
   /* =============================== */
   /* ======== CONVERSION OPS ======= */
@@ -87,6 +92,8 @@ public:
   
 private:
   inline void resize(bui_word ndepth);
+  void ripple_carry(bui_word level);
+  void ripple_borrow(bui_word level);
 };
 
 /* ===================================== */

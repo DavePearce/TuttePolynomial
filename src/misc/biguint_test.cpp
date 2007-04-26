@@ -71,7 +71,7 @@ void commutative_add_test(unsigned int count, unsigned int length) {
     }
     
     // now for the commutative part
-    for(unsigned int j=0;j!=length;++j) {
+    for(unsigned int j=0;j!=length;++j) {      
       v -= ws[j];
     }
     
@@ -100,7 +100,7 @@ void primitive_test(unsigned int count, aop op) {
       r2 -= w2; // bigint uint
       r3 -= w2;    
     } else if(op == MUL) {
-      r1 *= w2;
+      r1 *= biguint(w2);
       r2 *= w2;
       r3 *= w2;
     } else if(op == DIV) {
