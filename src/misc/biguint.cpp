@@ -82,7 +82,12 @@ void biguint::swap(biguint &src) {
 /* =============================== */
 
 bool biguint::operator==(bui_word v) {
-  return ptr[1] == v;
+  if(ptr[1] != v) { return false; }
+  unsigned int depth(ptr[0]);
+  for(unsigned int i=2;i<=depth;++i) {
+    if(ptr[i] != 0) { return false; }
+  }
+  return true;
 }
 
 bool biguint::operator==(bui_dword v) {
@@ -214,10 +219,11 @@ void biguint::operator*=(bui_word v) {
     ptr[i] = w;
     overflow = w >> BUI_WORD_WIDTH;
   }
+
   if(overflow > 0) {
     // need additional space
-    resize(depth+1);
-    ptr[depth+1]=overflow;
+    resize(depth+1);    
+    ptr[depth+1] = overflow;
   }
 }
 
@@ -234,7 +240,9 @@ void biguint::operator*=(biguint const &v) {
     unsigned int carry = 0;
 
     ans.resize(j + t_depth); 
-
+    
+    // standard add, although slightly modified
+    // to give the base shift for free.
     for(bui_word i=0;i!=t_depth;++i) {
       bui_word v = ans.ptr[j+i+1];
       bui_word w = tmp.ptr[i+1];
@@ -309,7 +317,9 @@ void biguint::operator^=(bui_word v) {
   biguint p(*this);
 
   for(unsigned int i=1;i<v;++i) {
+    cout << "BEFORE:" << (*this) << endl;
     (*this) *= p;
+    cout << "AFTER:" << (*this) << endl;
   }
 }
 
@@ -409,4 +419,8 @@ std::ostream& operator<<(ostream &out, biguint val) {
   }
 
   return out << r;
+}
+
+biguint pow(biguint const &r, unsigned int power) {
+  return r ^ power;
 }

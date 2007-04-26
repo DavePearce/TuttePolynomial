@@ -101,5 +101,6 @@ private:
 /* ===================================== */
 
 std::ostream& operator<<(std::ostream &out, biguint val);
+biguint pow(biguint const &r, unsigned int power);
 
 #endif

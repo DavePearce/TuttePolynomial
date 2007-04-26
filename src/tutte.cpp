@@ -13,6 +13,7 @@
 #include "eval_simple_fours.hpp" // auto-generated solutions for simple graphs of size 4
 #include "eval_simple_fives.hpp" // auto-generated solutions for simple graphs of size 5
 #include "cache/simple_cache.hpp"
+#include "misc/biguint.hpp"
 
 #include <set>
 
@@ -569,7 +570,7 @@ int main(int argc, char *argv[]) {
   try {
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
-      run<spanning_graph<adjacency_list<> >,factor_poly<unsigned int> >(input,ngraphs,quiet_mode);
+      run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,quiet_mode);
     } else {
       run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,quiet_mode);
     }

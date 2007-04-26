@@ -163,10 +163,14 @@ int main(int argc, char *argv[]) {
   // seed random number generator
   srand(time(NULL));  
   // do the tests!
-  primitive_test(count,ADD);
-  primitive_test(count,SUB);
-  commutative_add_test(count,10);
-  primitive_test(count,MUL);
-  primitive_test(count,DIV);
-  commutative_mul_test(count,10);
+  //  primitive_test(count,ADD);
+  //  primitive_test(count,SUB);
+  // commutative_add_test(count,10);
+  // primitive_test(count,MUL);
+  // primitive_test(count,DIV);
+  // commutative_mul_test(count,10);
+
+  biguint p(2147483648U);
+  p *= 2147483648U;
+  cout << p << endl;
 }

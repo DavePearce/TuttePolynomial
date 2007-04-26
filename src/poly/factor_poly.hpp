@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 #include "xy_term.hpp"
+#include "../misc/biguint.hpp"
 
 #define FPOLY_PADDING_FACTOR 1
 
@@ -143,15 +144,16 @@ public:
 
   T &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
 
-  double substitute(double y) const {
+  biguint substitute(unsigned int y) const {
     if(coefficients != NULL) {
-      double r = 0.0;
-      for(unsigned int i=ymin;i<=ymax;++i) {
-	r += pow(y,(double)i) * (*this)[i];
+      biguint r(0);
+      for(unsigned int i=ymin;i<=ymax;++i) {	
+	biguint p(y);
+	r += pow(p,i) * (*this)[i];
       }
       return r;
     } else {
-      return 0.0;
+      return biguint(0);
     }
   }
 
@@ -416,7 +418,7 @@ public:
   double substitute(double x, double y) const {
     double r = 0.0;
     for(unsigned int i=0;i<nxterms;++i) {
-      r += pow(x,(double)i) * xterms[i].substitute(y);
+      r += pow(x,(double)i) * xterms[i].substitute((unsigned int) y);
     }
     return r;
   }
