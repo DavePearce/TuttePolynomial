@@ -397,11 +397,11 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
     deleteContract<G,P>(start_graph,tuttePoly,1);        
     
     if(quiet_mode) {
-      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << (long long) tuttePoly.substitute(1,1) << endl;
+      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << tuttePoly.substitute(1,1) << endl;
     } else {
       cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
       
-      cout << "Number of spanning trees: " << (long long) tuttePoly.substitute(1,1) << endl;
+      cout << "Number of spanning trees: " << tuttePoly.substitute(1,1) << endl;
       
       cout << "==================" << endl;
       cout << "Total Steps: " << num_steps << endl;

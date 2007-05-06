@@ -146,14 +146,14 @@ public:
 
   biguint substitute(unsigned int y) const {
     if(coefficients != NULL) {
-      biguint r(0);
+      biguint r(0U);
       for(unsigned int i=ymin;i<=ymax;++i) {	
 	biguint p(y);
 	r += pow(p,i) * (*this)[i];
       }
       return r;
     } else {
-      return biguint(0);
+      return biguint(0U);
     }
   }
 
@@ -415,10 +415,10 @@ public:
     return r;
   }
 
-  double substitute(double x, double y) const {
-    double r = 0.0;
+  biguint substitute(unsigned int x, unsigned int y) const {
+    biguint r(0U);
     for(unsigned int i=0;i<nxterms;++i) {
-      r += pow(x,(double)i) * xterms[i].substitute((unsigned int) y);
+      r += pow(biguint(x),i) * xterms[i].substitute(y);
     }
     return r;
   }
