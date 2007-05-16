@@ -4,6 +4,7 @@
 #include <iostream>
 #include <cstring>
 #include <algorithm>
+#include <stdexcept>
 
 class bstreambuf {
 private:
@@ -40,6 +41,72 @@ public:
       ptr = start + src.size();
       memcpy(start,src.start,src.size());      
     }
+  }
+
+  void reset() { ptr = start; }
+
+  void read(char& v) {    
+    if((ptr-sizeof(char)) < start) {
+      throw std::runtime_error("attempt to read past start");
+    }
+    v = *((char*) ptr);
+    ptr -= sizeof(char);   
+  }
+
+  void read(unsigned char& v) {    
+    if((ptr-sizeof(unsigned char)) < start) {
+      throw std::runtime_error("attempt to read past start");
+    }
+    v = *((unsigned char*) ptr);
+    ptr -= sizeof(unsigned char);   
+  }
+
+  void read(short& v) {    
+    if((ptr-sizeof(short)) < start) {
+      throw std::runtime_error("attempt to read past start");
+    }
+    v = *((short*) ptr);
+    ptr -= sizeof(short);    
+  }
+
+  void read(unsigned short &v) {    
+    if((ptr-sizeof(unsigned short)) < start) {
+      throw std::runtime_error("attempt to read past start");
+    }
+    v = *((unsigned short*) ptr);
+    ptr -= sizeof(unsigned short);
+  }
+
+  void read(int& v) {    
+    if((ptr-sizeof(int)) < start) {
+      throw std::runtime_error("attempt to read past start");
+    }
+    v = *((int*) ptr);
+    ptr -= sizeof(int);
+  }
+
+  void read(unsigned int& v) {    
+    if((ptr-sizeof(unsigned int)) < start) {
+      throw std::runtime_error("attempt to read past start");
+    }
+    v = *((unsigned int*) ptr);
+    ptr -= sizeof(unsigned int);
+  }
+
+  void read(long& v) {    
+    if((ptr-sizeof(long)) < start) {
+      throw std::runtime_error("attempt to read past start");
+    }
+    v = *((long*) ptr);
+    ptr -= sizeof(long);
+  }
+
+  void read(unsigned long& v) {    
+    if((ptr-sizeof(unsigned long)) < start) {
+      throw std::runtime_error("attempt to read past start");
+    }
+    v = *((unsigned long*) ptr);
+    ptr -= sizeof(unsigned long);
   }
 
   void write(unsigned char v) {    
@@ -131,6 +198,16 @@ private:
     ptr = start + osize;    
   }
 };
+
+bstreambuf &operator>>(bstreambuf &out, char&);
+bstreambuf &operator>>(bstreambuf &out, unsigned char&);
+bstreambuf &operator>>(bstreambuf &out, short&);
+bstreambuf &operator>>(bstreambuf &out, unsigned short&);
+bstreambuf &operator>>(bstreambuf &out, int&);
+bstreambuf &operator>>(bstreambuf &out, unsigned int&);
+bstreambuf &operator>>(bstreambuf &out, long&);
+bstreambuf &operator>>(bstreambuf &out, unsigned long&);
+
 
 bstreambuf& operator<<(bstreambuf &out, char val);
 bstreambuf& operator<<(bstreambuf &out, unsigned char val);
