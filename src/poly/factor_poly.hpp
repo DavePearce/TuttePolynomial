@@ -6,6 +6,7 @@
 #include <utility>
 #include "xy_term.hpp"
 #include "../misc/biguint.hpp"
+#include "../misc/bstreambuf.hpp"
 
 #define FPOLY_PADDING_FACTOR 1
 
@@ -14,6 +15,11 @@ class yterms {
 public:  
   unsigned int ymin;
   unsigned int ymax;
+
+  template<class S> 
+  friend bstreambuf &operator<<(bstreambuf &, yterms<S> const &);
+  template<class S> 
+  friend bstreambuf &operator>>(bstreambuf &, yterms<S> &);
 private:  
   unsigned int fpadding;
   unsigned int bpadding;
@@ -23,9 +29,10 @@ public:
   /* ========= CONSTRUCTORS ======== */
   /* =============================== */
 
-  yterms() : ymin(0), ymax(-1), coefficients(NULL) {}
+  yterms() : ymin(1), ymax(0), fpadding(0), bpadding(0), coefficients(NULL) {}
 
-  yterms(unsigned int y_min, unsigned int y_max) {
+  yterms(unsigned int y_min, unsigned int y_max) {    
+    std::cout << "CONSTRUCT: " << y_min << ", " << y_max << std::endl;
     alloc(y_min,y_max);
   }
 
@@ -142,7 +149,8 @@ public:
 
   bool is_empty() const { return coefficients == NULL; }
 
-  T &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
+  T const &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
+  T &operator[](int i) { return coefficients[(i + fpadding) - ymin]; }
 
   biguint substitute(unsigned int y) const {
     if(coefficients != NULL) {
@@ -228,7 +236,10 @@ private:
   }  
 
   void clone(yterms<T> const &src) { 
-    if(src.is_empty()) { coefficients = NULL; ymin = 0; ymax=0; }
+    std::cout << "CLONE " << std::endl;
+    if(src.is_empty()) { 
+      std::cout << "CLONE EMPTY" << std::endl;
+      coefficients = NULL; ymin = 1; ymax=0; fpadding = 0; bpadding = 0;}
     else {
       ymin = src.ymin;
       ymax = src.ymax;
@@ -247,7 +258,8 @@ private:
   }
 
   void alloc(unsigned int _ymin, unsigned int _ymax) {
-    unsigned int nyterms = (_ymax-_ymin)+1;
+    std::cout << "ALLOC " << _ymin << ", " <<_ymax << std::endl;
+    unsigned int nyterms = (_ymax-_ymin)+1;    
     bpadding = nyterms * FPOLY_PADDING_FACTOR;
     fpadding = std::min(_ymin,nyterms * FPOLY_PADDING_FACTOR);
     ymin = _ymin;
@@ -261,65 +273,39 @@ private:
   }
 };
 
+template<class T> 
+bstreambuf &operator<<(bstreambuf &bout, yterms<T> const &yt) {
+  bout << yt.ymin << yt.ymax;
 
-// This iterator is a temporary structure
-template<class T>
-class factor_poly_iterator {
-private:
-  unsigned int x;
-  unsigned int x_max;
-  unsigned int y;
-  yterms<T> *xterms;
-public:
-  factor_poly_iterator(unsigned int _x, unsigned int xm, yterms<T> *_xterms) 
-    : x(_x), x_max(xm), xterms(_xterms) {
-    while(x < x_max && xterms[x].is_empty()) { ++x; }      
-    if(x >= x_max) { y = 0; }
-    else { y = xterms[x].ymin; }
+  for(unsigned int i=yt.ymin;i<=yt.ymax;++i) {
+    bout << yt[i];
   }
+}
 
-  void operator++() { 
-    if(++y > xterms[x].ymax) {
-      do { ++x; }
-      while(x < x_max && xterms[x].is_empty());
-      if(x >= x_max) { y = 0; }
-      else { y = xterms[x].ymin; }
-    } 
+template<class T> 
+bstreambuf &operator>>(bstreambuf &bout, yterms<T> &yt) {
+  unsigned int ymin, ymax;
+  bout >> ymin >> ymax;
+  if(ymin > ymax) { 
+    yt = yterms<T>(); 
+  } else {
+    yt = yterms<T>(ymin,ymax);
+    for(unsigned int i=yt.ymin;i<=yt.ymax;++i) {
+      bout >> yt[i];
+    }
   }
-
-  factor_poly_iterator operator++(int) { 
-    factor_poly_iterator tmp(*this);
-    ++(*this);
-    return tmp;
-  }
-
-  // crikey, this is ugly
-  std::pair<xy_term, T> operator*() const {
-    return std::make_pair(xy_term(x,y),xterms[x][y]);
-  }
-
-  std::string str() const {
-    std::stringstream ss;
-    ss << x << "," << y;
-    return ss.str();
-  }
-
-  bool operator==(factor_poly_iterator const &o) const {
-    return xterms == o.xterms && x == o.x && y == o.y;
-  }
-
-  bool operator!=(factor_poly_iterator const &o) const {
-    return xterms != o.xterms || x != o.x || y != o.y;
-  }
-};
+}
 
 template<class T>
 class factor_poly {
-public:
-  typedef factor_poly_iterator<T> const_iterator;
 private:
   yterms<T> *xterms; 
   unsigned int nxterms;
+  
+  template<class S> 
+  friend bstreambuf &operator<<(bstreambuf &,factor_poly<S> const &);
+  template<class S> 
+  friend bstreambuf &operator>>(bstreambuf &,factor_poly<S> &);
 public:
   /* =============================== */
   /* ========= CONSTRUCTORS ======== */
@@ -339,6 +325,11 @@ public:
   }
 
   factor_poly(factor_poly<T> const &fp) { clone(fp); }
+
+  factor_poly(unsigned int nx, yterms<T> *xts) {
+    nxterms = nx;
+    xterms = xts;
+  }
 
   ~factor_poly() { destroy(); }
 
@@ -430,9 +421,6 @@ public:
     }
     return r;
   }
-  
-  const_iterator begin() const { return factor_poly_iterator<T>(0,nxterms,xterms); }
-  const_iterator end() const { return factor_poly_iterator<T>(nxterms,nxterms,xterms); }
 private:
   void destroy() {
     delete [] xterms; // will invoke yterms destructors 
@@ -460,5 +448,26 @@ private:
     nxterms = ns;  
   }  
 };
+
+template<class T> 
+bstreambuf &operator<<(bstreambuf &bout, factor_poly<T> const &fp) {
+  bout << fp.nxterms;
+  for(unsigned int i=0;i<fp.nxterms;++i) {
+    bout << fp.xterms[i];
+  }
+  return bout;
+}
+
+template<class T> 
+bstreambuf &operator>>(bstreambuf &bout, factor_poly<T> &fp) {
+  unsigned int nxterms;
+  bout >> nxterms;
+  yterms<T> *xterms = new yterms<T>[nxterms];  
+  for(unsigned int i=0;i<nxterms;++i) {
+    bout >> xterms[i];
+  }
+  fp = factor_poly<T>(nxterms,xterms);
+  return bout;
+}
 
 #endif

@@ -10,24 +10,28 @@ class bstreambuf {
 private:
   char *start;
   char *end;
-  char *ptr;
+  char *write_ptr;
+  char *read_ptr;
 public:
   bstreambuf() {
     start = new char[1024];
     end = start + 1024;
-    ptr = start;
+    write_ptr = start;    
+    read_ptr = start;
   }
 
   bstreambuf(unsigned int max) {
     start = new char[max];
     end = start + max;
-    ptr = start;
+    write_ptr = start;
+    read_ptr = start;
   }
 
   bstreambuf(bstreambuf const &src) {
     start = new char[src.max()];
     end = start + src.max();
-    ptr = start + src.size();
+    write_ptr = start + src.size();
+    read_ptr = start + src.pos();
     memcpy(start,src.start,src.size());
   }
 
@@ -38,84 +42,87 @@ public:
       delete [] start;
       start = new char[src.max()];
       end = start + src.max();
-      ptr = start + src.size();
+      write_ptr = start + src.size();
       memcpy(start,src.start,src.size());      
     }
   }
 
-  void reset() { ptr = start; }
+  void reset() { 
+    write_ptr = start; 
+    read_ptr = start; 
+  }
 
   void read(char& v) {    
-    if((ptr-sizeof(char)) < start) {
-      throw std::runtime_error("attempt to read past start");
-    }
-    v = *((char*) ptr);
-    ptr -= sizeof(char);   
+    if((pos()+sizeof(char)) > size()) {
+      throw std::runtime_error("attempt to read past end of stream!");
+    } 
+    v = *((char*) read_ptr);    
+    read_ptr += sizeof(char);   
   }
 
   void read(unsigned char& v) {    
-    if((ptr-sizeof(unsigned char)) < start) {
-      throw std::runtime_error("attempt to read past start");
-    }
-    v = *((unsigned char*) ptr);
-    ptr -= sizeof(unsigned char);   
+    if((pos()+sizeof(unsigned char)) > size()) {
+      throw std::runtime_error("attempt to read past end of stream!");
+    } 
+    v = *((unsigned char*) read_ptr);    
+    read_ptr += sizeof(unsigned char);   
   }
 
   void read(short& v) {    
-    if((ptr-sizeof(short)) < start) {
-      throw std::runtime_error("attempt to read past start");
-    }
-    v = *((short*) ptr);
-    ptr -= sizeof(short);    
+    if((pos()+sizeof(short)) > size()) {
+      throw std::runtime_error("attempt to read past end of stream!");
+    } 
+    v = *((short*) read_ptr);    
+    read_ptr += sizeof(short);   
   }
 
-  void read(unsigned short &v) {    
-    if((ptr-sizeof(unsigned short)) < start) {
-      throw std::runtime_error("attempt to read past start");
-    }
-    v = *((unsigned short*) ptr);
-    ptr -= sizeof(unsigned short);
+  void read(unsigned short& v) {    
+    if((pos()+sizeof(unsigned short)) > size()) {
+      throw std::runtime_error("attempt to read past end of stream!");
+    } 
+    v = *((unsigned short*) read_ptr);    
+    read_ptr += sizeof(unsigned short);   
   }
 
   void read(int& v) {    
-    if((ptr-sizeof(int)) < start) {
-      throw std::runtime_error("attempt to read past start");
-    }
-    v = *((int*) ptr);
-    ptr -= sizeof(int);
+    if((pos()+sizeof(int)) > size()) {
+      throw std::runtime_error("attempt to read past end of stream!");
+    } 
+    v = *((int*) read_ptr);    
+    read_ptr += sizeof(int);   
   }
 
   void read(unsigned int& v) {    
-    if((ptr-sizeof(unsigned int)) < start) {
-      throw std::runtime_error("attempt to read past start");
-    }
-    v = *((unsigned int*) ptr);
-    ptr -= sizeof(unsigned int);
+    if((pos()+sizeof(unsigned int)) > size()) {
+      throw std::runtime_error("attempt to read past end of stream!");
+    } 
+    v = *((unsigned int*) read_ptr);    
+    read_ptr += sizeof(unsigned int);   
   }
 
   void read(long& v) {    
-    if((ptr-sizeof(long)) < start) {
-      throw std::runtime_error("attempt to read past start");
-    }
-    v = *((long*) ptr);
-    ptr -= sizeof(long);
+    if((pos()+sizeof(long)) > size()) {
+      throw std::runtime_error("attempt to read past end of stream!");
+    } 
+    v = *((long*) read_ptr);    
+    read_ptr += sizeof(long);   
   }
 
   void read(unsigned long& v) {    
-    if((ptr-sizeof(unsigned long)) < start) {
-      throw std::runtime_error("attempt to read past start");
-    }
-    v = *((unsigned long*) ptr);
-    ptr -= sizeof(unsigned long);
+    if((pos()+sizeof(unsigned long)) > size()) {
+      throw std::runtime_error("attempt to read past end of stream!");
+    } 
+    v = *((unsigned long*) read_ptr);    
+    read_ptr += sizeof(unsigned long);     
   }
-
+  
   void write(unsigned char v) {    
     if((size()+sizeof(unsigned char)) > max()) {
       resize(size() + sizeof(unsigned char));      
     } 
     // this line is a bit of a hack
-    *((unsigned char*) ptr) = v;
-    ptr += sizeof(unsigned char);
+    *((unsigned char*) write_ptr) = v;
+    write_ptr += sizeof(unsigned char);
   }
 
   void write(char v) {    
@@ -123,8 +130,8 @@ public:
       resize(size() + sizeof(char));      
     } 
     // this line is a bit of a hack
-    *((char*) ptr) = v;
-    ptr += sizeof(char);
+    *((char*) write_ptr) = v;
+    write_ptr += sizeof(char);
   }
 
   void write(unsigned short v) {    
@@ -132,8 +139,8 @@ public:
       resize(size() + sizeof(unsigned short));      
     } 
     // this line is a bit of a hack
-    *((unsigned short*) ptr) = v;
-    ptr += sizeof(unsigned short);
+    *((unsigned short*) write_ptr) = v;
+    write_ptr += sizeof(unsigned short);
   }
 
   void write(short v) {    
@@ -141,8 +148,8 @@ public:
       resize(size() + sizeof(short));      
     } 
     // this line is a bit of a hack
-    *((short*) ptr) = v;
-    ptr += sizeof(short);
+    *((short*) write_ptr) = v;
+    write_ptr += sizeof(short);
   }
 
   void write(unsigned int v) {    
@@ -150,8 +157,8 @@ public:
       resize(size() + sizeof(unsigned int));      
     } 
     // this line is a bit of a hack
-    *((unsigned int*) ptr) = v;
-    ptr += sizeof(unsigned int);
+    *((unsigned int*) write_ptr) = v;
+    write_ptr += sizeof(unsigned int);
   }
 
   void write(int v) {    
@@ -159,8 +166,8 @@ public:
       resize(size() + sizeof(int));      
     } 
     // this line is a bit of a hack
-    *((int*) ptr) = v;
-    ptr += sizeof(int);
+    *((int*) write_ptr) = v;
+    write_ptr += sizeof(int);
   }
 
   void write(unsigned long v) {    
@@ -168,8 +175,8 @@ public:
       resize(size() + sizeof(unsigned long));      
     } 
     // this line is a bit of a hack
-    *((unsigned long*) ptr) = v;
-    ptr += sizeof(unsigned long);
+    *((unsigned long*) write_ptr) = v;
+    write_ptr += sizeof(unsigned long);
   }
 
   void write(long v) {    
@@ -177,25 +184,27 @@ public:
       resize(size() + sizeof(long));      
     } 
     // this line is a bit of a hack
-    *((long*) ptr) = v;
-    ptr += sizeof(long);
+    *((long*) write_ptr) = v;
+    write_ptr += sizeof(long);
   }
 
-
-  unsigned int size() const { return ptr-start; }
+  unsigned int pos() const { return read_ptr-start; }
+  unsigned int size() const { return write_ptr-start; }
   unsigned int max() const { return end-start; }
 
 private:
   // resize so we have at least min bytes
   void resize(unsigned int min) {
     unsigned int osize = size();
+    unsigned int opos = pos();
     unsigned int nmax = std::max(min,2*max());
     char *nstart = new char[nmax];
     memcpy(nstart,start,osize);    
     delete [] start;
     start = nstart;
     end = start + nmax;
-    ptr = start + osize;    
+    write_ptr = start + osize;    
+    read_ptr = start + opos;
   }
 };
 
