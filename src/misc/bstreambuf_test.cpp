@@ -1,4 +1,5 @@
 #include "bstreambuf.hpp"
+#include "bistream.hpp"
 
 using namespace std;
 
@@ -11,10 +12,12 @@ int main(int argc, char* args[]) {
 
   cout << "========================" << endl;
 
+  bistream y(x);
+
   for(int i=0;i!=1000;++i) {
     unsigned short c;
-    x >> c;
-    cout << "SIZE = " << x.size() << ", MAX = " << x.max() << endl;
+    y >> c;
+    cout << "SIZE = " << y.size() <<  endl;
   }
   
   return 0;

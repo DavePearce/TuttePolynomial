@@ -351,9 +351,7 @@ void biguint::operator^=(bui_word v) {
   biguint p(*this);
 
   for(unsigned int i=1;i<v;++i) {
-    cout << "BEFORE:" << (*this) << endl;
     (*this) *= p;
-    cout << "AFTER:" << (*this) << endl;
   }
 }
 
