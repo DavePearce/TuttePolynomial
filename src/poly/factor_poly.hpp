@@ -32,7 +32,6 @@ public:
   yterms() : ymin(1), ymax(0), fpadding(0), bpadding(0), coefficients(NULL) {}
 
   yterms(unsigned int y_min, unsigned int y_max) {    
-    std::cout << "CONSTRUCT: " << y_min << ", " << y_max << std::endl;
     alloc(y_min,y_max);
   }
 
@@ -236,9 +235,7 @@ private:
   }  
 
   void clone(yterms<T> const &src) { 
-    std::cout << "CLONE " << std::endl;
     if(src.is_empty()) { 
-      std::cout << "CLONE EMPTY" << std::endl;
       coefficients = NULL; ymin = 1; ymax=0; fpadding = 0; bpadding = 0;}
     else {
       ymin = src.ymin;
@@ -252,13 +249,12 @@ private:
 
       // copy old stuff over
       for(unsigned int i=0;i<ncoeffs;++i) { 
-	coefficients[i+fpadding-ymin] = src[i];
+	coefficients[i] = src.coefficients[i];
       }
     }
   }
 
   void alloc(unsigned int _ymin, unsigned int _ymax) {
-    std::cout << "ALLOC " << _ymin << ", " <<_ymax << std::endl;
     unsigned int nyterms = (_ymax-_ymin)+1;    
     bpadding = nyterms * FPOLY_PADDING_FACTOR;
     fpadding = std::min(_ymin,nyterms * FPOLY_PADDING_FACTOR);
@@ -289,10 +285,13 @@ bstreambuf &operator>>(bstreambuf &bout, yterms<T> &yt) {
   if(ymin > ymax) { 
     yt = yterms<T>(); 
   } else {
-    yt = yterms<T>(ymin,ymax);
-    for(unsigned int i=yt.ymin;i<=yt.ymax;++i) {
-      bout >> yt[i];
+    yterms<T> tmp(ymin,ymax);
+    for(unsigned int i=tmp.ymin;i<=tmp.ymax;++i) {
+      bout >> tmp[i];
     }
+    // again, the following trick saves on 
+    // assignment
+    yt.swap(tmp);
   }
 }
 
@@ -343,6 +342,11 @@ public:
       clone(src);
     }
     return *this;  
+  }
+
+  void swap(factor_poly<T> &src) {
+    std::swap(nxterms,src.nxterms);
+    std::swap(xterms,src.xterms);
   }
 
   /* =============================== */
@@ -466,7 +470,11 @@ bstreambuf &operator>>(bstreambuf &bout, factor_poly<T> &fp) {
   for(unsigned int i=0;i<nxterms;++i) {
     bout >> xterms[i];
   }
-  fp = factor_poly<T>(nxterms,xterms);
+  // I do the following swap trick to reduce
+  // the number of copy assignments
+  factor_poly<T> tmp(nxterms,xterms);
+  fp.swap(tmp);
+  
   return bout;
 }
 
