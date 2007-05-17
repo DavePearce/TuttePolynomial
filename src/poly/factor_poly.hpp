@@ -6,6 +6,7 @@
 #include <utility>
 #include "xy_term.hpp"
 #include "../misc/biguint.hpp"
+#include "../misc/bistream.hpp"
 #include "../misc/bstreambuf.hpp"
 
 #define FPOLY_PADDING_FACTOR 1
@@ -19,7 +20,7 @@ public:
   template<class S> 
   friend bstreambuf &operator<<(bstreambuf &, yterms<S> const &);
   template<class S> 
-  friend bstreambuf &operator>>(bstreambuf &, yterms<S> &);
+  friend bistream &operator>>(bistream &, yterms<S> &);
 private:  
   unsigned int fpadding;
   unsigned int bpadding;
@@ -279,15 +280,15 @@ bstreambuf &operator<<(bstreambuf &bout, yterms<T> const &yt) {
 }
 
 template<class T> 
-bstreambuf &operator>>(bstreambuf &bout, yterms<T> &yt) {
+bistream &operator>>(bistream &bin, yterms<T> &yt) {
   unsigned int ymin, ymax;
-  bout >> ymin >> ymax;
+  bin >> ymin >> ymax;
   if(ymin > ymax) { 
     yt = yterms<T>(); 
   } else {
     yterms<T> tmp(ymin,ymax);
     for(unsigned int i=tmp.ymin;i<=tmp.ymax;++i) {
-      bout >> tmp[i];
+      bin >> tmp[i];
     }
     // again, the following trick saves on 
     // assignment
@@ -304,7 +305,7 @@ private:
   template<class S> 
   friend bstreambuf &operator<<(bstreambuf &,factor_poly<S> const &);
   template<class S> 
-  friend bstreambuf &operator>>(bstreambuf &,factor_poly<S> &);
+  friend bistream &operator>>(bistream &,factor_poly<S> &);
 public:
   /* =============================== */
   /* ========= CONSTRUCTORS ======== */
@@ -463,19 +464,19 @@ bstreambuf &operator<<(bstreambuf &bout, factor_poly<T> const &fp) {
 }
 
 template<class T> 
-bstreambuf &operator>>(bstreambuf &bout, factor_poly<T> &fp) {
+bistream &operator>>(bistream &bin, factor_poly<T> &fp) {
   unsigned int nxterms;
-  bout >> nxterms;
+  bin >> nxterms;
   yterms<T> *xterms = new yterms<T>[nxterms];  
   for(unsigned int i=0;i<nxterms;++i) {
-    bout >> xterms[i];
+    bin >> xterms[i];
   }
   // I do the following swap trick to reduce
   // the number of copy assignments
   factor_poly<T> tmp(nxterms,xterms);
   fp.swap(tmp);
   
-  return bout;
+  return bin;
 }
 
 #endif

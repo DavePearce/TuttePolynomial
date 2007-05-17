@@ -3,6 +3,7 @@
 
 #include "../graph/algorithms.hpp"
 #include "../misc/bstreambuf.hpp"
+#include "../misc/bistream.hpp"
 #include <stdexcept>
 #include <ext/hash_map>
 #include <cstdlib>
@@ -17,7 +18,8 @@
 struct cache_node {
   struct cache_node *next;  
   struct cache_node *prev;  
-  unsigned int hit_count; 
+  unsigned int hit_count;
+  unsigned int size;       // in bytes of node, including header
   // graph key comes here
   // followed by polynomial
 };
@@ -30,10 +32,7 @@ public:
   
   void operator++() { 
     unsigned char *p = (unsigned char *) ptr;
-    unsigned int header_size = sizeof(struct cache_node);
-    unsigned int key_size = sizeof_graph_key(p + header_size);
-    unsigned int poly_size = sizeof_compact_poly(p + header_size + key_size);
-    p += header_size + key_size + poly_size;
+    p += ptr->size;
     ptr = (struct cache_node *) p;
   }
 
@@ -251,7 +250,8 @@ public:
       if(compare_graph_keys(key,key_p)) {
 	// match made
 	size_t sizeof_key = sizeof_graph_key(key_p);
-	dst = read_compact_poly<P>(key_p + sizeof_key);
+	bistream bin(key_p + sizeof_key, node_p->size - (sizeof_key + sizeof(struct cache_node)));
+	bin >> dst;
 	// update hit count
 	node_p->hit_count++;
 	// move node to front of bucket
@@ -285,6 +285,8 @@ public:
     insert_node_after(node_p,&(buckets[bucket]));
     // init hit count
     node_p->hit_count = 0;
+    // set node size
+    node_p->size = sizeof(struct cache_node) + sizeof_key + bout.size();
     // load the key into the node
     memcpy(key_p,key,sizeof_key);
     // load poly stream into node
@@ -363,7 +365,7 @@ private:
 	  ptr = ptr->next;
 	  if(optr->hit_count < hc) { 
 	    count++; 
-	    amount += sizeof_node(optr);
+	    amount += optr->size;
 	    remove_node(optr); 
 	  }
 	}
@@ -382,7 +384,7 @@ private:
       struct cache_node *nptr = next_node(ptr);
       if(ptr->next == NULL && ptr->prev == NULL) {
 	// this node is free
-	diff += sizeof_node(ptr);
+	diff += ptr->size;
       } else if(diff > 0){
 	// move node along
 	unsigned char *dst = (unsigned char *) ptr;
@@ -401,16 +403,8 @@ private:
 
   struct cache_node *next_node(struct cache_node *ptr) {
     unsigned char *p = (unsigned char *) ptr;
-    p += sizeof_node(ptr);
+    p += ptr->size;
     return (struct cache_node *) p;
-  }
-
-  size_t sizeof_node(struct cache_node *node) {
-    unsigned char *p = (unsigned char *) node;
-    unsigned int header_size = sizeof(struct cache_node);
-    unsigned int key_size = sizeof_graph_key(p + header_size);
-    unsigned int poly_size = sizeof_compact_poly(p + header_size + key_size);
-    return header_size + key_size + poly_size;
   }
 
   void insert_node_after(struct cache_node *new_node, struct cache_node *pos) {
@@ -435,7 +429,7 @@ private:
     if(ptr->next != NULL) {
       ptr->next->prev = dstptr;
     }
-    memmove(dst,ptr,sizeof_node(ptr));
+    memmove(dst,ptr,ptr->size);
   }
 };
 
