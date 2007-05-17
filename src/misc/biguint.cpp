@@ -24,7 +24,6 @@ biguint::biguint(biguint const &src) { clone(src); }
 biguint::biguint(bui_word *p) {
   ptr = p;
   }*/
-
     
 biguint::~biguint() { destroy(); }
 
@@ -129,17 +128,18 @@ void biguint::operator+=(bui_word w) {
   if(ptr & BUI_PTR_BIT) {    
     bui_word *p(UNPACK(ptr));
     bui_word v = p[1];
-    p[1] = v + w;
-    if((BUI_WORD_MAX-v) < w) { ripple_carry(1); }
+    w = v + w;
+    p[1] = w;
+    if(w < v) { ripple_carry(1); }
   } else {
     bui_word v = ptr;
     ptr = v + w;
-    if((BUI_WORD_MAX-v) < w) {
+    if(ptr < v) {
       bui_word *p = aligned_alloc(3); 
-      ptr = PACK(p);
-      p[0] = 1;
-      p[1] = v;
+      p[0] = 2U;
+      p[1] = ptr;
       p[2] = 1U;
+      ptr = PACK(p);
     } else if(ptr & BUI_PTR_BIT) {
       clone(ptr);
     }
@@ -147,37 +147,42 @@ void biguint::operator+=(bui_word w) {
 }
 
 void biguint::operator+=(biguint const &src) {
-  if(!(src.ptr & BUI_PTR_BIT)) { (*this) += src.ptr; }
-  else if(!(ptr & BUI_PTR_BIT)) { 
-    // assume I need to go big
-    bui_word *p = aligned_alloc(2);
-    p[0] = 1;
-    p[1] = ptr;
-    ptr = PACK(p);
-  }
-
-  bui_word *p(UNPACK(ptr));
-  bui_word *s(UNPACK(src.ptr));
-
-  bui_word depth = s[0];
-  resize(depth);
-
-  unsigned int carry = 0;
-  
-  for(bui_word i=0;i<depth;++i) {
-    bui_word v = p[i+1];
-    bui_word w = s[i+1];
-
-    p[i+1] = v + w + carry;   
-
-    if(carry == 0) {
-      carry = (BUI_WORD_MAX - v) < w ? 1 : 0;
-    } else {
-      carry = (BUI_WORD_MAX - v) <= w ? 1 : 0;
-    }
-  }
+  if((src.ptr & BUI_PTR_BIT) == 0) { 
+    (*this) += src.ptr; 
+  } else {
+    bui_word *s(UNPACK(src.ptr));
+    bui_word depth = s[0];
+    bui_word *p;
     
-  if(carry == 1) { ripple_carry(depth); }
+    if((ptr & BUI_PTR_BIT) == 0) { 
+      // assume it needs to go big
+      p = aligned_alloc(depth+1);
+      p[0] = depth;      
+      p[1] = ptr;
+      for(int i=2;i<=depth;++i) { p[i] = 0U; }
+      ptr = PACK(p);
+    } else {
+      resize(depth);
+      p = UNPACK(ptr);
+    }
+
+    unsigned int carry = 0;
+    
+    for(bui_word i=1;i<=depth;++i) {
+      bui_word v = p[i];
+      bui_word w = s[i];
+      
+      w = v + w + carry;   
+      p[i] = w;
+      
+      if(carry == 0) {
+	carry = w < v ? 1 : 0;
+      } else {
+	carry = w <= v ? 1 : 0;
+      }
+    }
+    if(carry == 1) { ripple_carry(depth); }
+  }   
 }
 
 biguint biguint::operator+(biguint const &w) const {
@@ -206,36 +211,41 @@ void biguint::operator-=(bui_word w) {
 }
 
 void biguint::operator-=(biguint const &src) {
-  if(!(src.ptr & BUI_PTR_BIT)) { (*this) -= src.ptr; }
-  else if(!(ptr & BUI_PTR_BIT)) { 
-    // assume I need to go big (COULD BE OPTIMISED?)
-    bui_word *p = aligned_alloc(2);   
-    p[0] = 1;
-    p[1] = ptr;
-    ptr = PACK(p);
-  }
-
-  bui_word *p(UNPACK(ptr));
-  bui_word *s(UNPACK(src.ptr));
+  if((src.ptr & BUI_PTR_BIT) == 0) { 
+    (*this) -= src.ptr; 
+  } else {
+    bui_word *s(UNPACK(src.ptr));
+    bui_word depth = s[0];
+    bui_word *p;
     
-  bui_word depth = s[0];
-  resize(depth);
-  unsigned int borrow = 0;
-  
-  for(bui_word i=0;i!=depth;++i) {
-    bui_word v = p[i+1];
-    bui_word w = s[i+1];
-
-    p[i+1] = v - w - borrow;    
-
-    if(borrow == 0) {
-      borrow = v < w ? 1 : 0;
+    if((ptr & BUI_PTR_BIT) == 0) { 
+      // assume it needs to go big
+      p = aligned_alloc(depth+1);
+      p[0] = depth;      
+      p[1] = ptr;
+      for(int i=2;i<=depth;++i) { p[i] = 0U; }
+      ptr = PACK(p);
     } else {
-      borrow = v <= w ? 1 : 0;
+      resize(depth);
+      p = UNPACK(ptr);
     }
-  }
+    unsigned int borrow = 0;
+    
+    for(bui_word i=1;i<=depth;++i) {
+      bui_word v = p[i];
+      bui_word w = s[i];
+      
+      p[i] = v - w - borrow;    
+      
+      if(borrow == 0) {
+	borrow = v < w ? 1 : 0;
+      } else {
+	borrow = v <= w ? 1 : 0;
+      }
+    }
   
-  if(borrow == 1) { ripple_borrow(depth); }
+    if(borrow == 1) { ripple_borrow(depth); }
+  }
 }
 
 biguint biguint::operator-(biguint const &w) const {
@@ -505,30 +515,29 @@ void biguint::ripple_carry(bui_word level) {
   bui_word *p(UNPACK(ptr));
   unsigned int depth(p[0]);
 
-  for(unsigned int i(level);i<depth;++i) {
-    bui_word v = p[i+1];
+  for(unsigned int i(level+1);i<=depth;++i) {
+    bui_word v = p[i];
     
-    if(v == BUI_WORD_MAX) { p[i+1] = 0; } 
+    if(v == BUI_WORD_MAX) { p[i] = 0; } 
     else {
-      p[i+1] = v + 1;
+      p[i] = v + 1;
       return;
     }	
   }
-  
   // not enough space to hold answer!
   resize(depth+1);
-  p[depth+1]=1U;
+  UNPACK(ptr)[depth+1]=1U;  
 }
 
 void biguint::ripple_borrow(bui_word level) {  
   bui_word *p(UNPACK(ptr));
   bui_word depth = p[0];
-  for(bui_word i(level);i<depth;++i) {
-    bui_word v = p[i+1];
+  for(bui_word i(level+1);i<=depth;++i) {
+    bui_word v = p[i];
     if(v == 0) {
-      p[i+1] = BUI_WORD_MAX;
+      p[i] = BUI_WORD_MAX;
     } else {
-      p[i+1] = v - 1;
+      p[i] = v - 1;
       return;
     }	
   }    

@@ -112,12 +112,11 @@ void primitive_test(unsigned int count, aop op) {
 
     if(r1 != r3) {
       // error
-      cout << "ERROR: " << w1 << " " << op2str(op) << " " << w2 << " gives " << r1.c_ulonglong() << ", not " << r3 << endl;
+      cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r1.c_ulonglong() << ", not " << r3 << endl;
     } else if(r2 != r3) {
       // error
-      cout << "ERROR: " << w1 << " " << op2str(op) << " " << w2 << " gives " << r2.c_ulonglong() << ", not " << r3 << endl;
+      cout << "ERROR(2): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r2.c_ulonglong() << ", not " << r3 << endl;
     } 
-
   }
 }
 
@@ -165,7 +164,9 @@ int main(int argc, char *argv[]) {
   srand(time(NULL));  
   // do the tests!
   primitive_test(count,ADD);
+  cout << "PRIM ADD DONE" << endl;
   primitive_test(count,SUB);
+  cout << "PRIM SUB DONE" << endl;
   commutative_add_test(count,10);
   //  primitive_test(count,MUL);
   //  primitive_test(count,DIV);
