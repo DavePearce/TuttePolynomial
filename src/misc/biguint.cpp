@@ -36,6 +36,10 @@ biguint::biguint(biguint const &src) {
     ptr = new bui_word[depth+1];
     memcpy(ptr,src.ptr,(depth+1)*sizeof(bui_word));
   }
+
+biguint::biguint(bui_word *p) {
+  ptr = p;
+}
     
 biguint::~biguint() { delete [] ptr; }
 
@@ -456,3 +460,28 @@ std::ostream& operator<<(ostream &out, biguint val) {
 biguint pow(biguint const &r, unsigned int power) {
   return r ^ power;
 }
+
+bstreambuf &operator<<(bstreambuf &bout, biguint const &src) {
+  bui_word depth(src.ptr[0]);
+
+  bout << depth;
+  for(bui_word i=1;i<=depth;++i) { bout << src.ptr[i]; }
+}
+
+bistream &operator>>(bistream &bin, biguint &src) {  
+  bui_word depth;
+
+  bin >> depth;
+  bui_word *ptr = new bui_word[depth+1];
+  ptr[0] = depth;
+  
+  for(bui_word i=1;i<=depth;++i) { 
+    bin >> ptr[i]; 
+  }
+  
+  biguint tmp(ptr);
+  src.swap(tmp);
+
+  return bin;
+}
+

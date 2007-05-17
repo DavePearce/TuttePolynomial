@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <climits>
+#include "bstreambuf.hpp"
+#include "bistream.hpp"
 
 // this class provides arbitrary sized integers
 typedef unsigned int bui_word;
@@ -20,6 +22,9 @@ typedef unsigned long long bui_dword;
 class biguint {
 private:
   bui_word *ptr;
+
+  friend bstreambuf &operator<<(bstreambuf &, biguint const &);
+  friend bistream &operator>>(bistream &, biguint &);
 public:
   /* =============================== */
   /* ========= CONSTRUCTORS ======== */
@@ -29,7 +34,8 @@ public:
   biguint(bui_word v);
   biguint(bui_dword v);
   biguint(biguint const &src);
-  ~biguint();
+  biguint(bui_word *p);
+  ~biguint();  
 
   /* =============================== */
   /* ======== ASSIGNMENT OPS ======= */
@@ -102,6 +108,8 @@ private:
 /* ===================================== */
 
 std::ostream& operator<<(std::ostream &out, biguint val);
+bstreambuf &operator<<(bstreambuf &, biguint const &);
+bistream &operator>>(bistream &, biguint &);
 biguint pow(biguint const &r, unsigned int power);
 
 #endif
