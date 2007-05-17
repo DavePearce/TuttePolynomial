@@ -2,7 +2,7 @@
 #define SIMPLE_CACHE_HPP
 
 #include "../graph/algorithms.hpp"
-#include "../poly/algorithms.hpp"
+#include "../misc/bstreambuf.hpp"
 #include <stdexcept>
 #include <ext/hash_map>
 #include <cstdlib>
@@ -272,8 +272,12 @@ public:
   void store(unsigned char const *key, P const &p) {
     // allocate space for new node
     unsigned int sizeof_key = sizeof_graph_key(key);
-    unsigned int sizeof_poly = sizeof_compact_poly(p);
-    unsigned char *ptr = alloc_node(sizeof(struct cache_node) + sizeof_key + sizeof_poly);  
+    // convert poly into stream
+    static bstreambuf bout;
+    bout.reset();
+    bout << p;
+    // allocate space in cache
+    unsigned char *ptr = alloc_node(sizeof(struct cache_node) + sizeof_key + bout.size());  
     struct cache_node *node_p = (struct cache_node *) ptr;
     unsigned char *key_p = ptr + sizeof(struct cache_node);
     // now put key at head of its bucket list
@@ -283,8 +287,8 @@ public:
     node_p->hit_count = 0;
     // load the key into the node
     memcpy(key_p,key,sizeof_key);
-    // load the poly into the node
-    write_compact_poly(key_p+sizeof_key,p);
+    // load poly stream into node
+    memcpy(key_p+sizeof_key,bout.c_ptr(),bout.size());
     // update stats
     numentries++;
     // done.

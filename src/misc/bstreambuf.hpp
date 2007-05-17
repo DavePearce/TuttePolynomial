@@ -8,27 +8,27 @@
 
 class bstreambuf {
 private:
-  char *start;
-  char *end;
-  char *write_ptr;
-  char *read_ptr;
+  unsigned char *start;
+  unsigned char *end;
+  unsigned char *write_ptr;
+  unsigned char *read_ptr;
 public:
   bstreambuf() {
-    start = new char[1024];
+    start = new unsigned char[1024];
     end = start + 1024;
     write_ptr = start;    
     read_ptr = start;
   }
 
   bstreambuf(unsigned int max) {
-    start = new char[max];
+    start = new unsigned char[max];
     end = start + max;
     write_ptr = start;
     read_ptr = start;
   }
 
   bstreambuf(bstreambuf const &src) {
-    start = new char[src.max()];
+    start = new unsigned char[src.max()];
     end = start + src.max();
     write_ptr = start + src.size();
     read_ptr = start + src.pos();
@@ -40,7 +40,7 @@ public:
   bstreambuf const &operator=(bstreambuf const &src) {
     if(this != &src) {
       delete [] start;
-      start = new char[src.max()];
+      start = new unsigned char[src.max()];
       end = start + src.max();
       write_ptr = start + src.size();
       memcpy(start,src.start,src.size());      
@@ -191,6 +191,7 @@ public:
   unsigned int pos() const { return read_ptr-start; }
   unsigned int size() const { return write_ptr-start; }
   unsigned int max() const { return end-start; }
+  unsigned char const * const c_ptr() const { return start; }
 
 private:
   // resize so we have at least min bytes
@@ -198,7 +199,7 @@ private:
     unsigned int osize = size();
     unsigned int opos = pos();
     unsigned int nmax = std::max(min,2*max());
-    char *nstart = new char[nmax];
+    unsigned char *nstart = new unsigned char[nmax];
     memcpy(nstart,start,osize);    
     delete [] start;
     start = nstart;
