@@ -11,7 +11,8 @@ typedef unsigned int bui_word;
 typedef unsigned long long bui_dword;
 
 #define BUI_WORD_WIDTH 32U
-#define BUI_DWORD_WIDTH 32U
+// 2147483648U
+#define BUI_PTR_BIT (1U << (BUI_WORD_WIDTH-1))
 #define BUI_WORD_MAX UINT_MAX
 
 // problem when wors size > unsigned int ?
@@ -21,7 +22,7 @@ typedef unsigned long long bui_dword;
 
 class biguint {
 private:
-  bui_word *ptr;
+  bui_word ptr; // either an int or a pointer ...
 
   friend bstreambuf &operator<<(bstreambuf &, biguint const &);
   friend bistream &operator>>(bistream &, biguint &);
@@ -51,13 +52,13 @@ public:
   /* ======== COMPARISON OPS ======= */
   /* =============================== */
 
-  bool operator==(bui_word v);
-  bool operator==(bui_dword v);
-  bool operator==(biguint const &v);
+  bool operator==(bui_word v) const;
+  bool operator==(bui_dword v) const;
+  bool operator==(biguint const &v) const;
 
-  bool operator!=(bui_word v);
-  bool operator!=(bui_dword v);
-  bool operator!=(biguint const &v);
+  bool operator!=(bui_word v) const;
+  bool operator!=(bui_dword v) const;
+  bool operator!=(biguint const &v) const;
 
   /* =============================== */
   /* ======== ARITHMETIC OPS ======= */
@@ -67,24 +68,24 @@ public:
   void operator+=(biguint const &src);
   void operator-=(bui_word w);
   void operator-=(biguint const &src);
-
+  /*
   void operator*=(bui_word v);
   void operator*=(biguint const &v);
   void operator/=(bui_word v);
   void operator%=(bui_word v);
   void operator^=(bui_word v);   
-
+  */
   biguint operator+(bui_word w) const;
   biguint operator+(biguint const &w) const;
   biguint operator-(bui_word w) const;
   biguint operator-(biguint const &w) const;
-
+  /*
   biguint operator*(bui_word w) const;
   biguint operator*(biguint const &w) const;
   biguint operator/(bui_word w) const;
   bui_word operator%(bui_word w) const;
   biguint operator^(bui_word v) const;
-
+  */
   /* =============================== */
   /* ======== CONVERSION OPS ======= */
   /* =============================== */
@@ -98,7 +99,13 @@ public:
   /* =============================== */
   
 private:
+  inline void destroy();
+  inline void clone(bui_word w);
+  inline void clone(bui_dword w);
+  inline void clone(biguint const &w);
   inline void resize(bui_word ndepth);
+  inline bui_word *aligned_alloc(unsigned int c);
+
   void ripple_carry(bui_word level);
   void ripple_borrow(bui_word level);
 };
@@ -106,10 +113,10 @@ private:
 /* ===================================== */
 /* ======== OTHER USEFUL METHODS ======= */
 /* ===================================== */
-
+/*
 std::ostream& operator<<(std::ostream &out, biguint val);
 bstreambuf &operator<<(bstreambuf &, biguint const &);
 bistream &operator>>(bistream &, biguint &);
 biguint pow(biguint const &r, unsigned int power);
-
+*/
 #endif

@@ -5,74 +5,49 @@
 
 using namespace std;
 
+#define PACK(x) ((((bui_word)x) >> 1U) | BUI_PTR_BIT)
+#define UNPACK(x) ((bui_word*)(x << 1U))
+
 /* =============================== */
 /* ========= CONSTRUCTORS ======== */
 /* =============================== */
 
 biguint::biguint() {
-  ptr = new bui_word[1];
-  ptr[0] = 1;
-  ptr[1] = 0U;
+  ptr = 0U;
 }
 
-biguint::biguint(bui_word v) {
-  ptr = new bui_word[1];
-  ptr[0] = 1;
-  ptr[1] = v;
-}
+biguint::biguint(bui_word v) { clone(v); }
+biguint::biguint(bui_dword v) { clone(v); }
+biguint::biguint(biguint const &src) { clone(src); }
 
-biguint::biguint(bui_dword v) {
-    ptr = new bui_word[2];
-    ptr[0] = 2;
-
-    for(unsigned int i=1;i<=2;i++) {
-      ptr[i] = (bui_word) v;
-      v >>= BUI_WORD_WIDTH;
-    }    
-  }
-
-biguint::biguint(biguint const &src) {
-    bui_word depth = src.ptr[0];
-    ptr = new bui_word[depth+1];
-    memcpy(ptr,src.ptr,(depth+1)*sizeof(bui_word));
-  }
-
+/*
 biguint::biguint(bui_word *p) {
   ptr = p;
-}
+  }*/
+
     
-biguint::~biguint() { delete [] ptr; }
+biguint::~biguint() { destroy(); }
 
 /* =============================== */
 /* ======== ASSIGNMENT OPS ======= */
 /* =============================== */
   
 biguint const &biguint::operator=(bui_word v) {
-  delete [] ptr;
-  ptr = new bui_word[1];
-  ptr[0] = 1;
-  ptr[1] = v;
+  destroy();
+  clone(v);
   return *this;
 }
 
 biguint const &biguint::operator=(bui_dword v) {
-  delete [] ptr;
-  ptr = new bui_word[BUI_ULONGLONG_SIZE];
-  ptr[0] = BUI_ULONGLONG_SIZE;
-  
-  for(unsigned int i=1;i<=BUI_ULONGLONG_SIZE;i++) {
-    ptr[i] = (bui_word) v;
-    v >>= BUI_WORD_WIDTH;
-  }    
+  destroy();
+  clone(v);
   return *this;
 }
 
 biguint const &biguint::operator=(biguint const &src) {
   if(this != &src) {
-    delete [] ptr;
-    bui_word depth = src.ptr[0];
-    ptr = new bui_word[depth+1];
-    memcpy(ptr,src.ptr,(depth+1)*sizeof(bui_word));
+    destroy();
+    clone(src);
   }
   return *this;
 }
@@ -85,71 +60,115 @@ void biguint::swap(biguint &src) {
 /* ======== COMPARISON OPS ======= */
 /* =============================== */
 
-bool biguint::operator==(bui_word v) {
-  if(ptr[1] != v) { return false; }
-  unsigned int depth(ptr[0]);
-  for(unsigned int i=2;i<=depth;++i) {
-    if(ptr[i] != 0) { return false; }
-  }
-  return true;
-}
-
-bool biguint::operator==(bui_dword v) {
-  bui_word depth(ptr[0]);
-  for(bui_word i=1;i<=depth;i++) {
-    if(ptr[i] != (bui_word) v) { return false; }
-    v >>= BUI_WORD_WIDTH;
-  }    
-  if(v != 0) { return false; }
-  return true;
-}
-
-bool biguint::operator==(biguint const &v) {
-  bui_word depth(std::min(ptr[0],v.ptr[0]));
-  for(bui_word i=1;i<=depth;i++) {
-    if(ptr[i] != v.ptr[i]) { return false; }
-  }
-  // now, check remaining digits are zero.
-  if(depth < ptr[0]) {
-    bui_word m_depth(ptr[0]);
-    for(bui_word i=depth+1;i<m_depth;++i) {
-      if(ptr[i] != 0) { return false; }
+bool biguint::operator==(bui_word v) const {
+  if(ptr & BUI_PTR_BIT) {    
+    bui_word *p = UNPACK(ptr);
+    if(p[1] != v) { return false; }
+    unsigned int depth(p[0]);
+    for(unsigned int i=2;i<=depth;++i) {
+      if(p[i] != 0) { return false; }
     }
+    return true;
   } else {
-    bui_word v_depth(ptr[0]);
-    for(bui_word i=depth+1;i<v_depth;++i) {
-      if(v.ptr[i] != 0) { return false; }
-    }      
+    return ptr == v;
+  } 
+}
+
+bool biguint::operator==(bui_dword v) const {
+  if(ptr & BUI_PTR_BIT) {
+    bui_word *p = UNPACK(ptr);
+    bui_word depth(p[0]);
+    for(bui_word i=1;i<=depth;i++) {
+      if(p[i] != (bui_word) v) { return false; }
+      v >>= BUI_WORD_WIDTH;
+    }    
+    if(v != 0) { return false; }
+    return true;
+  } else {
+    return (v <= BUI_WORD_MAX) && ptr == v;
+  } 
+}
+
+bool biguint::operator==(biguint const &v) const {
+  if(!(ptr & BUI_PTR_BIT)) {
+    return v == ptr;
+  } else if(!(v.ptr & BUI_PTR_BIT)) {
+    return (*this) == v.ptr;
+  } else {
+    bui_word *p(UNPACK(ptr));
+    bui_word *s(UNPACK(v.ptr));
+    bui_word depth(std::min(p[0],s[0]));
+    for(bui_word i=1;i<=depth;i++) {
+      if(p[i] != s[i]) { return false; }
+    }
+    // now, check remaining digits are zero.
+    if(depth < p[0]) {
+      bui_word m_depth(p[0]);
+      for(bui_word i=depth+1;i<m_depth;++i) {
+	if(p[i] != 0) { return false; }
+      }
+    } else {
+      bui_word v_depth(p[0]);
+      for(bui_word i=depth+1;i<v_depth;++i) {
+	if(s[i] != 0) { return false; }
+      }      
+    }
   }
   return true;
 }
 
-bool biguint::operator!=(bui_word v) { return !((*this) == v); }
-bool biguint::operator!=(bui_dword v) { return !((*this) == v); }
-bool biguint::operator!=(biguint const &v) { return !((*this) == v); }
-
+bool biguint::operator!=(bui_word v) const { return !((*this) == v); }
+bool biguint::operator!=(bui_dword v) const { return !((*this) == v); }
+bool biguint::operator!=(biguint const &v) const { return !((*this) == v); }
 
 /* =============================== */
 /* ======== ARITHMETIC OPS ======= */
 /* =============================== */
 
 void biguint::operator+=(bui_word w) {
-  bui_word v = ptr[1];
-  ptr[1] = v + w;
-  if((BUI_WORD_MAX-v) < w) { ripple_carry(1); }
+  if(ptr & BUI_PTR_BIT) {    
+    bui_word *p(UNPACK(ptr));
+    bui_word v = p[1];
+    p[1] = v + w;
+    if((BUI_WORD_MAX-v) < w) { ripple_carry(1); }
+  } else {
+    bui_word v = ptr;
+    ptr = v + w;
+    if((BUI_WORD_MAX-v) < w) {
+      bui_word *p = aligned_alloc(3); 
+      ptr = PACK(p);
+      p[0] = 1;
+      p[1] = v;
+      p[2] = 1U;
+    } else if(ptr & BUI_PTR_BIT) {
+      clone(ptr);
+    }
+  }
 }
 
 void biguint::operator+=(biguint const &src) {
-  bui_word depth = src.ptr[0];
+  if(!(src.ptr & BUI_PTR_BIT)) { (*this) += src.ptr; }
+  else if(!(ptr & BUI_PTR_BIT)) { 
+    // assume I need to go big
+    bui_word *p = aligned_alloc(2);
+    p[0] = 1;
+    p[1] = ptr;
+    ptr = PACK(p);
+  }
+
+  bui_word *p(UNPACK(ptr));
+  bui_word *s(UNPACK(src.ptr));
+
+  bui_word depth = s[0];
   resize(depth);
 
   unsigned int carry = 0;
   
   for(bui_word i=0;i<depth;++i) {
-    bui_word v = ptr[i+1];
-    bui_word w = src.ptr[i+1];
+    bui_word v = p[i+1];
+    bui_word w = s[i+1];
 
-    ptr[i+1] = v + w + carry;   
+    p[i+1] = v + w + carry;   
 
     if(carry == 0) {
       carry = (BUI_WORD_MAX - v) < w ? 1 : 0;
@@ -174,22 +193,40 @@ biguint biguint::operator+(bui_word w) const {
 }
 
 void biguint::operator-=(bui_word w) {
-  bui_word v = ptr[1];
-  ptr[1] = v - w;
-
-  if(v < w) { ripple_borrow(1); }
+  if(ptr & BUI_PTR_BIT) {    
+    bui_word *p(UNPACK(ptr));
+    bui_word v = p[1];
+    p[1] = v - w;
+    if(v < w) { ripple_borrow(1); }
+  } else {
+    bui_word v(ptr);
+    ptr = v - w;
+    if(v < w) {   throw std::runtime_error("biguint cannot go negative"); }
+  }
 }
 
 void biguint::operator-=(biguint const &src) {
-  bui_word depth = src.ptr[0];
+  if(!(src.ptr & BUI_PTR_BIT)) { (*this) -= src.ptr; }
+  else if(!(ptr & BUI_PTR_BIT)) { 
+    // assume I need to go big (COULD BE OPTIMISED?)
+    bui_word *p = aligned_alloc(2);   
+    p[0] = 1;
+    p[1] = ptr;
+    ptr = PACK(p);
+  }
+
+  bui_word *p(UNPACK(ptr));
+  bui_word *s(UNPACK(src.ptr));
+    
+  bui_word depth = s[0];
   resize(depth);
   unsigned int borrow = 0;
   
   for(bui_word i=0;i!=depth;++i) {
-    bui_word v = ptr[i+1];
-    bui_word w = src.ptr[i+1];
+    bui_word v = p[i+1];
+    bui_word w = s[i+1];
 
-    ptr[i+1] = v - w - borrow;    
+    p[i+1] = v - w - borrow;    
 
     if(borrow == 0) {
       borrow = v < w ? 1 : 0;
@@ -212,6 +249,9 @@ biguint biguint::operator-(bui_word w) const {
   r -= w;
   return r;
 }
+
+
+/*
 
 void biguint::operator*=(bui_word v) {
   bui_word depth(ptr[0]);
@@ -365,72 +405,130 @@ biguint biguint::operator^(bui_word v) const {
   return r;
 }
 
+*/
+
 /* =============================== */
 /* ======== CONVERSION OPS ======= */
 /* =============================== */
 
 unsigned int biguint::c_uint() const {
-  if(ptr[0] > BUI_UINT_SIZE) { throw runtime_error("biguint too large for unsigned int"); }
-  return ptr[1];
+  if(ptr & BUI_PTR_BIT) {
+    bui_word *p(UNPACK(ptr));
+    if(p[0] > BUI_UINT_SIZE) { throw runtime_error("biguint too large for unsigned int"); }
+    return p[1];
+  } else {
+    return ptr;
+  }
 }  
 
 unsigned long biguint::c_ulong() const {
-  if(ptr[0] > BUI_ULONG_SIZE) { throw runtime_error("biguint too large for unsigned long"); }
-  return ptr[1];
+  if(ptr & BUI_PTR_BIT) {
+    bui_word *p(UNPACK(ptr));
+    if(p[0] > BUI_ULONG_SIZE) { throw runtime_error("biguint too large for unsigned int"); }
+    return p[1];
+  } else {
+    return ptr;
+  }
 }  
 
 unsigned long long biguint::c_ulonglong() const {
-  bui_word depth = ptr[0];
-  if(depth > BUI_ULONGLONG_SIZE) { throw runtime_error("biguint too large for unsigned long long"); }
-  unsigned long long r=0;
-  for(bui_word i=depth;i>0;--i) {
-    r <<= BUI_WORD_WIDTH;
-    r += ptr[i];
+  if(ptr & BUI_PTR_BIT) {
+    bui_word *p(UNPACK(ptr));
+    bui_word depth = p[0];
+    if(depth > BUI_ULONGLONG_SIZE) { throw runtime_error("biguint too large for unsigned long long"); }
+    unsigned long long r=0;
+    for(bui_word i=depth;i>0;--i) {
+      r <<= BUI_WORD_WIDTH;
+      r += p[i];
+    }
+    return r;
+  } else {
+    return ptr;
   }
-  return r;
 }  
 
 /* =============================== */
 /* ======== HELPER METHODS ======= */
 /* =============================== */
+
+void biguint::destroy() {
+  if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); }
+}  
+
+void biguint::clone(bui_word v) {
+  if(v & BUI_PTR_BIT) {
+    bui_word *p = aligned_alloc(2);
+    ptr = PACK(p);
+    p[0] = 1;
+    p[1] = v;
+  } else {
+    ptr = v;
+  }
+}
+
+void biguint::clone(bui_dword v) {
+  bui_word *p = aligned_alloc(3);
+  p[0] = 2;
   
+  for(unsigned int i=1;i<=2;i++) {
+    p[i] = (bui_word) v;
+    v >>= BUI_WORD_WIDTH;
+  }    
+  ptr = PACK(p);
+}
+
+void biguint::clone(biguint const &src) {
+  if(src.ptr & BUI_PTR_BIT) {
+    bui_word *s = UNPACK(src.ptr);
+    bui_word depth = s[0];
+    bui_word *p = aligned_alloc(depth+1);
+    memcpy(p,s,(depth+1)*sizeof(bui_word));
+    ptr = PACK(p);
+  } else {
+    ptr = src.ptr;
+  }
+}
+
 void biguint::resize(bui_word ndepth) {
-  bui_word depth = ptr[0];
+  bui_word *p(UNPACK(ptr));
+  bui_word depth = p[0];
   if(depth >= ndepth) { return; }
-  bui_word *nptr = new bui_word[ndepth+1];        
+  bui_word *nptr = aligned_alloc(ndepth+1);
   nptr[0]=ndepth;
   memset(nptr+depth+1,0,(ndepth-depth)*sizeof(bui_word));
-  memcpy(nptr+1,ptr+1,depth*sizeof(bui_word));
-  delete [] ptr;
-  ptr = nptr;
+  memcpy(nptr+1,p+1,depth*sizeof(bui_word));
+  free(p);
+  ptr = PACK(nptr);
 }
 
 void biguint::ripple_carry(bui_word level) {
-  unsigned int depth(ptr[0]);
+  bui_word *p(UNPACK(ptr));
+  unsigned int depth(p[0]);
 
   for(unsigned int i(level);i<depth;++i) {
-    bui_word v = ptr[i+1];
+    bui_word v = p[i+1];
     
-    if(v == BUI_WORD_MAX) { ptr[i+1] = 0; } 
+    if(v == BUI_WORD_MAX) { p[i+1] = 0; } 
     else {
-      ptr[i+1] = v + 1;
+      p[i+1] = v + 1;
       return;
     }	
   }
   
   // not enough space to hold answer!
   resize(depth+1);
-  ptr[depth+1]=1U;
+  p[depth+1]=1U;
 }
 
 void biguint::ripple_borrow(bui_word level) {  
-  bui_word depth = ptr[0];
+  bui_word *p(UNPACK(ptr));
+  bui_word depth = p[0];
   for(bui_word i(level);i<depth;++i) {
-    bui_word v = ptr[i+1];
+    bui_word v = p[i+1];
     if(v == 0) {
-      ptr[i+1] = BUI_WORD_MAX;
+      p[i+1] = BUI_WORD_MAX;
     } else {
-      ptr[i+1] = v - 1;
+      p[i+1] = v - 1;
       return;
     }	
   }    
@@ -438,10 +536,16 @@ void biguint::ripple_borrow(bui_word level) {
   throw std::runtime_error("biguint cannot go negative"); 
 }
 
+bui_word *biguint::aligned_alloc(unsigned int c) {
+  bui_word *p = (bui_word*) malloc(c * sizeof(bui_word));  
+  if(((unsigned int)p) & 1) { throw std::runtime_error("Allocated memory not aligned!"); }
+  return p;
+}
+
 /* =============================== */
 /* ======== FRIEND METHODS ======= */
 /* =============================== */
-
+/*
 std::ostream& operator<<(ostream &out, biguint val) {
   std::string r;
 
@@ -462,26 +566,36 @@ biguint pow(biguint const &r, unsigned int power) {
 }
 
 bstreambuf &operator<<(bstreambuf &bout, biguint const &src) {
-  bui_word depth(src.ptr[0]);
-
-  bout << depth;
-  for(bui_word i=1;i<=depth;++i) { bout << src.ptr[i]; }
+  if(src.ptr & BUI_PTR_BIT) {
+    bui_word *s(UNPACK(src.ptr));
+    bui_word depth(s[0]);
+    
+    bout << depth;
+    for(bui_word i=1;i<=depth;++i) { bout << s[i]; }
+  } else {
+    bout << 1U << src.ptr;
+  }
 }
 
 bistream &operator>>(bistream &bin, biguint &src) {  
   bui_word depth;
 
   bin >> depth;
-  bui_word *ptr = new bui_word[depth+1];
-  ptr[0] = depth;
-  
-  for(bui_word i=1;i<=depth;++i) { 
-    bin >> ptr[i]; 
+  if(depth == 1) {
+    unsigned int v;
+    bin >> v;
+    biguint tmp(v);
+    src.swap(tmp);
+  } else {  
+    bui_word *ptr = new bui_word[depth+1];
+    ptr[0] = depth;
+    
+    for(bui_word i=1;i<=depth;++i) { bin >> ptr[i]; }
+
+    biguint tmp(ptr);
+    src.swap(tmp);
   }
-  
-  biguint tmp(ptr);
-  src.swap(tmp);
 
   return bin;
 }
-
+*/
