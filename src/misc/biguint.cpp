@@ -260,7 +260,6 @@ biguint biguint::operator-(bui_word w) const {
   return r;
 }
 
-
 /*
 
 void biguint::operator*=(bui_word v) {
