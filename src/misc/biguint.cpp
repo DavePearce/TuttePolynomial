@@ -260,59 +260,87 @@ biguint biguint::operator-(bui_word w) const {
   return r;
 }
 
-/*
-
 void biguint::operator*=(bui_word v) {
-  bui_word depth(ptr[0]);
   bui_word overflow = 0;
 
-  for(bui_word i=1;i<=depth;++i) {
-    bui_dword w = ptr[i];
-    w = (w * v) + overflow;
-    ptr[i] = w;
+  if(ptr & BUI_PTR_BIT) {    
+    // complicated case!
+    bui_word *p(UNPACK(ptr));
+    bui_word depth(p[0]);
+    
+    for(bui_word i=1;i<=depth;++i) {
+      bui_dword w = p[i];
+      w = (w * v) + overflow;
+      p[i] = w;
+      overflow = w >> BUI_WORD_WIDTH;
+    }
+    
+    if(overflow > 0) {
+      // need additional space
+      resize(depth+1);   
+      p = UNPACK(ptr); 
+      p[depth+1] = overflow;
+    }
+  } else {    
+    // easier case!
+    bui_dword w = ptr * v;
     overflow = w >> BUI_WORD_WIDTH;
-  }
-
-  if(overflow > 0) {
-    // need additional space
-    resize(depth+1);    
-    ptr[depth+1] = overflow;
+    if(overflow > 0) { 
+      // build new object
+      bui_word *p = aligned_alloc(2);
+      ptr = PACK(p);
+      p[0] = w;
+      p[1] = overflow;
+    } else {
+      ptr = w;
+    }
   }
 }
 
-void biguint::operator*=(biguint const &v) {
+void biguint::operator*=(biguint const &src) {
   // this could probably be optimised ...
-  bui_word depth(v.ptr[0]);
-  biguint ans(0U);
-
-  for(unsigned int j=0;j<depth;++j) {
-    biguint tmp(*this);
-    tmp *= v.ptr[j+1];
-
-    unsigned int t_depth(tmp.ptr[0]);
-    unsigned int carry = 0;
-
-    ans.resize(j + t_depth); 
+  if((src.ptr & BUI_PTR_BIT) == 0) { 
+    (*this) *= src.ptr; 
+  } else if((ptr & BUI_PTR_BIT) == 0) {
+    // could be optimised a little?
+    biguint ans(src);
+    ans *= ptr;
+    swap(ans);
+  } else {
+    bui_word *s(UNPACK(src.ptr));
+    bui_word depth = s[0];
+    biguint ans(0U);
     
-    // standard add, although slightly modified
-    // to give the base shift for free.
-    for(bui_word i=0;i!=t_depth;++i) {
-      bui_word v = ans.ptr[j+i+1];
-      bui_word w = tmp.ptr[i+1];
+    for(unsigned int j=0;j<depth;++j) {
+      biguint tmp(*this);
+      tmp *= s[j+1];
+
+      bui_word *tp(UNPACK(tmp.ptr));      
+      unsigned int t_depth(tp[0]);
+      unsigned int carry = 0;
       
-      ans.ptr[j+i+1] = v + w + carry;   
-      
-      if(carry == 0) {
-	carry = (BUI_WORD_MAX - v) < w ? 1 : 0;
-      } else {
-	carry = (BUI_WORD_MAX - v) <= w ? 1 : 0;
+      ans.resize(j + t_depth); 
+      bui_word *ap(UNPACK(ans.ptr));      
+
+      // standard add, although slightly modified
+      // to give the base shift for free.
+      for(bui_word i=0;i!=t_depth;++i) {
+	bui_word v = ap[j+i+1];
+	bui_word w = tp[i+1];
+	
+	ap[j+i+1] = v + w + carry;   
+	
+	if(carry == 0) {
+	  carry = (BUI_WORD_MAX - v) < w ? 1 : 0;
+	} else {
+	  carry = (BUI_WORD_MAX - v) <= w ? 1 : 0;
+	}
       }
+      
+      if(carry == 1) { ans.ripple_carry(t_depth+j); }     
     }
-    
-    if(carry == 1) { ans.ripple_carry(t_depth+j); }     
+    swap(ans);
   }
-
-  swap(ans);
 }
 
 biguint biguint::operator*(bui_word w) const {
@@ -321,50 +349,62 @@ biguint biguint::operator*(bui_word w) const {
   return r;
 }
 
-biguint biguint::operator*(biguint const &v) const {
-  // this could probably be optimised ...
-  bui_word depth(v.ptr[0]);
-  biguint ans(0U);
-
-  for(unsigned int j=0;j<depth;++j) {
-    biguint tmp(*this);
-    tmp *= v.ptr[j+1];
-
-    unsigned int t_depth(tmp.ptr[0]);
-    unsigned int carry = 0;
-
-    ans.resize(j + t_depth); 
+biguint biguint::operator*(biguint const &src) const {
+  if((src.ptr & BUI_PTR_BIT) == 0) { return (*this) * src.ptr; }
+  else if((ptr & BUI_PTR_BIT) == 0) { return src * ptr; }
+  else {
+    bui_word *s(UNPACK(src.ptr));
+    bui_word depth = s[0];
+    biguint ans(0U);
     
-    // standard add, although slightly modified
-    // to give the base shift for free.
-    for(bui_word i=0;i!=t_depth;++i) {
-      bui_word v = ans.ptr[j+i+1];
-      bui_word w = tmp.ptr[i+1];
+    for(unsigned int j=0;j<depth;++j) {
+      biguint tmp(*this);
+      tmp *= s[j+1];
       
-      ans.ptr[j+i+1] = v + w + carry;   
+      bui_word *tp(UNPACK(tmp.ptr));      
+      unsigned int t_depth(tp[0]);
+      unsigned int carry = 0;
       
-      if(carry == 0) {
-	carry = (BUI_WORD_MAX - v) < w ? 1 : 0;
-      } else {
-	carry = (BUI_WORD_MAX - v) <= w ? 1 : 0;
+      ans.resize(j + t_depth); 
+      bui_word *ap(UNPACK(ans.ptr));      
+
+      // standard add, although slightly modified
+      // to give the base shift for free.
+      for(bui_word i=0;i!=t_depth;++i) {
+	bui_word v = ap[j+i+1];
+	bui_word w = tp[i+1];
+	
+	ap[j+i+1] = v + w + carry;   
+	
+	if(carry == 0) {
+	  carry = (BUI_WORD_MAX - v) < w ? 1 : 0;
+	} else {
+	  carry = (BUI_WORD_MAX - v) <= w ? 1 : 0;
+	}
       }
+      
+      if(carry == 1) { ans.ripple_carry(t_depth+j); }     
     }
-    
-    if(carry == 1) { ans.ripple_carry(t_depth+j); }     
+    return ans;
   }
-  return ans;
 }
 
 void biguint::operator/=(bui_word v) {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
-  bui_word remainder=0;
-  
-  for(bui_word i=ptr[0];i>0;--i) {
-    bui_dword w = remainder;
-    w = (w << BUI_WORD_WIDTH) + ptr[i];
-    ptr[i] = w / v;
-    remainder = w % v;
-  }    
+  if(ptr & BUI_PTR_BIT) {
+    bui_word *p(UNPACK(ptr));
+    bui_word remainder=0;
+    
+    for(bui_word i=p[0];i>0;--i) {
+      bui_dword w = remainder;
+      w = (w << BUI_WORD_WIDTH) + p[i];
+      p[i] = w / v;
+      remainder = w % v;
+    }    
+  } else {
+    // real easy!
+    ptr = ptr / v;
+  }
 }
 
 biguint biguint::operator/(bui_word w) const {
@@ -375,29 +415,36 @@ biguint biguint::operator/(bui_word w) const {
 
 void biguint::operator%=(bui_word v) {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
-  bui_word remainder=0;
-  
-  for(bui_word i=ptr[0];i>0;--i) {
-    bui_dword w = remainder;
-    w = (w << BUI_WORD_WIDTH) + ptr[i];
-    remainder = w % v;
-  }    
-
-  resize(1);
-  ptr[1] = remainder;
+  if(ptr & BUI_PTR_BIT) {
+    bui_word *p(UNPACK(ptr));
+    bui_word remainder=0;
+    
+    for(bui_word i=p[0];i>0;--i) {
+      bui_dword w = remainder;
+      w = (w << BUI_WORD_WIDTH) + p[i];
+      remainder = w % v;
+    }    
+    clone(remainder);
+  } else {
+    ptr = ptr % v;
+  }
 }
 
 bui_word biguint::operator%(bui_word v) const {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
-  bui_word remainder=0;
+  if(ptr & BUI_PTR_BIT) {
+    bui_word *p(UNPACK(ptr));
+    bui_word remainder=0;
   
-  for(bui_word i=ptr[0];i>0;--i) {
-    bui_dword w = remainder;
-    w = (w << BUI_WORD_WIDTH) + ptr[i];
-    remainder = w % v;
-  }    
-
-  return remainder;
+   for(bui_word i=p[0];i>0;--i) {
+     bui_dword w = remainder;
+     w = (w << BUI_WORD_WIDTH) + p[i];
+     remainder = w % v;
+   }     
+   return remainder;
+  } else {
+    return ptr % v;
+  }
 }
 
 void biguint::operator^=(bui_word v) {
@@ -413,8 +460,6 @@ biguint biguint::operator^(bui_word v) const {
   r ^= v;
   return r;
 }
-
-*/
 
 /* =============================== */
 /* ======== CONVERSION OPS ======= */

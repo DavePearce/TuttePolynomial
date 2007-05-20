@@ -68,24 +68,24 @@ public:
   void operator+=(biguint const &src);
   void operator-=(bui_word w);
   void operator-=(biguint const &src);
-  /*
+
   void operator*=(bui_word v);
   void operator*=(biguint const &v);
   void operator/=(bui_word v);
   void operator%=(bui_word v);
   void operator^=(bui_word v);   
-  */
+
   biguint operator+(bui_word w) const;
   biguint operator+(biguint const &w) const;
   biguint operator-(bui_word w) const;
   biguint operator-(biguint const &w) const;
-  /*
+
   biguint operator*(bui_word w) const;
   biguint operator*(biguint const &w) const;
   biguint operator/(bui_word w) const;
   bui_word operator%(bui_word w) const;
   biguint operator^(bui_word v) const;
-  */
+
   /* =============================== */
   /* ======== CONVERSION OPS ======= */
   /* =============================== */
