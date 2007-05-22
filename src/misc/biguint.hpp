@@ -5,6 +5,7 @@
 #include <climits>
 #include "bstreambuf.hpp"
 #include "bistream.hpp"
+#include "safe_arithmetic.hpp"
 
 // this class provides arbitrary sized integers
 typedef unsigned int bui_word;
@@ -70,22 +71,43 @@ public:
   void operator-=(bui_word w);
   void operator-=(biguint const &src);
 
+  template<class T>
+  void operator+=(safe<T> w) { (*this) += w.unpack(); }    
+  template<class T>
+  void operator-=(safe<T> w) { (*this) -= w.unpack(); }    
+
+
   void operator*=(bui_word v);
   void operator*=(biguint const &v);
   void operator/=(bui_word v);
   void operator%=(bui_word v);
   void operator^=(bui_word v);   
 
+  template<class T>
+  void operator*=(safe<T> w) { (*this) *= w.unpack(); }    
+  template<class T>
+  void operator/=(safe<T> w) { (*this) /= w.unpack(); }    
+
   biguint operator+(bui_word w) const;
   biguint operator+(biguint const &w) const;
   biguint operator-(bui_word w) const;
   biguint operator-(biguint const &w) const;
+
+  template<class T>
+  biguint operator+(safe<T> w) { return (*this) + w.unpack(); }    
+  template<class T>
+  biguint operator-(safe<T> w) { return (*this) - w.unpack(); }    
 
   biguint operator*(bui_word w) const;
   biguint operator*(biguint const &w) const;
   biguint operator/(bui_word w) const;
   bui_word operator%(bui_word w) const;
   biguint operator^(bui_word v) const;
+
+  template<class T>
+  biguint operator*(safe<T> w) { return (*this) * w.unpack(); }    
+  template<class T>
+  biguint operator/(safe<T> w) { return (*this) / w.unpack(); }    
 
   /* =============================== */
   /* ======== CONVERSION OPS ======= */

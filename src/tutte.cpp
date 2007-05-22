@@ -14,6 +14,7 @@
 #include "eval_simple_fives.hpp" // auto-generated solutions for simple graphs of size 5
 #include "cache/simple_cache.hpp"
 #include "misc/biguint.hpp"
+#include "misc/safe_arithmetic.hpp"
 
 #include <set>
 
@@ -584,7 +585,7 @@ int main(int argc, char *argv[]) {
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
       if(size == OPT_SMALL) {
-	run<spanning_graph<adjacency_list<> >,factor_poly<unsigned int> >(input,ngraphs,quiet_mode);
+	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,quiet_mode);
       } else if(size == OPT_MEDIUM) {
 	run<spanning_graph<adjacency_list<> >,factor_poly<unsigned long long> >(input,ngraphs,quiet_mode);
       } else {
