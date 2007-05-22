@@ -27,10 +27,10 @@ biguint::biguint(bui_word v, bui_word depth) {
   ptr = PACK(p);
 }
 
-/*
+
 biguint::biguint(bui_word *p) {
-  ptr = p;
-  }*/
+  ptr = PACK(p);
+}
     
 biguint::~biguint() { destroy(); }
 
@@ -602,7 +602,7 @@ bui_word *biguint::aligned_alloc(unsigned int c) {
 /* =============================== */
 /* ======== FRIEND METHODS ======= */
 /* =============================== */
-/*
+
 std::ostream& operator<<(ostream &out, biguint val) {
   std::string r;
 
@@ -655,4 +655,4 @@ bistream &operator>>(bistream &bin, biguint &src) {
 
   return bin;
 }
-*/
+

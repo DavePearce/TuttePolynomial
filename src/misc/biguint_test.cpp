@@ -22,7 +22,7 @@ string op2str(aop op) {
   else { return "/"; }
 }
 
-/*
+
 void commutative_mul_test(unsigned int count, unsigned int length) {
   for(unsigned int i=0;i!=count;++i) {
     unsigned int ws[length];
@@ -58,7 +58,7 @@ void commutative_mul_test(unsigned int count, unsigned int length) {
     } 
   }
 }
-*/
+
 void commutative_add_test(unsigned int count, unsigned int length) {
   for(unsigned int i=0;i!=count;++i) {
     unsigned int ws[length];
@@ -172,5 +172,5 @@ int main(int argc, char *argv[]) {
   cout << "PRIM MUL DONE" << endl;
   primitive_test(count,DIV);
   cout << "PRIM DIV DONE" << endl;
-  //  commutative_mul_test(count,10);
+  commutative_mul_test(count,10);
 }

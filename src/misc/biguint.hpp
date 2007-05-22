@@ -114,10 +114,10 @@ private:
 /* ===================================== */
 /* ======== OTHER USEFUL METHODS ======= */
 /* ===================================== */
-/*
+
 std::ostream& operator<<(std::ostream &out, biguint val);
 bstreambuf &operator<<(bstreambuf &, biguint const &);
 bistream &operator>>(bistream &, biguint &);
 biguint pow(biguint const &r, unsigned int power);
-*/
+
 #endif
