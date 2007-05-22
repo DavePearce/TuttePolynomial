@@ -1,8 +1,5 @@
 Things to do!
 =============
-* Complete support for Bennett's XML output
-* Add y-shifting optimisation
-* Add support for integer overflow + optimise Poly
 * Eliminate need to retree based on Gary's idea.
 * Adde support for matching multi-trees and multi-loons since we can terminate immediately with them.
 * Investigate the multi-edge matching idea, where number of multiple edges is not important.

@@ -587,7 +587,7 @@ int main(int argc, char *argv[]) {
       if(size == OPT_SMALL) {
 	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,quiet_mode);
       } else if(size == OPT_MEDIUM) {
-	run<spanning_graph<adjacency_list<> >,factor_poly<unsigned long long> >(input,ngraphs,quiet_mode);
+	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,quiet_mode);
       } else {
 	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,quiet_mode);
       }

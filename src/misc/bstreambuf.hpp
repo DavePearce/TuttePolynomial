@@ -171,4 +171,5 @@ bstreambuf& operator<<(bstreambuf &out, long val);
 bstreambuf& operator<<(bstreambuf &out, unsigned long val);
 bstreambuf& operator<<(bstreambuf &out, long long val);
 bstreambuf& operator<<(bstreambuf &out, unsigned long long val);
+
 #endif

@@ -274,9 +274,7 @@ template<class T>
 bstreambuf &operator<<(bstreambuf &bout, yterms<T> const &yt) {
   bout << yt.ymin << yt.ymax;
 
-  for(unsigned int i=yt.ymin;i<=yt.ymax;++i) {
-    bout << yt[i];
-  }
+  for(unsigned int i=yt.ymin;i<=yt.ymax;++i) { bout << yt[i]; }
 }
 
 template<class T> 
