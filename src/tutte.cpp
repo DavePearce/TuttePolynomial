@@ -448,7 +448,11 @@ int main(int argc, char *argv[]) {
   #define OPT_NAUTYWORKSPACE 20
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
-  #define OPT_XML_OUT 31
+  #define OPT_XML_OUT 32
+  #define OPT_SMALL 40
+  #define OPT_MEDIUM 41
+  #define OPT_LARGE 42
+
 
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
@@ -462,6 +466,9 @@ int main(int argc, char *argv[]) {
     {"xml-tree",no_argument,NULL,OPT_XML_OUT},
     {"ngraphs",required_argument,NULL,OPT_NGRAPHS},
     {"quiet",no_argument,NULL,OPT_QUIET},
+    {"small",no_argument,NULL,OPT_SMALL},
+    {"medium",no_argument,NULL,OPT_MEDIUM},
+    {"large",no_argument,NULL,OPT_LARGE},
     NULL
   };
   
@@ -481,6 +488,7 @@ int main(int argc, char *argv[]) {
   unsigned int cache_buckets(10000);     // default 10,000 buckets
   unsigned int poly_rep(OPT_FACTOR_POLY);
   unsigned int ngraphs(UINT_MAX);
+  unsigned int size = OPT_LARGE;
   bool quiet_mode=false;
 
   while((v=getopt_long(argc,argv,"qc:",long_options,NULL)) != -1) {
@@ -517,6 +525,10 @@ int main(int argc, char *argv[]) {
     case OPT_CACHERANDOM:
       cache.set_random_replacement();
       break;
+    // --- POLY OPTIONS ---
+    case OPT_SIMPLE_POLY:
+      poly_rep = OPT_SIMPLE_POLY;
+      break;
     // --- OTHER OPTIONS ---
     case OPT_NAUTYWORKSPACE:
       resize_nauty_workspace(parse_amount(optarg));
@@ -524,11 +536,12 @@ int main(int argc, char *argv[]) {
     case OPT_SMALLGRAPHS:
       small_graph_threshold = parse_amount(optarg);      
       break;
-    // --- POLY OPTIONS ---
-    case OPT_SIMPLE_POLY:
-      poly_rep = OPT_SIMPLE_POLY;
+    case OPT_SMALL:
+    case OPT_MEDIUM:
+    case OPT_LARGE:
+      size=v;
       break;
-    }
+    }    
   }
 
   // Quick sanity check
@@ -570,7 +583,13 @@ int main(int argc, char *argv[]) {
   try {
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
-      run<spanning_graph<adjacency_list<> >,factor_poly<unsigned int> >(input,ngraphs,quiet_mode);
+      if(size == OPT_SMALL) {
+	run<spanning_graph<adjacency_list<> >,factor_poly<unsigned int> >(input,ngraphs,quiet_mode);
+      } else if(size == OPT_MEDIUM) {
+	run<spanning_graph<adjacency_list<> >,factor_poly<unsigned long long> >(input,ngraphs,quiet_mode);
+      } else {
+	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,quiet_mode);
+      }
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,quiet_mode);
     }

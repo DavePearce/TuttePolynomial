@@ -91,6 +91,22 @@ public:
     } 
     v = *((unsigned long*) read_ptr);    
     read_ptr += sizeof(unsigned long);     
+  } 
+  
+  void read(long long& v) {    
+    if((read_ptr+sizeof(long long)) > end) {
+      throw std::runtime_error("attempt to read past end of stream!");
+    } 
+    v = *((long long*) read_ptr);    
+    read_ptr += sizeof(long long);   
+  }
+
+  void read(unsigned long long& v) {    
+    if((read_ptr+sizeof(unsigned long long)) > end) {
+      throw std::runtime_error("attempt to read past end of stream!");
+    } 
+    v = *((unsigned long long*) read_ptr);    
+    read_ptr += sizeof(unsigned long long);     
   }  
 };
 
@@ -102,5 +118,8 @@ bistream &operator>>(bistream &out, int&);
 bistream &operator>>(bistream &out, unsigned int&);
 bistream &operator>>(bistream &out, long&);
 bistream &operator>>(bistream &out, unsigned long&);
+bistream &operator>>(bistream &out, long long&);
+bistream &operator>>(bistream &out, unsigned long long&);
+
 
 #endif

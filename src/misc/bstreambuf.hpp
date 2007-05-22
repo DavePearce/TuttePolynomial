@@ -123,6 +123,26 @@ public:
     write_ptr += sizeof(long);
   }
 
+
+  void write(unsigned long long v) {    
+    if((size()+sizeof(unsigned long long)) > max()) {
+      resize(size() + sizeof(unsigned long long));      
+    } 
+    // this line is a bit of a hack
+    *((unsigned long long*) write_ptr) = v;
+    write_ptr += sizeof(unsigned long long);
+  }
+
+  void write(long long v) {    
+    if((size()+sizeof(long long)) > max()) {
+      resize(size() + sizeof(long long));      
+    } 
+    // this line is a bit of a hack
+    *((long long*) write_ptr) = v;
+    write_ptr += sizeof(long long);
+  }
+
+
   unsigned int size() const { return write_ptr-start; }
   unsigned int max() const { return end-start; }
   unsigned char const * const c_ptr() const { return start; }
@@ -149,5 +169,6 @@ bstreambuf& operator<<(bstreambuf &out, int val);
 bstreambuf& operator<<(bstreambuf &out, unsigned int val);
 bstreambuf& operator<<(bstreambuf &out, long val);
 bstreambuf& operator<<(bstreambuf &out, unsigned long val);
-
+bstreambuf& operator<<(bstreambuf &out, long long val);
+bstreambuf& operator<<(bstreambuf &out, unsigned long long val);
 #endif
