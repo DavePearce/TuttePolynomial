@@ -101,12 +101,19 @@ void primitive_test(unsigned int count, aop op) {
       r2 -= w2; // bigint uint
       r3 -= w2;    
     } else if(op == MUL) {
+      cout << "STAGE 1" << endl;
       r1 *= biguint(w2);
+      cout << "STAGE 2" << endl;
       r2 *= w2;
+      cout << "STAGE 3" << endl;
       r3 *= w2;
+      cout << "STAGE 4" << endl;
     } else if(op == DIV) {
+      cout << "STAGE 5" << endl;
       r1 /= w2;
+      cout << "STAGE 6" << endl;
       r2 /= w2;
+      cout << "STAGE 7" << endl;
       r3 /= w2;
     }
 
@@ -169,6 +176,6 @@ int main(int argc, char *argv[]) {
   cout << "PRIM SUB DONE" << endl;
   commutative_add_test(count,10);
   primitive_test(count,MUL);
-  primitive_test(count,DIV);
+  // primitive_test(count,DIV);
   //  commutative_mul_test(count,10);
 }

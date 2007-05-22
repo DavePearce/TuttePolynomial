@@ -89,9 +89,9 @@ bool biguint::operator==(bui_dword v) const {
 }
 
 bool biguint::operator==(biguint const &v) const {
-  if(!(ptr & BUI_PTR_BIT)) {
+  if((ptr & BUI_PTR_BIT) == 0) {
     return v == ptr;
-  } else if(!(v.ptr & BUI_PTR_BIT)) {
+  } else if((v.ptr & BUI_PTR_BIT) == 0) {
     return (*this) == v.ptr;
   } else {
     bui_word *p(UNPACK(ptr));
@@ -100,18 +100,15 @@ bool biguint::operator==(biguint const &v) const {
     for(bui_word i=1;i<=depth;i++) {
       if(p[i] != s[i]) { return false; }
     }
-    // now, check remaining digits are zero.
-    if(depth < p[0]) {
-      bui_word m_depth(p[0]);
-      for(bui_word i=depth+1;i<m_depth;++i) {
-	if(p[i] != 0) { return false; }
-      }
-    } else {
-      bui_word v_depth(p[0]);
-      for(bui_word i=depth+1;i<v_depth;++i) {
-	if(s[i] != 0) { return false; }
-      }      
+    // now, check remaining digits are zero.    
+    bui_word m_depth(p[0]);
+    for(bui_word i=depth+1;i<m_depth;++i) {
+      if(p[i] != 0) { return false; }
     }
+    bui_word v_depth(s[0]);
+    for(bui_word i=depth+1;i<v_depth;++i) {
+      if(s[i] != 0) { return false; }
+    }      
   }
   return true;
 }
@@ -284,13 +281,14 @@ void biguint::operator*=(bui_word v) {
   } else {    
     // easier case!
     bui_dword w = ptr * v;
-    overflow = w >> BUI_WORD_WIDTH;
+    overflow = w >> (BUI_WORD_WIDTH-1);
     if(overflow > 0) { 
       // build new object
-      bui_word *p = aligned_alloc(2);
+      bui_word *p = aligned_alloc(3);
       ptr = PACK(p);
-      p[0] = w;
-      p[1] = overflow;
+      p[0] = 2U;
+      p[1] = w;
+      p[2] = overflow >> 1;
     } else {
       ptr = w;
     }
@@ -307,20 +305,29 @@ void biguint::operator*=(biguint const &src) {
     ans *= ptr;
     swap(ans);
   } else {
+    std::cout << "S1" << endl;
     bui_word *s(UNPACK(src.ptr));
     bui_word depth = s[0];
     biguint ans(0U);
+
+    std::cout << "S2" << endl;
     
     for(unsigned int j=0;j<depth;++j) {
       biguint tmp(*this);
       tmp *= s[j+1];
 
+      std::cout << "S3" << endl;
+
       bui_word *tp(UNPACK(tmp.ptr));      
       unsigned int t_depth(tp[0]);
       unsigned int carry = 0;
-      
+
+      std::cout << "S4" << endl;      
+
       ans.resize(j + t_depth); 
       bui_word *ap(UNPACK(ans.ptr));      
+
+      std::cout << "S5" << endl;
 
       // standard add, although slightly modified
       // to give the base shift for free.
@@ -329,14 +336,16 @@ void biguint::operator*=(biguint const &src) {
 	bui_word w = tp[i+1];
 	
 	ap[j+i+1] = v + w + carry;   
-	
+
 	if(carry == 0) {
-	  carry = (BUI_WORD_MAX - v) < w ? 1 : 0;
+	  carry = w < v ? 1 : 0;
 	} else {
-	  carry = (BUI_WORD_MAX - v) <= w ? 1 : 0;
+	  carry = w <= v ? 1 : 0;
 	}
       }
-      
+
+      std::cout << "S6" << endl;      
+
       if(carry == 1) { ans.ripple_carry(t_depth+j); }     
     }
     swap(ans);
