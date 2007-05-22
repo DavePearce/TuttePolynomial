@@ -20,6 +20,13 @@ biguint::biguint(bui_word v) { clone(v); }
 biguint::biguint(bui_dword v) { clone(v); }
 biguint::biguint(biguint const &src) { clone(src); }
 
+biguint::biguint(bui_word v, bui_word depth) { 
+  bui_word *p = aligned_alloc(depth+1);
+  p[0]=depth;
+  memset(p+1,0,depth*sizeof(bui_word));
+  ptr = PACK(p);
+}
+
 /*
 biguint::biguint(bui_word *p) {
   ptr = p;
@@ -258,12 +265,11 @@ biguint biguint::operator-(bui_word w) const {
 }
 
 void biguint::operator*=(bui_word v) {
-  bui_word overflow = 0;
-
   if(ptr & BUI_PTR_BIT) {    
     // complicated case!
     bui_word *p(UNPACK(ptr));
     bui_word depth(p[0]);
+    bui_word overflow = 0;
     
     for(bui_word i=1;i<=depth;++i) {
       bui_dword w = p[i];
@@ -280,15 +286,14 @@ void biguint::operator*=(bui_word v) {
     }
   } else {    
     // easier case!
-    bui_dword w = ptr * v;
-    overflow = w >> (BUI_WORD_WIDTH-1);
-    if(overflow > 0) { 
+    bui_dword w = ((bui_dword) ptr) * v;
+    if(w >= BUI_PTR_BIT) { 
       // build new object
       bui_word *p = aligned_alloc(3);
       ptr = PACK(p);
       p[0] = 2U;
       p[1] = w;
-      p[2] = overflow >> 1;
+      p[2] = w >> BUI_WORD_WIDTH;
     } else {
       ptr = w;
     }
@@ -305,29 +310,21 @@ void biguint::operator*=(biguint const &src) {
     ans *= ptr;
     swap(ans);
   } else {
-    std::cout << "S1" << endl;
     bui_word *s(UNPACK(src.ptr));
     bui_word depth = s[0];
-    biguint ans(0U);
+    biguint ans(0U,depth);
 
-    std::cout << "S2" << endl;
-    
     for(unsigned int j=0;j<depth;++j) {
       biguint tmp(*this);
       tmp *= s[j+1];
-
-      std::cout << "S3" << endl;
 
       bui_word *tp(UNPACK(tmp.ptr));      
       unsigned int t_depth(tp[0]);
       unsigned int carry = 0;
 
-      std::cout << "S4" << endl;      
-
       ans.resize(j + t_depth); 
-      bui_word *ap(UNPACK(ans.ptr));      
 
-      std::cout << "S5" << endl;
+      bui_word *ap(UNPACK(ans.ptr));      
 
       // standard add, although slightly modified
       // to give the base shift for free.
@@ -343,8 +340,6 @@ void biguint::operator*=(biguint const &src) {
 	  carry = w <= v ? 1 : 0;
 	}
       }
-
-      std::cout << "S6" << endl;      
 
       if(carry == 1) { ans.ripple_carry(t_depth+j); }     
     }
@@ -364,8 +359,8 @@ biguint biguint::operator*(biguint const &src) const {
   else {
     bui_word *s(UNPACK(src.ptr));
     bui_word depth = s[0];
-    biguint ans(0U);
-    
+    biguint ans(0U,depth);
+
     for(unsigned int j=0;j<depth;++j) {
       biguint tmp(*this);
       tmp *= s[j+1];
@@ -386,9 +381,9 @@ biguint biguint::operator*(biguint const &src) const {
 	ap[j+i+1] = v + w + carry;   
 	
 	if(carry == 0) {
-	  carry = (BUI_WORD_MAX - v) < w ? 1 : 0;
+	  carry = w < v ? 1 : 0;
 	} else {
-	  carry = (BUI_WORD_MAX - v) <= w ? 1 : 0;
+	  carry = w <= v ? 1 : 0;
 	}
       }
       

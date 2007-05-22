@@ -35,6 +35,7 @@ public:
   biguint(bui_word v);
   biguint(bui_dword v);
   biguint(biguint const &src);
+  biguint(bui_word v, bui_word d);
   biguint(bui_word *p);
   ~biguint();  
 
