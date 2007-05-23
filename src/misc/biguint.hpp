@@ -71,6 +71,7 @@ public:
   void operator-=(biguint const &src);
 
   void operator*=(bui_word v);
+  void operator*=(bui_dword v);
   void operator*=(biguint const &v);
   void operator/=(bui_word v);
   void operator%=(bui_word v);
@@ -82,6 +83,7 @@ public:
   biguint operator-(biguint const &w) const;
 
   biguint operator*(bui_word w) const;
+  biguint operator*(bui_dword w) const;
   biguint operator*(biguint const &w) const;
   biguint operator/(bui_word w) const;
   bui_word operator%(bui_word w) const;

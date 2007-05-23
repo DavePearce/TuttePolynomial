@@ -300,6 +300,11 @@ void biguint::operator*=(bui_word v) {
   }
 }
 
+void biguint::operator*=(bui_dword v) {
+  biguint tmp(v);
+  (*this) *= tmp;
+}
+
 void biguint::operator*=(biguint const &src) {
   // this could probably be optimised ...
   if((src.ptr & BUI_PTR_BIT) == 0) { 
@@ -348,6 +353,12 @@ void biguint::operator*=(biguint const &src) {
 }
 
 biguint biguint::operator*(bui_word w) const {
+  biguint r(*this);
+  r *= w;
+  return r;
+}
+
+biguint biguint::operator*(bui_dword w) const {
   biguint r(*this);
   r *= w;
   return r;

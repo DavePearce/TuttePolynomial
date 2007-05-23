@@ -32,6 +32,8 @@ public:
   unsigned int domain_size() const { return _domain_size; }
   unsigned int num_vertices() const { return vertices.size(); }
   unsigned int num_edges() const { return numedges; }
+  unsigned int num_underlying_edges() const { return numedges - nummultiedges; }
+
   unsigned int num_edges(unsigned int vertex) const { 
     // this could also be cached.
     unsigned int count=0;
@@ -43,6 +45,17 @@ public:
 
   unsigned int num_underlying_edges(unsigned int vertex) const { 
     return edges[vertex].size();
+  }
+
+  unsigned int num_edges(unsigned int from, unsigned int to) {
+    T &fset = edges[from];         
+    typename T::iterator fend = fset.end(); // optimisation
+    typename T::iterator i = fset.find(to);
+    if(i != fend) {
+      return i->second;
+    } else {
+      return 0;
+    }
   }
 
   unsigned int num_multiedges() const { return nummultiedges; }
@@ -64,6 +77,12 @@ public:
       } 
     }
     edges[v] = T(); // save memory
+  }
+
+  void clearall() {
+    for(vertex_iterator i(begin_verts());i!=end_verts();++i) {
+      clear(*i);
+    }
   }
 
   // remove vertex from graph
@@ -152,7 +171,7 @@ public:
 
   bool remove_edge(unsigned int from, unsigned int to) {
     return remove_edge(from,to,1);
-  }
+  } 
 
   // Ok, this implementation is seriously inefficient! 
   // could use an indirection trick here as one solution?  

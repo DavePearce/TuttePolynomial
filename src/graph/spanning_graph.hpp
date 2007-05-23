@@ -1,6 +1,7 @@
 #ifndef SPANNING_GRAPH_HPP
 #define SPANNING_GRAPH_HPP
 
+#include <iostream>
 #include <vector>
 #include <stack>
 #include <utility>
@@ -20,13 +21,15 @@ public:
   typedef triple<unsigned int, unsigned int, unsigned int> edge_t;
 private:
   G graph;
-  std::vector<edge_t> nontree_edges; // all non-tree edges *except* loop edges
+  G spanning_tree;
+
   std::vector<int> pendant_vertices;
   std::vector<bool> visited;
 public:
-  spanning_graph(int n) : graph(n), visited(n)  {  }
-  spanning_graph(G const &g) : graph(g), visited(g.domain_size())  {  
-    build_tree();
+  spanning_graph(int n) : graph(n), spanning_tree(n), visited(n)  {  }
+
+  spanning_graph(G const &g) : graph(g), spanning_tree(g.domain_size()), visited(g.domain_size())  {  
+    build_spanning_tree();
   }
 
   unsigned int domain_size() const { return graph.domain_size(); }
@@ -63,17 +66,19 @@ public:
 	  }
 	}
 	graph.remove(vertex); 
+	spanning_tree.remove(vertex);
 	return;
       }
     }
     // non-pendant vertex case
     graph.remove(vertex); 
-    build_tree();
+    spanning_tree.remove(vertex);
+    build_spanning_tree();
   }
 
   void add_edge(int from, int to) { 
     graph.add_edge(from,to); 
-    build_tree(); // WOAH, rather inefficient!
+    build_spanning_tree(); // WOAH, rather inefficient!
   }
 
   unsigned int remove_loops() {
@@ -112,57 +117,35 @@ public:
 	if(num_edges(from) == 1) { pendant_vertices.push_back(from); }
 	if(num_edges(to) == 1) { pendant_vertices.push_back(to); }
 	// now, check to see if this was a non-tree
-	for(std::vector<edge_t>::reverse_iterator i(nontree_edges.rbegin());
-	    i!=nontree_edges.rend();++i) {
-	  if((i->first == from && i->second == to) ||
-	     (i->first == to && i->second == from)) {
-	    // yes, this is a nontree edge, so no big deal
-	    i->third -= c;
-	    if(i->third == 0) {
-	      // see: "Effective STL", item 28, p125 for explanation
-	      // as to why it's "(++i).base()", not "i.base()"
-	      nontree_edges.erase((++i).base()); 
-	      return true;
-	    }
-	  }
+	if(spanning_tree.remove_edge(from,to,c) && 
+	   spanning_tree.num_edges(from,to) == 0) {
+	  // ok, have removed tree edge!
+	  build_spanning_tree();
 	}
+	return true;
       }
-      
-      // oh dear, we removed a tree edge.  must recompute
-      // the tree then ...
-      build_tree();
-      return true;
     }
     return false;
   }
 
-  // pretty simple ... if there are no nontree and loop edges, then we must be a tree!
-  bool is_tree() { return nontree_edges.size() == 0; }
+  bool is_tree() { return spanning_tree.num_underlying_edges() == graph.num_edges(); }
 
   // assumes this graph is NOT a tree
   edge_t select_nontree_edge() {
     // interesting observation is that picking the edge with least
     // underlying edges on either vertex is the best strategy.
-
-    /*
-    edge_t cur(0,0,0);
-    unsigned int min=UINT_MAX;
-    unsigned int max=0;
     
-    for(std::vector<edge_t>::reverse_iterator i(nontree_edges.rbegin());
-	i!=nontree_edges.rend();++i) {
-      unsigned int x = graph.num_underlying_edges(i->first) + 
-	               graph.num_underlying_edges(i->second);
-      if(x < min) {
-	cur = *i;
-	min = x;
+    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+      for(typename G::edge_iterator j(graph.begin_edges(*i));
+	  j!=graph.end_edges(*i);++j) {	
+	unsigned int c = j->second;
+	if(spanning_tree.num_edges(*i,j->first) > 0) { c--; }
+	if(c > 0) {
+	  return edge_t(*i,j->first,c);
+	}
       }
     }
-    
-    return cur;
-    */
-    
-    return nontree_edges.back();
+    throw std::runtime_error("shouldn't get here");
   }
 
   int select_pendant_vertex() const {
@@ -171,9 +154,10 @@ public:
 
   void contract_edge(int from, int to) { 
     graph.contract_edge(from,to); 
+    spanning_tree.contract_edge(from,to);
     // for now, simply assume that we need to rebuild
     // the spanning tree!
-    build_tree();
+    build_spanning_tree();
   }
   
   vertex_iterator begin_verts() const { return graph.begin_verts(); }
@@ -183,10 +167,11 @@ public:
   edge_iterator end_edges(int f) const { return graph.end_edges(f); }
 
 private:
-  void build_tree() { // was retree
+  void build_spanning_tree() { // was retree
     // reset visited information
     fill(visited.begin(),visited.end(),false);
-    nontree_edges.clear();
+    // remove all spanning tree edges
+    spanning_tree.clearall();
     pendant_vertices.clear();
     // now, make sure each vertex is explored
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
@@ -200,6 +185,7 @@ private:
     visited[head] = true;
     // now, consider edges
     unsigned int total(0);
+
     for(typename G::edge_iterator i(graph.begin_edges(head));
 	i!=graph.end_edges(head);++i) {
       int next = i->first;
@@ -207,12 +193,10 @@ private:
 
       total += k;
 
-      if(!visited[next]) { traverse(head,next); k--; }
-      else if(next == tail) { k--; }
-
-      if(k > 0 && head < next) { 
-	nontree_edges.push_back(edge_t(head,next,k));
-      } 
+      if(!visited[next]) { 
+	spanning_tree.add_edge(head,next,k);
+	traverse(head,next); 
+      }     
     }
 
     // pendant vertex check
