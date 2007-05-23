@@ -5,6 +5,7 @@
 #include <vector>
 #include <stack>
 #include <utility>
+#include <algorithm>
 
 #include "misc/triple.hpp"
 
@@ -139,7 +140,7 @@ public:
       for(typename G::edge_iterator j(graph.begin_edges(*i));
 	  j!=graph.end_edges(*i);++j) {	
 	unsigned int c = j->second;
-	if(spanning_tree.num_edges(*i,j->first) > 0) { c--; }
+	if(spanning_tree.num_edges(*i,j->first) > 0) { c = c - 1; }
 	if(c > 0) {
 	  return edge_t(*i,j->first,c);
 	}
@@ -155,9 +156,14 @@ public:
   void contract_edge(int from, int to) { 
     graph.contract_edge(from,to); 
     spanning_tree.contract_edge(from,to);
-    // for now, simply assume that we need to rebuild
-    // the spanning tree!
-    build_spanning_tree();
+    // now, incrementally update the spanning tree
+    correct_spanning_tree(-1,from,from);
+
+    // finally, incrementally update the pendant edges    
+
+    // how to do this efficiently ?
+    pendant_vertices.erase(std::remove(pendant_vertices.begin(),pendant_vertices.end(),from), pendant_vertices.end());
+    pendant_vertices.erase(std::remove(pendant_vertices.begin(),pendant_vertices.end(),to), pendant_vertices.end());
   }
   
   vertex_iterator begin_verts() const { return graph.begin_verts(); }
@@ -201,6 +207,23 @@ private:
 
     // pendant vertex check
     if(total == 1) { pendant_vertices.push_back(head); }
+  }
+  
+  bool correct_spanning_tree(int tail, int head, int start) {
+    for(typename G::edge_iterator i(spanning_tree.begin_edges(head));
+	i!=spanning_tree.end_edges(head);++i) {
+      int w(i->first);
+      // don't traverse edge we've alread seen!
+      if(w != tail) {
+	if(w == start) { 
+	  spanning_tree.remove_edge(head,start,i->second);
+	  return true;
+	} else if(correct_spanning_tree(head,w,start)) {
+	  return true;
+	}
+      }    
+    }
+    return false;
   }
 };
 
