@@ -46,7 +46,7 @@ public:
 // Global Variables
 // ---------------------------------------------------------------
 
-typedef enum { RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, VERTEX_ORDER } EDGE_SELECTION_HEURISTIC;
+typedef enum { RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER } EDGE_SELECTION_HEURISTIC;
 
 unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
@@ -146,6 +146,9 @@ typename G::edge_t select_nontree_edge(G graph) {
 	    break;
 	  case MINIMISE_DEGREE:
 	    cost = 2*V - (graph.num_underlying_edges(head) + graph.num_underlying_edges(tail));
+	    break;
+	  case MINIMISE_SDEGREE:
+	    cost = V - (std::min(graph.num_underlying_edges(head),graph.num_underlying_edges(tail)));
 	    break;
 	  case MINIMISE_MDEGREE:
 	    cost = V*V - ((graph.num_underlying_edges(head) * graph.num_underlying_edges(tail)));
@@ -539,8 +542,11 @@ int main(int argc, char *argv[]) {
   #define OPT_MAXMDEGREE 51
   #define OPT_MINDEGREE 52
   #define OPT_MINMDEGREE 53
-  #define OPT_VERTEXORDER 54
-  #define OPT_RANDOM 55
+  #define OPT_MINSDEGREE 54
+  #define OPT_VERTEXORDER 55
+  #define OPT_RANDOM 56
+  #define OPT_BFSTREE 57
+  #define OPT_DFSTREE 58
 
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
@@ -550,9 +556,12 @@ int main(int argc, char *argv[]) {
     {"cache-random-replacement",required_argument,NULL,OPT_CACHERANDOM},    
     {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
     {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
+    {"minimise-sdegree", no_argument,NULL,OPT_MINSDEGREE},
     {"maximise-degree", no_argument,NULL,OPT_MAXDEGREE},
     {"maximise-mdegree", no_argument,NULL,OPT_MAXMDEGREE},
     {"vertex-order", no_argument,NULL,OPT_VERTEXORDER},
+    {"bfs-spanning-tree", no_argument, NULL, OPT_BFSTREE},
+    {"dfs-spanning-tree", no_argument, NULL, OPT_DFSTREE},
     {"random", no_argument,NULL,OPT_RANDOM},
     {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
@@ -584,6 +593,7 @@ int main(int argc, char *argv[]) {
   unsigned int ngraphs(UINT_MAX);
   unsigned int size = OPT_LARGE;
   bool quiet_mode=false;
+  bool bfs_tree = false;
 
   while((v=getopt_long(argc,argv,"qc:",long_options,NULL)) != -1) {
     switch(v) {      
@@ -636,11 +646,20 @@ int main(int argc, char *argv[]) {
     case OPT_MINMDEGREE:
       edge_selection_heuristic = MINIMISE_MDEGREE;
       break;
+    case OPT_MINSDEGREE:
+      edge_selection_heuristic = MINIMISE_SDEGREE;
+      break;
     case OPT_VERTEXORDER:
       edge_selection_heuristic = VERTEX_ORDER;
       break;
     case OPT_RANDOM:
       edge_selection_heuristic = RANDOM;
+      break;
+    case OPT_BFSTREE:
+      bfs_tree = true;
+      break;
+    case OPT_DFSTREE:
+      bfs_tree = false;
       break;
     // --- OTHER OPTIONS ---
     case OPT_NAUTYWORKSPACE:
@@ -697,11 +716,23 @@ int main(int argc, char *argv[]) {
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
       if(size == OPT_SMALL) {
-	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,quiet_mode);
+	if(bfs_tree) {
+	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,quiet_mode);
+	} else {
+	  run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,quiet_mode);
+	}
       } else if(size == OPT_MEDIUM) {
-	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,quiet_mode);
+	if(bfs_tree) {
+	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,quiet_mode);
+	} else {
+	  run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,quiet_mode);
+	}
       } else {
-	run<bfs_spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,quiet_mode);
+	if(bfs_tree) {
+	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,quiet_mode);
+	} else {
+	  run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,quiet_mode);
+	}
       }
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,quiet_mode);
