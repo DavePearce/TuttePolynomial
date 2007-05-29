@@ -4,6 +4,7 @@
 #include <stack>
 #include <stdexcept>
 #include <algorithm>
+#include <cstdlib>
 #include <csignal>
 #include <getopt.h>
 #include <sys/time.h>
@@ -45,10 +46,13 @@ public:
 // Global Variables
 // ---------------------------------------------------------------
 
+typedef enum { RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, VERTEX_ORDER } EDGE_SELECTION_HEURISTIC;
+
 unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
+EDGE_SELECTION_HEURISTIC edge_selection_heuristic = MINIMISE_DEGREE;
 unsigned int xml_id = 2;
 simple_cache cache(1024*1024,100);
 static bool status_flag=false;
@@ -63,6 +67,14 @@ void print_status();
 /* XML output methods.  Currently needed to interface with the visualisation
  * tool being developed by Bennett Thompson.
  */
+
+void write_xml_start() {
+  cout << "<object-stream>" << endl;
+}
+
+void write_xml_end() {
+  cout << "</object-stream>" << endl;
+}
 
 template<class G>
 void write_xml_match(unsigned int my_id, G const &graph) {
@@ -93,6 +105,71 @@ void write_xml_leaf(unsigned int my_id, G const &graph) {
   cout << "<edges>" << graph.num_edges() << "</edges>" << endl;
   cout << "</graphnode>" << endl;
 }
+
+/* This method determines which edge is chosen to delete contract upon.
+ * It is key to how the algorithm operates!
+ */
+
+template<class G>
+typename G::edge_t select_nontree_edge(G graph) {
+  // assumes this graph is NOT a tree 
+  unsigned int best(0);
+  unsigned int V(graph.num_vertices());
+  unsigned int rcount(0);
+  unsigned int rtarget(0);
+  typename G::edge_t r(-1,-1,-1);
+  
+  if(edge_selection_heuristic == RANDOM) {
+    unsigned int nedges = graph.num_edges() - graph.num_spanning_edges();
+    rtarget = (unsigned int) (((double) nedges*rand()) / (1.0+RAND_MAX));
+  }
+
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename G::edge_iterator j(graph.begin_edges(*i));
+	j!=graph.end_edges(*i);++j) {	
+      unsigned int head = *i;
+      unsigned int tail = j->first;
+      
+      if(head < tail) { // to avoid duplicates
+	unsigned int count = j->second;
+	// check whether edge on spanning tree
+	if(graph.on_spanning_tree(head,tail)) { count = count - 1; }
+	
+	if(count > 0) {
+	  unsigned int cost;
+	  switch(edge_selection_heuristic) {
+	  case MAXIMISE_DEGREE:
+	    cost = graph.num_underlying_edges(head) + graph.num_underlying_edges(tail);
+	    break;
+	  case MAXIMISE_MDEGREE:
+	    cost = graph.num_underlying_edges(head) * graph.num_underlying_edges(tail);
+	    break;
+	  case MINIMISE_DEGREE:
+	    cost = 2*V - (graph.num_underlying_edges(head) + graph.num_underlying_edges(tail));
+	    break;
+	  case MINIMISE_MDEGREE:
+	    cost = V*V - ((graph.num_underlying_edges(head) * graph.num_underlying_edges(tail)));
+	    break;
+	  case VERTEX_ORDER:
+	    return typename G::edge_t(head,tail,count);
+	    break;
+	  case RANDOM:
+	    if(rcount == rtarget) {
+	      return typename G::edge_t(head,tail,count);
+	    }
+	    rcount += count;	    
+	  }
+	  if(cost > best) {
+	    r = typename G::edge_t(head,tail,count);
+	    best = cost;
+	  }     
+	} 
+      }
+    }
+  }
+  if(best == 0) { throw new std::runtime_error("internal failure"); }
+  return r;
+} 
 
 /* deleteContract is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
@@ -168,7 +245,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     // === END ===
 
     // Third, perform delete contract 
-    typename G::edge_t e = graph.select_nontree_edge();
+    typename G::edge_t e = select_nontree_edge(graph);
 
     graph.remove_edge(e.first,e.second,e.third);        
     G g2(graph); 
@@ -376,6 +453,7 @@ void print_status() {
 template<class G, class P>
 void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
   unsigned int ngraphs_completed=0;
+  if(xml_flag) { write_xml_start(); }
   while(!input.eof() && ngraphs_completed < ngraphs) {
     // first, reset all stats information
     cache.clear();  
@@ -385,7 +463,9 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
     // now, do stuff!
     G start_graph = read_graph<G>(input);
     if(start_graph.num_vertices() == 0) { break; }
-    if(quiet_mode) {
+    if(xml_flag) {
+      // do nout for now
+    } else if(quiet_mode) {
       cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();
     } else {
       cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
@@ -396,8 +476,10 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
     P tuttePoly;
     
     deleteContract<G,P>(start_graph,tuttePoly,1);        
-    
-    if(quiet_mode) {
+
+    if(xml_flag) {
+      // do nout for now.
+    } else if(quiet_mode) {
       cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << tuttePoly.substitute(1,1) << endl;
     } else {
       cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
@@ -423,9 +505,9 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
       write_graph_sizes(stats_out);
       write_hit_counts(stats_out);
     }
-    
     ++ngraphs_completed;
   }
+  if(xml_flag) { write_xml_end(); }
 }
 
 // ---------------------------------------------------------------
@@ -453,7 +535,12 @@ int main(int argc, char *argv[]) {
   #define OPT_SMALL 40
   #define OPT_MEDIUM 41
   #define OPT_LARGE 42
-
+  #define OPT_MAXDEGREE 50
+  #define OPT_MAXMDEGREE 51
+  #define OPT_MINDEGREE 52
+  #define OPT_MINMDEGREE 53
+  #define OPT_VERTEXORDER 54
+  #define OPT_RANDOM 55
 
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
@@ -461,6 +548,12 @@ int main(int argc, char *argv[]) {
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
     {"cache-random-replacement",required_argument,NULL,OPT_CACHERANDOM},    
+    {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
+    {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
+    {"maximise-degree", no_argument,NULL,OPT_MAXDEGREE},
+    {"maximise-mdegree", no_argument,NULL,OPT_MAXMDEGREE},
+    {"vertex-order", no_argument,NULL,OPT_VERTEXORDER},
+    {"random", no_argument,NULL,OPT_RANDOM},
     {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
     {"simple-poly",no_argument,NULL,OPT_SIMPLE_POLY},
@@ -530,13 +623,32 @@ int main(int argc, char *argv[]) {
     case OPT_SIMPLE_POLY:
       poly_rep = OPT_SIMPLE_POLY;
       break;
+    // --- HEURISTICS ---
+    case OPT_MINDEGREE:
+      edge_selection_heuristic = MINIMISE_DEGREE;
+      break;
+    case OPT_MAXDEGREE:
+      edge_selection_heuristic = MAXIMISE_DEGREE;
+      break;
+    case OPT_MAXMDEGREE:
+      edge_selection_heuristic = MAXIMISE_MDEGREE;
+      break;
+    case OPT_MINMDEGREE:
+      edge_selection_heuristic = MINIMISE_MDEGREE;
+      break;
+    case OPT_VERTEXORDER:
+      edge_selection_heuristic = VERTEX_ORDER;
+      break;
+    case OPT_RANDOM:
+      edge_selection_heuristic = RANDOM;
+      break;
     // --- OTHER OPTIONS ---
     case OPT_NAUTYWORKSPACE:
       resize_nauty_workspace(parse_amount(optarg));
       break;
     case OPT_SMALLGRAPHS:
       small_graph_threshold = parse_amount(optarg);      
-      break;
+      break;      
     case OPT_SMALL:
     case OPT_MEDIUM:
     case OPT_LARGE:
@@ -589,13 +701,11 @@ int main(int argc, char *argv[]) {
       } else if(size == OPT_MEDIUM) {
 	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,quiet_mode);
       } else {
-	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,quiet_mode);
+	run<bfs_spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,quiet_mode);
       }
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,quiet_mode);
-    }
-    
-    cout << "# RESIZES = " << resize_stats << endl;
+    }    
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
   } catch(exception const &e) {

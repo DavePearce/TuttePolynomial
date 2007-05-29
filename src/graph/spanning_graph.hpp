@@ -24,19 +24,22 @@ private:
   G graph;
   G spanning_tree;
 
+  bool bfs_tree;
   std::vector<int> pendant_vertices;
   std::vector<bool> visited;
 public:
-  spanning_graph(int n) : graph(n), spanning_tree(n), visited(n)  {  }
+  spanning_graph(int n, bool bfs = false) : graph(n), spanning_tree(n), visited(n), bfs_tree(bfs)  {  }
 
-  spanning_graph(G const &g) : graph(g), spanning_tree(g.domain_size()), visited(g.domain_size())  {  
+  spanning_graph(G const &g, bool bfs = false) : graph(g), spanning_tree(g.domain_size()), visited(g.domain_size()), bfs_tree(bfs)  {  
     build_spanning_tree();
   }
 
   unsigned int domain_size() const { return graph.domain_size(); }
   unsigned int num_vertices() const { return graph.num_vertices(); }
   unsigned int num_edges() const { return graph.num_edges(); }
+  unsigned int num_spanning_edges() const { return spanning_tree.num_edges(); }
   unsigned int num_edges(unsigned int vertex) const { return graph.num_edges(vertex); }
+  unsigned int num_underlying_edges(unsigned int vertex) const { return graph.num_underlying_edges(vertex); }
   unsigned int num_pendant_vertices() const { return pendant_vertices.size(); }
   unsigned int num_multiedges() const { return graph.num_multiedges(); }
   bool is_multi_graph() const { return graph.is_multi_graph(); }
@@ -131,23 +134,7 @@ public:
 
   bool is_tree() { return spanning_tree.num_underlying_edges() == graph.num_edges(); }
 
-  // assumes this graph is NOT a tree
-  edge_t select_nontree_edge() {
-    // interesting observation is that picking the edge with least
-    // underlying edges on either vertex is the best strategy.
-    
-    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-      for(typename G::edge_iterator j(graph.begin_edges(*i));
-	  j!=graph.end_edges(*i);++j) {	
-	unsigned int c = j->second;
-	if(spanning_tree.num_edges(*i,j->first) > 0) { c = c - 1; }
-	if(c > 0) {
-	  return edge_t(*i,j->first,c);
-	}
-      }
-    }
-    throw std::runtime_error("shouldn't get here");
-  }
+  bool on_spanning_tree(int from, int to) { return spanning_tree.num_edges(from,to) > 0; }
 
   int select_pendant_vertex() const {
     return pendant_vertices.back();
@@ -160,8 +147,6 @@ public:
     correct_spanning_tree(-1,from,from);
 
     // finally, incrementally update the pendant edges    
-
-    // how to do this efficiently ?
     pendant_vertices.erase(std::remove(pendant_vertices.begin(),pendant_vertices.end(),from), pendant_vertices.end());
     pendant_vertices.erase(std::remove(pendant_vertices.begin(),pendant_vertices.end(),to), pendant_vertices.end());
   }
@@ -179,10 +164,42 @@ private:
     // remove all spanning tree edges
     spanning_tree.clearall();
     pendant_vertices.clear();
-    // now, make sure each vertex is explored
-    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-      unsigned int v = *i;
-      if(!visited[v]) { traverse(-1,v); }
+
+    // now do the searching
+    if(bfs_tree) {
+      std::deque<unsigned int> S;
+      // the loop shouldn't be needed ... but it is for a wierd reason.
+      for(typename G::vertex_iterator j(graph.begin_verts());j!=graph.end_verts();++j) {
+	if(!visited[*j]) {
+	  S.push_back(*j);
+	  visited[*j] = true;
+	  while(!S.empty()) {
+	    unsigned int v(S.front());
+	    S.pop_front();
+	    unsigned int total(0);
+	    for(typename G::edge_iterator i(graph.begin_edges(v));
+		i!=graph.end_edges(v);++i) {	  
+	      unsigned int w = i->first;
+	      int k = i->second; // number of multi edges
+	      total += k;
+	      if(!visited[w]) { 
+		visited[w] = true;
+		S.push_back(w);
+		spanning_tree.add_edge(v,w,k);
+	      }
+	    }
+	    // pendant vertex check
+	    if(total == 1) { pendant_vertices.push_back(v); }
+	  }    
+	}  
+      }      
+    } else {
+      // dfs search
+      // now, make sure each vertex is explored
+      for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+	unsigned int v = *i;
+	if(!visited[v]) { traverse(-1,v); }
+      }      
     }
   }
 
@@ -225,6 +242,13 @@ private:
     }
     return false;
   }
+};
+
+template<class G>
+class bfs_spanning_graph : public spanning_graph<G> {
+public:
+  bfs_spanning_graph(int n) : spanning_graph<G>(n,true)  {  }
+  bfs_spanning_graph(G const &g, bool bfs = false) : spanning_graph<G>(g,true) {}
 };
 
 #endif

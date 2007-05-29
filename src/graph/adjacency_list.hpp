@@ -30,6 +30,7 @@ public:
   }
 
   unsigned int domain_size() const { return _domain_size; }
+
   unsigned int num_vertices() const { return vertices.size(); }
   unsigned int num_edges() const { return numedges; }
   unsigned int num_underlying_edges() const { return numedges - nummultiedges; }
