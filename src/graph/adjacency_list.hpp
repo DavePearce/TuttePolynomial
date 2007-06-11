@@ -48,10 +48,10 @@ public:
     return edges[vertex].size();
   }
 
-  unsigned int num_edges(unsigned int from, unsigned int to) {
-    T &fset = edges[from];         
-    typename T::iterator fend = fset.end(); // optimisation
-    typename T::iterator i = fset.find(to);
+  unsigned int num_edges(unsigned int from, unsigned int to) const {
+    T const &fset = edges[from];         
+    typename T::const_iterator fend = fset.end(); // optimisation
+    typename T::const_iterator i = fset.find(to);
     if(i != fend) {
       return i->second;
     } else {

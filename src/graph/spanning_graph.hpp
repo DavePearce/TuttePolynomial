@@ -43,6 +43,9 @@ public:
   unsigned int num_pendant_vertices() const { return pendant_vertices.size(); }
   unsigned int num_multiedges() const { return graph.num_multiedges(); }
   bool is_multi_graph() const { return graph.is_multi_graph(); }
+  bool is_tree() const { return spanning_tree.num_underlying_edges() == graph.num_edges(); }
+  bool is_multi_tree() const { return spanning_tree.num_underlying_edges() == graph.num_underlying_edges(); }
+  bool on_spanning_tree(int from, int to) const { return spanning_tree.num_edges(from,to) > 0; }
 
   bool clear(int v) { graph.clear(v); }
 
@@ -131,10 +134,6 @@ public:
     }
     return false;
   }
-
-  bool is_tree() { return spanning_tree.num_underlying_edges() == graph.num_edges(); }
-
-  bool on_spanning_tree(int from, int to) { return spanning_tree.num_edges(from,to) > 0; }
 
   int select_pendant_vertex() const {
     return pendant_vertices.back();

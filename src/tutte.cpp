@@ -193,11 +193,34 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
   // first, eliminate any loops
   unsigned int num_loops = graph.remove_loops();  
 
-  // if the graph is a "loop tree", then we're done.
   if(graph.is_tree()) {
+    // termination for trees!
     if(xml_flag) { write_xml_leaf(my_id, graph); }
     poly += xy_term(graph.num_edges(),num_loops);
-  } else {
+  } else if(graph.is_multi_tree()) {
+    // termination for multi-graphs whose underlying
+    // graph is a tree.
+    poly = P(xy_term(0,0));
+    if(xml_flag) { write_xml_leaf(my_id, graph); }    
+    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+      for(typename G::edge_iterator j(graph.begin_edges(*i));
+	  j!=graph.end_edges(*i);++j) {		
+	unsigned int head = *i;
+	unsigned int tail = j->first;
+	unsigned int count = j->second;
+	if(head < tail) { 
+	  if(count > 1) {
+	    P tmp(poly);
+	    tmp *= xy_term(1,0); // this could be optimised for sure!
+	    poly *= xy_term(0,1,count-1);
+	    poly += tmp;
+	  } else {
+	    poly *= xy_term(1,0);
+	  }
+	}
+      }
+    }
+    } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
 
     int num_pendants(0);
