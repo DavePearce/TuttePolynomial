@@ -18,7 +18,7 @@ using namespace __gnu_cxx;
 
 typedef adjacency_list<> graph_t;
 typedef spanning_graph<adjacency_list<> > sgraph_t;
-typedef simple_poly poly_t;
+typedef factor_poly<unsigned int> poly_t;
 
 vector<vector<int> > combinator(int N, int min, int max) {
   bool finished;
@@ -115,22 +115,59 @@ bool two_connected(graph_t const &g) {
   return true;
 }
 
+sgraph_t::edge_t select_nontree_edge(sgraph_t &graph)  {
+  // assumes this graph is NOT a tree 
+  unsigned int best(0);
+  unsigned int V(graph.num_vertices());
+  sgraph_t::edge_t r(0,0,0);
+  
+  for(sgraph_t::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(sgraph_t::edge_iterator j(graph.begin_edges(*i));
+	j!=graph.end_edges(*i);++j) {	
+      unsigned int head = *i;
+      unsigned int tail = j->first;
+      
+      if(head < tail) { // to avoid duplicates
+	unsigned int count = j->second;
+	// check whether edge on spanning tree
+	if(graph.on_spanning_tree(head,tail)) { count = count - 1; }
+	if(count > 0) {	  
+	    unsigned int cost = V - (std::min(graph.num_underlying_edges(head),graph.num_underlying_edges(tail)));
+	    if(cost > best) {
+	      r = sgraph_t::edge_t(head,tail,count);
+	      best = cost;
+	    }
+	}     
+      } 
+    }
+  }
+
+  if(best == 0) { throw new std::runtime_error("internal failure"); }
+  return r;
+} 
 
 // a simple tutte polynomial solver which doesn't do anything fancy
 poly_t delete_contract(sgraph_t &g) { 
-  if(g.is_looptree()) {
-    return poly_t(g.num_edges()-g.num_loops(),g.num_loops());
+  // first, eliminate any loops
+  unsigned int num_loops = g.remove_loops();  
+
+  if(g.is_tree()) {
+    return poly_t(xy_term(g.num_edges(),num_loops));
   } else {
     // Perform delete contract 
-    pair<int,int> e = g.select_nontree_edge();
+    sgraph_t::edge_t e = select_nontree_edge(g);
 
     sgraph_t g1(g);  
-    g1.remove_edge(e.first,e.second);        
+    g1.remove_edge(e.first,e.second,e.third);        
     sgraph_t g2(g1); 
     g2.contract_edge(e.first,e.second); 
 
     // Fourth, recursively compute the polynomial
-    return delete_contract(g1) + delete_contract(g2); // perform the recursion
+    xy_term xys(0,num_loops);    
+    poly_t r = delete_contract(g1);
+    r += delete_contract(g2);
+    r *= xys;
+    return r; 
   }    
 }
 
@@ -144,11 +181,14 @@ void print_graph_poly(graph_t const &graph) {
   
   // second, print it!
   int count=0;
+  /*
   for(poly_t::const_iterator i(r.begin());i!=r.end();++i,++count) {
     if(count == 6) { cout << endl << "\t\t\t\t"; count = 0; }
     if(i!=r.begin()) { cout << " + "; }
     cout << "P(" << i->second << "," << i->first.xpower << "," << i->first.ypower << ")";
   }
+  */
+  cout << "TO BE COMPLETED" << endl;
 }
 
 int main(int argc, char *argv[]) {
@@ -249,10 +289,10 @@ int main(int argc, char *argv[]) {
       for(unsigned int j=0;j!=graph.num_vertices();++j) {
 	for(graph_t::edge_iterator k(graph.begin_edges(j));
 	    k!=graph.end_edges(j);++k) {
-	  if(j <= *k) {
+	  if(j <= k->first) {
 	    if(!first_time) { cout << ", "; }
 	    first_time=false;
-	    cout << j << "--" << *k;
+	    cout << j << "--" << k->first;
 	  }
 	}
       }
