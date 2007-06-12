@@ -197,10 +197,14 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     // termination for trees!
     if(xml_flag) { write_xml_leaf(my_id, graph); }
     poly += xy_term(graph.num_edges(),num_loops);
-  } else if(graph.is_multi_tree()) {
+    cout << "=== LEAF NODE ===" << endl;
+    cout << "POLY NOW: " << poly.str() << endl;
+    print_graph(cout,graph);
+  } else /*if(graph.is_multi_tree()) {
     // termination for multi-graphs whose underlying
     // graph is a tree.
-    poly = P(xy_term(0,0));
+    P r(xy_term(0,0));   
+
     if(xml_flag) { write_xml_leaf(my_id, graph); }    
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
       for(typename G::edge_iterator j(graph.begin_edges(*i));
@@ -210,17 +214,23 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 	unsigned int count = j->second;
 	if(head < tail) { 
 	  if(count > 1) {
-	    P tmp(poly);
+	    P tmp(r);
 	    tmp *= xy_term(1,0); // this could be optimised for sure!
-	    poly *= xy_term(0,1,count-1);
-	    poly += tmp;
+	    r *= xy_term(0,1,count-1);
+	    r += tmp;
 	  } else {
-	    poly *= xy_term(1,0);
+	    r *= xy_term(1,0);
 	  }
 	}
       }
     }
-    } else {
+
+    poly += r;
+    cout << "=== LEAF NODE ===" << endl;
+    cout << "GOT: " << r.str() << endl;
+    cout << "POLY NOW: " << poly.str() << endl;
+    print_graph(cout,graph);
+    } else */{
     // Now, remove any pendant vertices (i.e. vertices of degree one).
 
     int num_pendants(0);
@@ -273,6 +283,10 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     // Third, perform delete contract 
     typename G::edge_t e = select_nontree_edge(graph);
 
+    cout << "=== NON-LEAF NODE ===" << endl;
+    print_graph(cout,graph);
+    cout << "EDGE: " << e.first << "--" << e.second << endl;
+
     graph.remove_edge(e.first,e.second,e.third);        
     G g2(graph); 
     g2.contract_edge(e.first,e.second); 
@@ -280,7 +294,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     // Fourth, recursively compute the polynomial   
     P p2;
 
-    deleteContract(graph,poly, left_id);
+    deleteContract(graph, poly, left_id);
     deleteContract(g2,p2, right_id);
 
     if(e.third > 1) { p2 *= xy_term(0,0,e.third-1); }
@@ -293,7 +307,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       cache.store(key,poly);
       delete [] key;  // free space used by key
     }    
-  }    
+  }
 }
 
 // ---------------------------------------------------------------
