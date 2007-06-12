@@ -197,13 +197,10 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     // termination for trees!
     if(xml_flag) { write_xml_leaf(my_id, graph); }
     poly += xy_term(graph.num_edges(),num_loops);
-    cout << "=== LEAF NODE ===" << endl;
-    cout << "POLY: " << poly.str() << endl;
-    print_graph(cout,graph);
   } else if(graph.is_multi_tree()) {
     // termination for multi-graphs whose underlying
     // graph is a tree.
-    P r(xy_term(0,0));   
+    P r(xy_term(0,num_loops));   
 
     if(xml_flag) { write_xml_leaf(my_id, graph); }    
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
@@ -226,13 +223,9 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     }
 
     poly += r;
-    cout << "=== LEAF NODE ===" << endl;
-    cout << "GOT: " << r.str() << endl;
-    cout << "POLY NOW: " << poly.str() << endl;
-    print_graph(cout,graph);
-    } else {
+  } else  {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
-
+    
     int num_pendants(0);
 
     while(graph.num_pendant_vertices() > 0) {
@@ -283,10 +276,6 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     // Third, perform delete contract 
     typename G::edge_t e = select_nontree_edge(graph);
 
-    cout << "=== NON-LEAF NODE ===" << endl;
-    print_graph(cout,graph);
-    cout << "EDGE: " << e.first << "--" << e.second << endl;
-
     graph.remove_edge(e.first,e.second,e.third);        
     G g2(graph); 
     g2.contract_edge(e.first,e.second); 
@@ -301,9 +290,6 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
     poly += p2;
     poly *= xys;
-
-    cout << "=== END NON-LEAF === " << endl;
-    cout << "POLY: " << poly.str() << endl;
 
     // Finally, save computed polynomial
     if(key != NULL) {
