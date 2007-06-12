@@ -174,45 +174,6 @@ typename G::edge_t select_nontree_edge(G graph) {
   return r;
 } 
 
-/* This is a bit of a hack to get multi-three graphs
- * working.
- */
-template<class G, class P>
-P evaluate_threes(G const &graph) {
-  // count degrees
-  unsigned int n[3];
-  unsigned int idx=0;
-
-  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-    for(typename G::edge_iterator j(graph.begin_edges(*i));
-	j!=graph.end_edges(*i);++j) {	
-      unsigned int head = *i;
-      unsigned int tail = j->first;
-      if(head < tail) {
-	n[idx++] = j->second;
-      }
-    }
-  }
-
-  P r1(xy_term(1,0));
-  if(n[1] > 1) {
-    r1 += xy_term(0,1,n[1]-1);
-  }
-  P r2(r1);
-
-  r1 *= xy_term(1,0);
-  if(n[2] > 1) {
-    r2 *= xy_term(0,1,n[2]-1);
-    r1 += r2;
-  }
-  P r3(xy_term(1,0));
-  r3 += xy_term(0,1,max(1U,n[1]+n[2]-1));
-  r3 *= xy_term(0,0,n[0]-1);
-  r1 += r3;
-
-  return r1;
-}
-
 /* deleteContract is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
  * for one, and a contract operation for the other.
