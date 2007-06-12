@@ -198,9 +198,9 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     if(xml_flag) { write_xml_leaf(my_id, graph); }
     poly += xy_term(graph.num_edges(),num_loops);
     cout << "=== LEAF NODE ===" << endl;
-    cout << "POLY NOW: " << poly.str() << endl;
+    cout << "POLY: " << poly.str() << endl;
     print_graph(cout,graph);
-  } else /*if(graph.is_multi_tree()) {
+  } else if(graph.is_multi_tree()) {
     // termination for multi-graphs whose underlying
     // graph is a tree.
     P r(xy_term(0,0));   
@@ -230,7 +230,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     cout << "GOT: " << r.str() << endl;
     cout << "POLY NOW: " << poly.str() << endl;
     print_graph(cout,graph);
-    } else */{
+    } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
 
     int num_pendants(0);
@@ -301,6 +301,9 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
     poly += p2;
     poly *= xys;
+
+    cout << "=== END NON-LEAF === " << endl;
+    cout << "POLY: " << poly.str() << endl;
 
     // Finally, save computed polynomial
     if(key != NULL) {
