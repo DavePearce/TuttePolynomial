@@ -51,7 +51,7 @@ typedef enum { RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIM
 unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
-unsigned int small_graph_threshold = 4;
+unsigned int small_graph_threshold = 5;
 EDGE_SELECTION_HEURISTIC edge_selection_heuristic = MINIMISE_DEGREE;
 unsigned int xml_id = 2;
 simple_cache cache(1024*1024,100);
@@ -174,6 +174,45 @@ typename G::edge_t select_nontree_edge(G graph) {
   return r;
 } 
 
+/* This is a bit of a hack to get multi-three graphs
+ * working.
+ */
+template<class G, class P>
+P evaluate_threes(G const &graph) {
+  // count degrees
+  unsigned int n[3];
+  unsigned int idx=0;
+
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename G::edge_iterator j(graph.begin_edges(*i));
+	j!=graph.end_edges(*i);++j) {	
+      unsigned int head = *i;
+      unsigned int tail = j->first;
+      if(head < tail) {
+	n[idx++] = j->second;
+      }
+    }
+  }
+
+  P r1(xy_term(1,0));
+  if(n[1] > 1) {
+    r1 += xy_term(0,1,n[1]-1);
+  }
+  P r2(r1);
+
+  r1 *= xy_term(1,0);
+  if(n[2] > 1) {
+    r2 *= xy_term(0,1,n[2]-1);
+    r1 += r2;
+  }
+  P r3(xy_term(1,0));
+  r3 += xy_term(0,1,max(1U,n[1]+n[2]-1));
+  r3 *= xy_term(0,0,n[0]-1);
+  r1 += r3;
+
+  return r1;
+}
+
 /* deleteContract is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
  * for one, and a contract operation for the other.
@@ -223,7 +262,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     }
 
     poly += r;
-    } else  {
+  } else  {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
     
     int num_pendants(0);
@@ -239,7 +278,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
     unsigned char *key = NULL;
-    if(graph.num_vertices() < small_graph_threshold) {
+    if(graph.num_vertices() < small_graph_threshold) {      
       // if this is a small 
       /*
       if(!graph.is_multi_graph()) { 
