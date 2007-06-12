@@ -175,9 +175,7 @@ public:
       ss << "y";
     } else if(ymin != 0) {
       ss << "y^" << ymin;
-    } else if(ymin == 0) {
-      return "";
-    }
+    } 
     ss << "(";
     for(unsigned int i=ymin;i<=ymax;++i) {
       if(i != ymin) { ss << " + "; }
