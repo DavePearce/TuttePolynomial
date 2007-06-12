@@ -51,7 +51,7 @@ typedef enum { RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIM
 unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
-unsigned int small_graph_threshold = 5;
+unsigned int small_graph_threshold = 4;
 EDGE_SELECTION_HEURISTIC edge_selection_heuristic = MINIMISE_DEGREE;
 unsigned int xml_id = 2;
 simple_cache cache(1024*1024,100);
@@ -223,7 +223,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     }
 
     poly += r;
-  } else  {
+    } else  {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
     
     int num_pendants(0);
@@ -699,6 +699,9 @@ int main(int argc, char *argv[]) {
     case OPT_LARGE:
       size=v;
       break;
+    default:
+      cout << "Unrecognised parameter!" << endl;
+      exit(1);    
     }    
   }
 
