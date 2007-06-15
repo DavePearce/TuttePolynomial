@@ -83,8 +83,10 @@ public:
     build_spanning_tree();
   }
 
-  void add_edge(int from, int to) { 
-    graph.add_edge(from,to); 
+  void add_edge(int from, int to) { add_edge(from,to,1); }
+
+  void add_edge(int from, int to, int count) { 
+    graph.add_edge(from,to,count); 
     build_spanning_tree(); // WOAH, rather inefficient!
   }
 

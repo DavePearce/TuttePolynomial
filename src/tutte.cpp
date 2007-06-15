@@ -491,7 +491,45 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
     num_steps = 0;
 
     // now, do stuff!
-    G start_graph = read_graph<G>(input);
+    G graph = read_graph<G>(input);
+
+    // === sort vertices by degree ===
+    /*
+    std::vector<pair<int,int> > degs;
+    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+      degs.push_back(make_pair(*i,graph.num_edges(*i)));
+    }
+    unsigned int vmap[graph.num_edges()];
+    unsigned int vmi(0);
+    // ok, the following loop is not efficient!    
+    while(!degs.empty()) {
+      int max=0;
+      int v = -1;
+      for(unsigned int i=0;i!=degs.size();++i) {
+	if(degs[i].second > max) {
+	  max = degs[i].second;
+	  v = i;
+	  vmap[vmi] = degs[i].first;
+	}
+      }
+      degs.erase(degs.begin()+v);
+      vmi++;
+    }
+    G start_graph(graph.num_vertices());
+    // now, rebuild the graph with the new map
+    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+      for(typename G::edge_iterator j(graph.begin_edges(*i));
+	  j!=graph.end_edges(*i);++j) {		
+	unsigned int head = *i;
+	unsigned int tail = j->first;
+	unsigned int count = j->second;
+	if(head <= tail) { 
+	  start_graph.add_edge(vmap[head],vmap[tail],count);
+	}
+      }
+    }     */
+    G start_graph(graph);
+    // === start the computation ===
     unsigned int nedges(start_graph.num_edges());
     if(start_graph.num_vertices() == 0) { break; }
     if(xml_flag) {
