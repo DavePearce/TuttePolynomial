@@ -491,6 +491,7 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
 
     // now, do stuff!
     G start_graph = read_graph<G>(input);
+
     if(start_graph.num_vertices() == 0) { break; }
     if(xml_flag) {
       // do nout for now
@@ -509,11 +510,13 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
     if(xml_flag) {
       // do nout for now.
     } else if(quiet_mode) {
-      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << tuttePoly.substitute(1,1) << endl;
+      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
     } else {
       cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
       
-      cout << "Number of spanning trees: " << tuttePoly.substitute(1,1) << endl;
+      cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
+
+      cout << "T(2,2) = " << tuttePoly.substitute(2,2) << endl;
       
       cout << "==================" << endl;
       cout << "Total Steps: " << num_steps << endl;
