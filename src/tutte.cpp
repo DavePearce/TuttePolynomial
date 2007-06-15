@@ -223,7 +223,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     }
 
     poly += r;
-  } else  {
+    } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
     
     int num_pendants(0);
@@ -491,7 +491,7 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
 
     // now, do stuff!
     G start_graph = read_graph<G>(input);
-
+    unsigned int nedges(start_graph.num_edges());
     if(start_graph.num_vertices() == 0) { break; }
     if(xml_flag) {
       // do nout for now
@@ -515,8 +515,7 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
       cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
       
       cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
-
-      cout << "T(2,2) = " << tuttePoly.substitute(2,2) << endl;
+      cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),nedges) << ")" << endl;
       
       cout << "==================" << endl;
       cout << "Total Steps: " << num_steps << endl;

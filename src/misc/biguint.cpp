@@ -463,10 +463,13 @@ bui_word biguint::operator%(bui_word v) const {
 }
 
 void biguint::operator^=(bui_word v) {
-  biguint p(*this);
-
-  for(unsigned int i=1;i<v;++i) {
-    (*this) *= p;
+  if(v == 0) { (*this) = 1U; }
+  else {
+    biguint p(*this);
+    
+    for(unsigned int i=1;i<v;++i) {
+      (*this) *= p;
+    }
   }
 }
 
