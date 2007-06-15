@@ -200,9 +200,8 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
   } else if(graph.is_multi_tree()) {
     // termination for multi-graphs whose underlying
     // graph is a tree.
-    P r(xy_term(0,num_loops));   
-
     if(xml_flag) { write_xml_leaf(my_id, graph); }    
+    P r(xy_term(0,num_loops));   
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
       for(typename G::edge_iterator j(graph.begin_edges(*i));
 	  j!=graph.end_edges(*i);++j) {		
@@ -223,7 +222,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     }
 
     poly += r;
-    } else {
+  } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
     
     int num_pendants(0);
@@ -282,20 +281,22 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
     // Fourth, recursively compute the polynomial   
     P p2;
-
+    
     deleteContract(graph, poly, left_id);
     deleteContract(g2,p2, right_id);
 
     if(e.third > 1) { p2 *= xy_term(0,0,e.third-1); }
-
     poly += p2;
-    poly *= xys;
 
     // Finally, save computed polynomial
     if(key != NULL) {
       cache.store(key,poly);
       delete [] key;  // free space used by key
     }    
+    
+    // do final multiplication here, since stored graph has pendants
+    // and loops removed already.
+    poly *= xys;
   }
 }
 
