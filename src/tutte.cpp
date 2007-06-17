@@ -1,3 +1,11 @@
+// (C) Copyright David James Pearce and Gary Haggard, 2007. 
+// Permission to copy, use, modify, sell and distribute this software 
+// is granted provided this copyright notice appears in all copies. 
+// This software is provided "as is" without express or implied 
+// warranty, and with no claim as to its suitability for any purpose.
+//
+// Email: david.pearce@mcs.vuw.ac.nz
+
 #include <iostream>
 #include <iomanip>
 #include <fstream>
@@ -11,8 +19,6 @@
 #include <sys/resource.h>
 
 #include "config.h"
-#include "eval_simple_fours.hpp" // auto-generated solutions for simple graphs of size 4
-#include "eval_simple_fives.hpp" // auto-generated solutions for simple graphs of size 5
 #include "cache/simple_cache.hpp"
 #include "misc/biguint.hpp"
 #include "misc/safe_arithmetic.hpp"
