@@ -491,45 +491,7 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
     num_steps = 0;
 
     // now, do stuff!
-    G graph = read_graph<G>(input);
-
-    // === sort vertices by degree ===
-    /*
-    std::vector<pair<int,int> > degs;
-    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-      degs.push_back(make_pair(*i,graph.num_edges(*i)));
-    }
-    unsigned int vmap[graph.num_edges()];
-    unsigned int vmi(0);
-    // ok, the following loop is not efficient!    
-    while(!degs.empty()) {
-      int max=0;
-      int v = -1;
-      for(unsigned int i=0;i!=degs.size();++i) {
-	if(degs[i].second > max) {
-	  max = degs[i].second;
-	  v = i;
-	  vmap[vmi] = degs[i].first;
-	}
-      }
-      degs.erase(degs.begin()+v);
-      vmi++;
-    }
-    G start_graph(graph.num_vertices());
-    // now, rebuild the graph with the new map
-    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-      for(typename G::edge_iterator j(graph.begin_edges(*i));
-	  j!=graph.end_edges(*i);++j) {		
-	unsigned int head = *i;
-	unsigned int tail = j->first;
-	unsigned int count = j->second;
-	if(head <= tail) { 
-	  start_graph.add_edge(vmap[head],vmap[tail],count);
-	}
-      }
-    }     */
-    G start_graph(graph);
-    // === start the computation ===
+    G start_graph = read_graph<G>(input);
     unsigned int nedges(start_graph.num_edges());
     if(start_graph.num_vertices() == 0) { break; }
     if(xml_flag) {
@@ -627,9 +589,9 @@ int main(int argc, char *argv[]) {
     {"maximise-degree", no_argument,NULL,OPT_MAXDEGREE},
     {"maximise-mdegree", no_argument,NULL,OPT_MAXMDEGREE},
     {"vertex-order", no_argument,NULL,OPT_VERTEXORDER},
+    {"random", no_argument,NULL,OPT_RANDOM},
     {"bfs-spanning-tree", no_argument, NULL, OPT_BFSTREE},
     {"dfs-spanning-tree", no_argument, NULL, OPT_DFSTREE},
-    {"random", no_argument,NULL,OPT_RANDOM},
     {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
     {"simple-poly",no_argument,NULL,OPT_SIMPLE_POLY},
@@ -645,11 +607,26 @@ int main(int argc, char *argv[]) {
   char *descriptions[]={
     "        --help                    display this information",
     " -q     --quiet                   output stats summary as single line only (useful for generating data)",
+    "        --nauty-workspace=<amount> set size of nauty workspace, e.g. 10000",
+    "        --small-graphs=size       set threshold for small graphs, e.g. 7",
+    "        --ngraphs=n               number of graphs to process from input file",
+    "        --xml-tree                output computation tree as XML",
+    "        --small                   use 32-bit integers only",
+    "        --medium                  use 64-bit integers only",
+    "        --large                   use unbound integers (default)",
+    " \ncache options:",
     " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
-    "        --nauty-workspace=<amount> set size of nauty workspace, e.g. 10000",
-    "        --small-graphs=size        set threshold for small graphs, e.g. 7",
-    "        --ngraphs=n               number of graphs to process from input file",
+    "        --cache-replacement=<amount> set ratio (between 0 .. 1) of cache to displace when full",
+    " \nedge selection heuristics:",
+    "        --minimise-degree         minimise endpoint (underlying) degree sum",
+    "        --minimise-sdegree        minimise single endpoint (underlying) degree",
+    "        --minimise-mdegree        minimise endpoint degree",
+    "        --maximise-degree         maximise endpoint (underlying) degree",
+    "        --maximise-sdegree        maximise single endpoint (underlying) degree",
+    "        --maximise-mdegree        maximise endpoint degree",
+    "        --vertex-order            select first available non-tree edge, starting from vertex 0",
+    "        --random                  random selection",
     NULL
   };
 
@@ -657,7 +634,7 @@ int main(int argc, char *argv[]) {
   unsigned int cache_size(50*1024*1024); // detault 50M
   unsigned int cache_buckets(10000);     // default 10,000 buckets
   unsigned int poly_rep(OPT_FACTOR_POLY);
-  unsigned int ngraphs(UINT_MAX);
+  unsigned int ngraphs(1);
   unsigned int size = OPT_LARGE;
   bool quiet_mode=false;
   bool bfs_tree = false;
