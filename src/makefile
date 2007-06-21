@@ -1,6 +1,7 @@
-include ../makefile.config
+ROOTDIR=..
+include ${ROOTDIR}/makefile.config
 
-SUBDIRS=core graph cache misc poly
+SUBDIRS=graph cache misc poly
 
 SRCS= tutte.cpp graph/algorithms.cpp graph/hash.c misc/biguint.cpp misc/bstreambuf.cpp misc/bistream.cpp
 
@@ -9,7 +10,7 @@ LIBS = -lnauty
 
 TARGET=tutte
 
-include ../makefile.std
+include ${ROOTDIR}/makefile.std
 
 
 

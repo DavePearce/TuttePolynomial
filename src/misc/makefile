@@ -1,4 +1,5 @@
-include ../../makefile.config
+ROOTDIR=../..
+include ${ROOTDIR}/makefile.config
 
 SUBDIRS=
 
@@ -9,7 +10,7 @@ LIBS = -lnauty
 
 TARGET=
 
-include ../../makefile.std
+include ${ROOTDIR}/makefile.std
 
 
 

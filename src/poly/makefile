@@ -1,8 +1,11 @@
+ROOTDIR=../..
+include ${ROOTDIR}/makefile.config
+
 SUBDIRS=
 
 SRCS=
 
-include ../../makefile.std
+include ${ROOTDIR}/makefile.std
 
 
 
