@@ -228,12 +228,12 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     }
 
     poly += r;
-  } else {
+    } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
-    int num_pendants(0);
+    unsigned int num_pendants(0);
 
     while(graph.num_pendant_vertices() > 0) {
-      int l = graph.select_pendant_vertex();
+      unsigned int l = graph.select_pendant_vertex();
       graph.remove(l);
       num_pendants++;
     }

@@ -91,12 +91,10 @@ public:
   }
 
   unsigned int remove_loops() {
-    unsigned int c=0;    
+    unsigned int c=0U;    
     for(typename G::vertex_iterator i(graph.begin_verts());
 	i!=graph.end_verts();++i) {
-
       c += graph.remove_all_edges(*i,*i);
-
     }
     return c;
   }
@@ -181,7 +179,7 @@ private:
 	    for(typename G::edge_iterator i(graph.begin_edges(v));
 		i!=graph.end_edges(v);++i) {	  
 	      unsigned int w = i->first;
-	      int k = i->second; // number of multi edges
+	      unsigned int k = i->second; // number of multi edges
 	      total += k;
 	      if(!visited[w]) { 
 		visited[w] = true;
@@ -190,7 +188,7 @@ private:
 	      }
 	    }
 	    // pendant vertex check
-	    if(total == 1) { pendant_vertices.push_back(v); }
+	    if(total == 1U) { pendant_vertices.push_back(v); }
 	  }    
 	}  
       }      
