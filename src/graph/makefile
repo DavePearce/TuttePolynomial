@@ -5,7 +5,7 @@ SUBDIRS=
 
 SRCS=
 
-include ${ROOTDIR}makefile.std
+include ${ROOTDIR}/makefile.std
 
 
 

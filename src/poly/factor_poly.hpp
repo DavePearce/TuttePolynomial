@@ -155,10 +155,14 @@ public:
   biguint substitute(unsigned int y) const {
     if(coefficients != NULL) {
       biguint r(0U);
+      biguint p(y);	
       for(unsigned int i=ymin;i<=ymax;++i) {	
-	biguint p(y);
-	r += pow(p,i) * (*this)[i];
+	std::cout << p << "^" << i << "=" << pow(p,i) << " * " << (*this)[i];
+	biguint t(pow(p,i) * (*this)[i]);
+	std::cout << " = " << t << std::endl;
+	r += t;
       }
+      std::cout << " ==== GOT: " << r << " ===" << std::endl;
       return r;
     } else {
       return biguint(0U);
