@@ -6,6 +6,9 @@
 #include "bstreambuf.hpp"
 #include "bistream.hpp"
 
+template<class T>
+class safe; // forward declaration
+
 // this class provides arbitrary sized integers
 typedef unsigned int bui_word;
 typedef unsigned long long bui_dword;
@@ -21,7 +24,7 @@ typedef unsigned long long bui_dword;
 #define BUI_ULONGLONG_SIZE (sizeof(unsigned long long) / sizeof(bui_word))
 
 class biguint {
-private:
+public:
   bui_word ptr; // either an int or a pointer ...
 
   friend bstreambuf &operator<<(bstreambuf &, biguint const &);
@@ -34,6 +37,10 @@ public:
   biguint();
   biguint(bui_word v);
   biguint(bui_dword v);
+
+  template<class T>
+  biguint(safe<T> v) { clone(v); }
+
   biguint(biguint const &src);
   biguint(bui_word v, bui_word d);
   biguint(bui_word *p);
@@ -102,12 +109,12 @@ public:
   /* =============================== */
   
 private:
-  inline void destroy();
-  inline void clone(bui_word w);
-  inline void clone(bui_dword w);
-  inline void clone(biguint const &w);
-  inline void resize(bui_word ndepth);
-  inline bui_word *aligned_alloc(unsigned int c);
+  void destroy();
+  void clone(bui_word w);
+  void clone(bui_dword w);
+  void clone(biguint const &w);
+  void resize(bui_word ndepth);
+  bui_word *aligned_alloc(unsigned int c);
 
   void ripple_carry(bui_word level);
   void ripple_borrow(bui_word level);
@@ -121,5 +128,7 @@ std::ostream& operator<<(std::ostream &out, biguint val);
 bstreambuf &operator<<(bstreambuf &, biguint const &);
 bistream &operator>>(bistream &, biguint &);
 biguint pow(biguint const &r, unsigned int power);
+
+#include "safe_arithmetic.hpp"
 
 #endif

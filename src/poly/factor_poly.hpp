@@ -151,14 +151,24 @@ public:
 
   T const &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
   T &operator[](int i) { return coefficients[(i + fpadding) - ymin]; }
-
+#define UNPACK(x) ((bui_word*)(x << 1U))
   biguint substitute(unsigned int y) const {
     if(coefficients != NULL) {
       biguint r(0U);
       biguint p(y);	
       for(unsigned int i=ymin;i<=ymax;++i) {	
-	std::cout << p << "^" << i << "=" << pow(p,i) << " * " << (*this)[i];
-	biguint t(pow(p,i) * (*this)[i]);
+	biguint tmp((*this)[i]);
+	if(tmp == 21U) { tmp = biguint(21U); }
+	if(tmp.ptr & BUI_PTR_BIT) {
+	  std::cout << "(";
+	  bui_word *ptr = UNPACK(tmp.ptr);
+	  for(bui_word j(0);j!=ptr[0];++j) {
+	    std::cout << ptr[j+1] << " ";
+	  }
+	  std::cout << ") ";
+	}
+	std::cout << p << "^" << i << "=" << pow(p,i) << " * " << tmp;
+	biguint t(pow(p,i) * tmp);
 	std::cout << " = " << t << std::endl;
 	r += t;
       }

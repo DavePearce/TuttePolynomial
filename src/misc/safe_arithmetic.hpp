@@ -75,11 +75,11 @@ public:
     return num / src;
   }
 
-  inline boolean operator==(T src) const {
+  inline bool operator==(T src) const {
     return num == src;
   }
 
-  inline boolean operator==(safe<T> src) const {
+  inline bool operator==(safe<T> src) const {
     return num == src.num;
   }
 

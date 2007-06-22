@@ -728,9 +728,6 @@ int main(int argc, char *argv[]) {
     }    
   }
 
-  biguint x(21U);
-  cout << "GOT: " << biguint(pow(biguint(2U),31) * x) << endl;
-
   // Quick sanity check
 
   if(optind >= argc) {
