@@ -742,7 +742,7 @@ int main(int argc, char *argv[]) {
     cout << ") ";
   }
   cout << "X = " << x << endl;
-  cout << "GOT: " << biguint(pow(biguint(2U),31) * x) << endl;
+  cout << "GOT: " << (pow(biguint(2U),31) * x) << endl;
 
   // Quick sanity check
 
