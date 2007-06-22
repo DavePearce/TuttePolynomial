@@ -728,6 +728,22 @@ int main(int argc, char *argv[]) {
     }    
   }
 
+  biguint x(21U);
+  biguint y(UINT_MAX);
+  x += y;
+  cout << "X = " << x << endl;
+  x -= y;
+  if(x.ptr & BUI_PTR_BIT) {
+    std::cout << "(";
+    bui_word *ptr = UNPACK(x.ptr);
+    for(bui_word j(0);j!=ptr[0];++j) {
+      cout << ptr[j+1] << " ";
+    }
+    cout << ") ";
+  }
+  cout << "X = " << x << endl;
+  cout << "GOT: " << biguint(pow(biguint(2U),31) * x) << endl;
+
   // Quick sanity check
 
   if(optind >= argc) {
