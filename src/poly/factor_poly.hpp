@@ -157,22 +157,8 @@ public:
       biguint r(0U);
       biguint p(y);	
       for(unsigned int i=ymin;i<=ymax;++i) {	
-	biguint tmp((*this)[i]);
-	if(tmp == 21U) { tmp = biguint(21U); }
-	if(tmp.ptr & BUI_PTR_BIT) {
-	  std::cout << "(";
-	  bui_word *ptr = UNPACK(tmp.ptr);
-	  for(bui_word j(0);j!=ptr[0];++j) {
-	    std::cout << ptr[j+1] << " ";
-	  }
-	  std::cout << ") ";
-	}
-	std::cout << p << "^" << i << "=" << pow(p,i) << " * " << tmp;
-	biguint t(pow(p,i) * tmp);
-	std::cout << " = " << t << std::endl;
-	r += t;
+	r += pow(p,i) * (*this)[i];
       }
-      std::cout << " ==== GOT: " << r << " ===" << std::endl;
       return r;
     } else {
       return biguint(0U);
