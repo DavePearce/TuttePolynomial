@@ -16,6 +16,7 @@ Alternative Implementations
 
 Optimisations
 -------------
+* Fixup BIGUINT so it packs (i.e. removes trailing zeros) automatically
 * Threshold support
 * Optimise space used by nauty graphs
 * Optimise cache lookup policies (i.e. don't convert to nauty graph

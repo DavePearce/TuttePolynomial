@@ -114,6 +114,7 @@ private:
   void clone(bui_dword w);
   void clone(biguint const &w);
   void resize(bui_word ndepth);
+  void expand(bui_word ndepth);
   bui_word *aligned_alloc(unsigned int c);
 
   void ripple_carry(bui_word level);
