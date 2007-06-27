@@ -558,6 +558,10 @@ void biguint::clone(biguint const &src) {
   }
 }
 
+// Expands the array to depth ndepth.  If ndepth < current depth,
+// nothing happens.  
+//
+// PRE: assumes this in array format
 void biguint::expand(bui_word ndepth) {
   bui_word *p(UNPACK(ptr));
   bui_word depth = p[0];
@@ -570,7 +574,11 @@ void biguint::expand(bui_word ndepth) {
   ptr = PACK(nptr);
 }
 
-// assumes array format
+// Resizes the array to depth ndepth.  If ndepth < current depth, this
+// will trim the array; otherwise, it will expand it.  Also, if ndepth
+// <= 1, it will revert to word format.
+//
+// PRE: assumes this in array format
 void biguint::resize(bui_word ndepth) {
   bui_word *p(UNPACK(ptr));
   bui_word depth = p[0];
@@ -620,9 +628,6 @@ void biguint::ripple_borrow(bui_word level) {
     bui_word v = p[i];
     if(v == 0) {
       p[i] = BUI_WORD_MAX;
-    } else if(v == 1) {
-      resize(depth-1); // trim trailing zero
-      return;
     } else {
       p[i] = v - 1;
       return;
