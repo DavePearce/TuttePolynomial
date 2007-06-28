@@ -52,13 +52,14 @@ public:
 // Global Variables
 // ---------------------------------------------------------------
 
-typedef enum { RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER } EDGE_SELECTION_HEURISTIC;
+typedef enum { RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER } edgesel_t;
+typedef enum { V_RANDOM, V_NONE } vorder_t;
 
 unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
-EDGE_SELECTION_HEURISTIC edge_selection_heuristic = MINIMISE_DEGREE;
+edgesel_t edge_selection_heuristic = MINIMISE_DEGREE;
 unsigned int xml_id = 2;
 simple_cache cache(1024*1024,100);
 static bool status_flag=false;
@@ -357,6 +358,38 @@ G read_graph(std::istream &input) {
   return r;
 }
 
+template<class G>
+G permute_graph(G const &graph, vorder_t heuristic) {
+  vector<unsigned int> order;
+  for(unsigned int i=0;i!=graph.num_vertices();++i) {
+    order.push_back(i);
+  }
+  // obtain the new ordering
+  switch(heuristic) {
+  case V_RANDOM:
+    random_shuffle(order.begin(),order.end());
+    break;
+  default:
+    // do nothing
+    break;
+  }
+  // finally, create new permuted graph
+  G r(graph.num_vertices());
+  
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename G::edge_iterator j(graph.begin_edges(*i));
+	j!=graph.end_edges(*i);++j) {	      
+      unsigned int head(*i);
+      unsigned int tail(j->first);
+      unsigned int count(j->second);
+      if(head <= tail) {
+	r.add_edge(order[head],order[tail],count);
+      }
+    }
+  }
+  return r;
+}
+
 unsigned int parse_amount(char *str) {
   char *endp=NULL;
   long r = strtol(str,&endp,10);
@@ -495,8 +528,11 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
     cache.reset_stats();
     num_steps = 0;
 
-    // now, do stuff!
+    // Create graph and then permute it according to 
+    // vertex ordering strategy
     G start_graph = read_graph<G>(input);
+    start_graph = permute_graph<G>(start_graph,V_RANDOM);
+    
     unsigned int nedges(start_graph.num_edges());
     if(start_graph.num_vertices() == 0) { break; }
     if(xml_flag) {
