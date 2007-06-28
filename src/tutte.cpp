@@ -53,7 +53,7 @@ public:
 // ---------------------------------------------------------------
 
 typedef enum { RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER } edgesel_t;
-typedef enum { V_RANDOM, V_NONE } vorder_t;
+typedef enum { V_RANDOM, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DEGREE, V_MINIMISE_DEGREE,  V_MAXIMISE_DEGREE, V_NONE } vorder_t;
 
 unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
@@ -358,6 +358,32 @@ G read_graph(std::istream &input) {
   return r;
 }
 
+template<class G, class OP>
+class vo_underlying {
+private:
+  G const &graph;
+  OP op;
+public:
+  vo_underlying(G const &g) : graph(g) {}
+
+  bool operator()(unsigned int v1, unsigned int v2) {
+    return op(graph.num_underlying_edges(v1),graph.num_underlying_edges(v2));
+  }
+};
+
+template<class G, class OP>
+class vo_multi {
+private:
+  G const &graph;
+  OP op;
+public:
+  vo_multi(G const &g) : graph(g) {}
+
+  bool operator()(unsigned int v1, unsigned int v2) {
+    return op(graph.num_edges(v1),graph.num_edges(v2));
+  }
+};
+
 template<class G>
 G permute_graph(G const &graph, vorder_t heuristic) {
   vector<unsigned int> order;
@@ -369,10 +395,28 @@ G permute_graph(G const &graph, vorder_t heuristic) {
   case V_RANDOM:
     random_shuffle(order.begin(),order.end());
     break;
+  case V_MINIMISE_UNDERLYING_DEGREE:
+    sort(order.begin(),order.end(),vo_underlying<G,less<unsigned int> >(graph));
+    break;
+  case V_MAXIMISE_UNDERLYING_DEGREE:
+    sort(order.begin(),order.end(),vo_underlying<G,greater<unsigned int> >(graph));
+    break;
+  case V_MINIMISE_DEGREE:
+    sort(order.begin(),order.end(),vo_multi<G,less<unsigned int> >(graph));
+    break;
+  case V_MAXIMISE_DEGREE:
+	 sort(order.begin(),order.end(),vo_multi<G,greater<unsigned int> >(graph));
+    break;
   default:
     // do nothing
     break;
   }
+  // transpose ordering
+  vector<unsigned int> iorder(order.size());
+  for(unsigned int i=0;i!=graph.num_vertices();++i) {
+    iorder[order[i]] = i;
+  }
+  
   // finally, create new permuted graph
   G r(graph.num_vertices());
   
@@ -383,7 +427,7 @@ G permute_graph(G const &graph, vorder_t heuristic) {
       unsigned int tail(j->first);
       unsigned int count(j->second);
       if(head <= tail) {
-	r.add_edge(order[head],order[tail],count);
+	r.add_edge(iorder[head],iorder[tail],count);
       }
     }
   }
@@ -519,7 +563,7 @@ void print_status() {
 // ---------------------------------------------------------------
 
 template<class G, class P>
-void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
+void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean quiet_mode) {
   unsigned int ngraphs_completed=0;
   if(xml_flag) { write_xml_start(); }
   while(!input.eof() && ngraphs_completed < ngraphs) {
@@ -531,8 +575,8 @@ void run(ifstream &input, unsigned int ngraphs, boolean quiet_mode) {
     // Create graph and then permute it according to 
     // vertex ordering strategy
     G start_graph = read_graph<G>(input);
-    start_graph = permute_graph<G>(start_graph,V_RANDOM);
-    
+    start_graph = permute_graph<G>(start_graph,vertex_ordering);
+
     unsigned int nedges(start_graph.num_edges());
     if(start_graph.num_vertices() == 0) { break; }
     if(xml_flag) {
@@ -617,7 +661,12 @@ int main(int argc, char *argv[]) {
   #define OPT_RANDOM 56
   #define OPT_BFSTREE 57
   #define OPT_DFSTREE 58
-
+  #define OPT_RANDOM_ORDERING 60
+  #define OPT_MINDEG_ORDERING 61
+  #define OPT_MAXDEG_ORDERING 62
+  #define OPT_MINUDEG_ORDERING 63
+  #define OPT_MAXUDEG_ORDERING 64
+  
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
@@ -630,6 +679,11 @@ int main(int argc, char *argv[]) {
     {"maximise-degree", no_argument,NULL,OPT_MAXDEGREE},
     {"maximise-mdegree", no_argument,NULL,OPT_MAXMDEGREE},
     {"vertex-order", no_argument,NULL,OPT_VERTEXORDER},
+    {"random-ordering",no_argument,NULL,OPT_RANDOM_ORDERING},
+    {"mindeg-ordering",no_argument,NULL,OPT_MINDEG_ORDERING},
+    {"maxdeg-ordering",no_argument,NULL,OPT_MAXDEG_ORDERING},
+    {"minudeg-ordering",no_argument,NULL,OPT_MINUDEG_ORDERING},
+    {"maxudeg-ordering",no_argument,NULL,OPT_MAXUDEG_ORDERING},
     {"random", no_argument,NULL,OPT_RANDOM},
     {"bfs-spanning-tree", no_argument, NULL, OPT_BFSTREE},
     {"dfs-spanning-tree", no_argument, NULL, OPT_DFSTREE},
@@ -679,6 +733,7 @@ int main(int argc, char *argv[]) {
   unsigned int size = OPT_LARGE;
   bool quiet_mode=false;
   bool bfs_tree = false;
+  vorder_t vertex_ordering(V_NONE);
 
   while((v=getopt_long(argc,argv,"qc:",long_options,NULL)) != -1) {
     switch(v) {      
@@ -746,6 +801,21 @@ int main(int argc, char *argv[]) {
     case OPT_DFSTREE:
       bfs_tree = false;
       break;
+    case OPT_RANDOM_ORDERING:
+      vertex_ordering = V_RANDOM;
+      break;
+    case OPT_MINDEG_ORDERING:
+      vertex_ordering = V_MINIMISE_DEGREE;
+      break;
+    case OPT_MAXDEG_ORDERING:
+      vertex_ordering = V_MAXIMISE_DEGREE;
+      break;
+    case OPT_MINUDEG_ORDERING:
+      vertex_ordering = V_MINIMISE_UNDERLYING_DEGREE;
+      break;
+    case OPT_MAXUDEG_ORDERING:
+      vertex_ordering = V_MAXIMISE_UNDERLYING_DEGREE;
+      break;
     // --- OTHER OPTIONS ---
     case OPT_NAUTYWORKSPACE:
       resize_nauty_workspace(parse_amount(optarg));
@@ -805,25 +875,25 @@ int main(int argc, char *argv[]) {
     if(poly_rep == OPT_FACTOR_POLY) {
       if(size == OPT_SMALL) {
 	if(bfs_tree) {
-	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,quiet_mode);
+	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,quiet_mode);
 	} else {
-	  run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,quiet_mode);
+	  run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,quiet_mode);
 	}
       } else if(size == OPT_MEDIUM) {
 	if(bfs_tree) {
-	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,quiet_mode);
+	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,quiet_mode);
 	} else {
-	  run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,quiet_mode);
+	  run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,quiet_mode);
 	}
       } else {
 	if(bfs_tree) {
-	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,quiet_mode);
+	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,quiet_mode);
 	} else {
-	  run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,quiet_mode);
+	  run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,quiet_mode);
 	}
       }
     } else {
-      //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,quiet_mode);
+      //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering,quiet_mode);
     }    
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
