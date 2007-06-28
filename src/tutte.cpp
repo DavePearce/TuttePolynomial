@@ -1,3 +1,4 @@
+
 // (C) Copyright David James Pearce and Gary Haggard, 2007. 
 // Permission to copy, use, modify, sell and distribute this software 
 // is granted provided this copyright notice appears in all copies. 
@@ -672,7 +673,7 @@ int main(int argc, char *argv[]) {
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
-    {"cache-random-replacement",required_argument,NULL,OPT_CACHERANDOM},    
+    {"cache-random-replacement",no_argument,NULL,OPT_CACHERANDOM},    
     {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
     {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
     {"minimise-sdegree", no_argument,NULL,OPT_MINSDEGREE},
