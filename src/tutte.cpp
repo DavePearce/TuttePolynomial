@@ -629,6 +629,20 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 }
 
 // ---------------------------------------------------------------
+// Misc helper Methods
+// ---------------------------------------------------------------
+
+// The purpose of this function is to figure out a good size for the
+// cache.  Ideally, i'd like 80% of physical memory.  However, it
+// seems to be a seriously non-trivial challenge to determine the
+// amount of physical memory in UNIX.
+long calc_default_cache_size() {
+  struct rlimit r;
+  getrlimit(RLIMIT_DATA,&r);    
+  return (r.rlim_cur / 10) * 8;
+}
+
+// ---------------------------------------------------------------
 // Main Method
 // ---------------------------------------------------------------
 
@@ -727,7 +741,7 @@ int main(int argc, char *argv[]) {
   };
 
   unsigned int v;
-  unsigned int cache_size(50*1024*1024); // detault 50M
+  unsigned int cache_size(calc_default_cache_size()); 
   unsigned int cache_buckets(10000);     // default 10,000 buckets
   unsigned int poly_rep(OPT_FACTOR_POLY);
   unsigned int ngraphs(1);
@@ -849,7 +863,9 @@ int main(int argc, char *argv[]) {
   // -------------------------------------------------
   // Initialise Cache 
   // -------------------------------------------------
-
+  if(!quiet_mode) {
+    cout << "Using " << cache_size/(1024*1024) << "M of cache." << endl;
+  }
   cache.resize(cache_size);
   cache.rebucket(cache_buckets);
 
