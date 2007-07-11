@@ -1,27 +1,26 @@
 Things to do!
 =============
-* Investigate the multi-edge matching idea, where number of multiple edges is not important.
-* Removing "lines" by checking that one of their vertices is not on the spanning tree.  Adjust spanning tree to pick "bushy" vertices.
-* Add support for cache replacement policies and garbage collection
-* Add Gary's small graph isomorphism tests
+
+Code Improvements
+-----------------
+* Refactor graph_key to be a class.  This might simplify a few things, but it's hard to keep it as efficient.
 * Add support for decent stats reporting [breakdown of bucket length, proportion of memory used by graphs vs polynomial]
 
-Alternative Implementations
----------------------------
-* Add vecmultiset option for adjacency list
+Easy Ideas
+----------
+* Add Gary's small graph isomorphism tests
+* Removing "lines" by checking that one of their vertices is not on the spanning tree.  Adjust spanning tree to pick "bushy" vertices.
+* Add support for more cache replacement policies
 * Add alternative(s) to adjacency list (i.e. Gary's optimised for contracting)
-* Add alternative(s) to simple poly for representing polynomials
+* Fixup BIGUINT so it packs (i.e. removes trailing zeros) automatically and optimise multiplication?
 
-Optimisations
--------------
-* Fixup BIGUINT so it packs (i.e. removes trailing zeros) automatically
-* Threshold support
-* Optimise space used by nauty graphs
-* Optimise cache lookup policies (i.e. don't convert to nauty graph
-  unless really need to, possibly by using bins for different size graph) 
-  Could use things like min-max degree to help compare graphs?
-* Optimise updating of canonical graph to prevent recomputing every time?
-* Explore nauty options?
+Hard Ideas
+----------
+* Investigate the multi-edge matching idea, where number of multiple edges is not important.
+* Refactor polynomial to simplify it after computing
+* Use template matching for multi-graphs
+* Consider incremental isomorphism algorithm?
+* Consider truely distributed implementation?
 
 
 
