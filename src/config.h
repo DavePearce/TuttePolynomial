@@ -3,7 +3,7 @@
 
 // the following is needed for Nauty and determines
 // the maximum graph size
-#define MAXN 96
+#define MAXN 0
 #include "nauty.h"
 
 #include "graph/adjacency_list.hpp"

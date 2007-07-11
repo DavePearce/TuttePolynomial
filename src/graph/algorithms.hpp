@@ -38,8 +38,10 @@ void print_graph(std::ostream &ostr, T const &graph) {
 
 #define NAUTY_HEADER_SIZE 2
 
-extern setword nauty_graph_buf[];
+extern setword *nauty_graph_buf;
+extern size_t nauty_graph_buf_size;
 extern setword *nauty_workspace;
+extern size_t _nauty_workspace_size;
 
 void print_graph_key(std::ostream &ostr, unsigned char const *key);
 bool compare_graph_keys(unsigned char const *_k1, unsigned char const *_k2);
@@ -56,11 +58,20 @@ unsigned char *graph_key(T const &graph) {
   unsigned int N = graph.num_vertices();
   unsigned int NN = N + graph.num_multiedges();
   unsigned int M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
-  // quick sanity check
-  if(NN > MAXN) { throw std::runtime_error("graph to large for MAXN setting --- try changing it in config.h"); }
-
-  // clear temporary space
-  memset(nauty_graph_buf,0,sizeof(setword)*NN*M);
+  
+  // allocate a clear space for graph
+  unsigned int graph_size(sizeof(setword)*NN*M);
+  if(graph_size > nauty_graph_buf_size) {
+    // need to increase size of temporary buffer!
+    delete [] nauty_graph_buf;
+    nauty_graph_buf = new setword[sizeof(setword)*NN*M];  
+    // SHOULD CHECK FOR INCREASE IN WORKSPACE SIZE?
+    delete [] nauty_workspace;
+    nauty_workspace = new setword[100 * M];
+    _nauty_workspace_size = 100 * M;
+  }
+  
+  memset(nauty_graph_buf,0,graph_size);
 
   // build map from graph vertex space to nauty vertex space
   unsigned int vtxmap[graph.domain_size()];
@@ -92,7 +103,7 @@ unsigned char *graph_key(T const &graph) {
 	    nauty_add_edge(mes,w,M);	    
 	  }
 	} 
-      }
+      }   
     }
   }  
 

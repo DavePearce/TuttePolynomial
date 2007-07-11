@@ -1,7 +1,5 @@
 Things to do!
 =============
-* Eliminate need to retree based on Gary's idea.
-* Adde support for matching multi-trees and multi-loons since we can terminate immediately with them.
 * Investigate the multi-edge matching idea, where number of multiple edges is not important.
 * Removing "lines" by checking that one of their vertices is not on the spanning tree.  Adjust spanning tree to pick "bushy" vertices.
 * Add support for cache replacement policies and garbage collection
@@ -23,9 +21,7 @@ Optimisations
   unless really need to, possibly by using bins for different size graph) 
   Could use things like min-max degree to help compare graphs?
 * Optimise updating of canonical graph to prevent recomputing every time?
-* Optimise of hashing policy?
 * Explore nauty options?
-* Search for multiple edge of tree edge for removal as this means spaning tree is unchanged.
 
 
 
