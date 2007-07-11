@@ -20,6 +20,7 @@
 #include <sys/resource.h>
 
 #include "config.h"
+#include "graph/nauty_graph.hpp"
 #include "cache/simple_cache.hpp"
 #include "misc/biguint.hpp"
 #include "misc/safe_arithmetic.hpp"
@@ -244,7 +245,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
-    unsigned char *key = NULL;
+    nauty_graph *key = NULL;
     if(graph.num_vertices() < small_graph_threshold) {      
       // if this is a small 
       /*
@@ -260,10 +261,9 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       }
       */
     } else {     
-      key = graph_key(graph);      
-      if(cache.lookup(key,poly)) { 
+      key = nauty_graph(graph);      
+      if(cache.lookup(*key,poly)) { 
 	if(xml_flag) { write_xml_match(my_id,graph); }
-
 	poly *= xys;
 	delete [] key; // free space used by key
 	return; 
@@ -297,8 +297,8 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
     // Finally, save computed polynomial
     if(key != NULL) {
-      cache.store(key,poly);
-      delete [] key;  // free space used by key
+      cache.store(*key,poly);
+      delete key;  // free space used by key
     }    
     
     // do final multiplication here, since stored graph has pendants

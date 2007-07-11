@@ -239,17 +239,18 @@ public:
   }
 
   template<class P>
-  bool lookup(unsigned char const *key, P &dst) {
+  bool lookup(nauty_graph const &key, P &dst) {
     // identify containing bucket
-    unsigned int bucket = hash_graph_key(key) % nbuckets;
+    unsigned int bucket = key.hashcode() % nbuckets;
     struct cache_node *node_p = buckets[bucket].next;
     // traverse bucket looking for match
     while(node_p != NULL) {
-      unsigned char *key_p = (unsigned char *) node_p;
-      key_p += sizeof(struct cache_node);
-      if(compare_graph_keys(key,key_p)) {
+      unsigned char *key_p = ((unsigned char *) node_p) +  sizeof(struct cache_node);
+      nauty_graph skey(key_p);
+      
+      if(key == skey) {
 	// match made
-	size_t sizeof_key = sizeof_graph_key(key_p);
+	size_t sizeof_key = skey.size();
 	bistream bin(key_p + sizeof_key, node_p->size - (sizeof_key + sizeof(struct cache_node)));
 	bin >> dst;
 	// update hit count
@@ -269,9 +270,9 @@ public:
   }
 
   template<class P>  
-  void store(unsigned char const *key, P const &p) {
+  void store(nauty_graph const &key, P const &p) {
     // allocate space for new node
-    unsigned int sizeof_key = sizeof_graph_key(key);
+    unsigned int sizeof_key = key.size();
     // convert poly into stream
     static bstreambuf bout;
     bout.reset();
@@ -281,7 +282,7 @@ public:
     struct cache_node *node_p = (struct cache_node *) ptr;
     unsigned char *key_p = ptr + sizeof(struct cache_node);
     // now put key at head of its bucket list
-    unsigned int bucket = hash_graph_key(key) % nbuckets;
+    unsigned int bucket = key.hashcode() % nbuckets;
     insert_node_after(node_p,&(buckets[bucket]));
     // init hit count
     node_p->hit_count = 0;
