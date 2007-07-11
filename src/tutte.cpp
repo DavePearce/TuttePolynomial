@@ -18,8 +18,12 @@
 #include <getopt.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <ext/hash_map>
 
-#include "config.h"
+#include "graph/adjacency_list.hpp"
+#include "graph/spanning_graph.hpp"
+#include "poly/simple_poly.hpp"
+#include "poly/factor_poly.hpp"
 #include "graph/algorithms.hpp"
 #include "cache/simple_cache.hpp"
 #include "misc/biguint.hpp"

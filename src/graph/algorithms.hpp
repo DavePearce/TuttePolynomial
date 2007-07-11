@@ -1,8 +1,6 @@
 #ifndef GRAPH_ALGORITHMS_HPP
 #define GRAPH_ALGORITHMS_HPP
 
-#include "../config.h"
-
 #include <iostream>
 #include <set>
 #include <stdexcept>
@@ -35,6 +33,11 @@ void print_graph(std::ostream &ostr, T const &graph) {
 // ----------------------------------
 // METHODS FOR INTERFACING WITH NAUTY
 // ----------------------------------
+
+// the following is needed for Nauty and determines
+// the maximum graph size
+#define MAXN 0
+#include "nauty.h"
 
 #define NAUTY_HEADER_SIZE 2
 
