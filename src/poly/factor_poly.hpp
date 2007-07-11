@@ -151,7 +151,7 @@ public:
 
   T const &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
   T &operator[](int i) { return coefficients[(i + fpadding) - ymin]; }
-#define UNPACK(x) ((bui_word*)(x << 1U))
+
   biguint substitute(unsigned int y) const {
     if(coefficients != NULL) {
       biguint r(0U);

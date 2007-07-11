@@ -199,6 +199,7 @@ public:
   unsigned int size() const;
   unsigned int hashcode() const;
   std::string str() const;
+  unsigned char *ptr() const { return (unsigned char *) tmp_graph; }
 private:
   bool internal_add_edge(int from, int to, int M);  
 };
