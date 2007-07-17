@@ -620,12 +620,6 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       cout << "# Cache Collisions: " << cache.num_collisions() << endl;
       cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
       cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
-      // now, write out stats
-      
-      fstream stats_out("tutte-stats.dat",fstream::out);
-      write_bucket_lengths(stats_out);
-      write_graph_sizes(stats_out);
-      write_hit_counts(stats_out);
     }
     ++ngraphs_completed;
   }
@@ -664,6 +658,7 @@ int main(int argc, char *argv[]) {
   #define OPT_CACHEBUCKETS 11  
   #define OPT_CACHEREPLACEMENT 12
   #define OPT_CACHERANDOM 13
+  #define OPT_CACHESTATS 14
   #define OPT_NAUTYWORKSPACE 20
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
@@ -692,6 +687,7 @@ int main(int argc, char *argv[]) {
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
     {"cache-random-replacement",no_argument,NULL,OPT_CACHERANDOM},    
+    {"cache-stats",required_argument,NULL,OPT_CACHESTATS},
     {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
     {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
     {"minimise-sdegree", no_argument,NULL,OPT_MINSDEGREE},
@@ -732,6 +728,7 @@ int main(int argc, char *argv[]) {
     " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     "        --cache-replacement=<amount> set ratio (between 0 .. 1) of cache to displace when full",
+    "        --cache-stats=<file>      write cache stats to file.  (doesn't make sense with --ngraphs>1)",
     " \nedge selection heuristics:",
     "        --minimise-degree         minimise endpoint (underlying) degree sum",
     "        --minimise-sdegree        minimise single endpoint (underlying) degree",
@@ -741,6 +738,10 @@ int main(int argc, char *argv[]) {
     "        --maximise-mdegree        maximise endpoint degree",
     "        --vertex-order            select first available non-tree edge, starting from vertex 0",
     "        --random                  random selection",
+    " \nvertex ordering heuristics:",
+    "        --random-ordering         use random ordering of vertices",
+    "        --mindeg-ordering         sort vertices by degree, with smallest first",
+    "        --maxdeg-ordering         sort vertices by degree, with largest first",
     NULL
   };
 
@@ -753,6 +754,7 @@ int main(int argc, char *argv[]) {
   bool quiet_mode=false;
   bool bfs_tree = false;
   vorder_t vertex_ordering(V_NONE);
+  string cache_stats_file("");
 
   while((v=getopt_long(argc,argv,"qc:",long_options,NULL)) != -1) {
     switch(v) {      
@@ -787,6 +789,9 @@ int main(int argc, char *argv[]) {
       break;
     case OPT_CACHERANDOM:
       cache.set_random_replacement();
+      break;
+    case OPT_CACHESTATS:
+      cache_stats_file = string(optarg);
       break;
     // --- POLY OPTIONS ---
     case OPT_SIMPLE_POLY:
@@ -916,6 +921,14 @@ int main(int argc, char *argv[]) {
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering,quiet_mode);
     }    
+
+    if(cache_stats_file != "") {
+      fstream stats_out(cache_stats_file.c_str(),fstream::out);
+      write_bucket_lengths(stats_out);
+      write_graph_sizes(stats_out);
+      write_hit_counts(stats_out);
+    }
+
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
   } catch(exception const &e) {

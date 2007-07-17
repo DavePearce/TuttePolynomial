@@ -31,6 +31,8 @@ Hard Ideas
 * Consider incremental isomorphism algorithm?
 * Consider truely distributed implementation?
 
-
+Other things
+------------
+* Focus on generating more stats.  E.g. locality of hit info, number of immediate collapses?
 
 
