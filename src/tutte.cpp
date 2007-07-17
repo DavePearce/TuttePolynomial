@@ -64,6 +64,9 @@ typedef enum { V_RANDOM, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DE
 unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
+unsigned long num_collapses = 0;
+unsigned long hit_count = 0;
+unsigned long hit_size = 0;
 unsigned int small_graph_threshold = 5;
 edgesel_t edge_selection_heuristic = MINIMISE_DEGREE;
 unsigned int xml_id = 2;
@@ -210,6 +213,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     // termination for trees!
     if(xml_flag) { write_xml_leaf(my_id, graph); }
     poly += xy_term(graph.num_edges(),num_loops);
+    num_collapses += graph.num_edges() + num_loops;
   } else if(graph.is_multi_tree()) {
     // termination for multi-graphs whose underlying
     // graph is a tree.
@@ -233,9 +237,9 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 	}
       }
     }
-
+    num_collapses += graph.num_edges() + num_loops;
     poly += r;
-    } else {
+  } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
     unsigned int num_pendants(0);
 
@@ -246,6 +250,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     }
 
     xy_term xys(num_pendants,num_loops);    
+    num_collapses += graph.num_edges() + num_loops;
 
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
@@ -268,6 +273,8 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       key = graph_key(graph);      
       if(cache.lookup(key,poly)) { 
 	if(xml_flag) { write_xml_match(my_id,graph); }
+	hit_count++;
+	hit_size += graph.num_vertices();
 	poly *= xys;
 	delete [] key; // free space used by key
 	return; 
@@ -610,10 +617,12 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       
       cout << "==================" << endl;
       cout << "Total Steps: " << num_steps << endl;
+      cout << "Total Collapses: " << num_collapses << endl;
       cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
       cout << endl;
       cout << "Cache stats:" << endl << "------------" << endl;
       cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
+      cout << "Avg Hit Size: " << ((float)hit_size)/hit_count << endl;
       cout << "# Entries: " << cache.num_entries() << endl;
       cout << "# Cache Hits: " << cache.num_hits() << endl;
       cout << "# Cache Misses: " << cache.num_misses() << endl;

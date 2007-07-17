@@ -10,13 +10,19 @@ set title "Distribution of Cache Bucket Lengths"
 set ylabel "Number of Buckets" 1,0
 set xlabel "Bucket Size" 1,0
 set output "cache-bucket-lengths.mindeg.ps"
-plot [][0:] "tutte-stats.mindeg.dat" index 0 using 1:2 with linespoints
+plot [][0:] "mindeg.stats" index 0 using 1:2 with linespoints
 
 set nolog x
 set title "Distribution of Cached Graphs"
 set ylabel "Number of Graphs" 1,0
 set xlabel "Graph Size" 1,0
 set output "graph-sizes.mindeg.ps"
-# plot [][0:50000] "tutte-stats.mindeg.dat" index 1 using 1:2  title "All-graphs" with linespoints, "tutte-stats.mindeg.dat" index 1 using 1:4  title "Multi-graphs" with linespoints
+# plot [][0:50000] "mindeg.stats" index 1 using 1:2  title "All-graphs" with linespoints, "mindeg.stats" index 1 using 1:4  title "Multi-graphs" with linespoints
 
-plot [][0:50000] "tutte-stats.mindeg.dat" index 1 using 1:2  title "Mindeg" with linespoints, "tutte-stats.maxdeg.dat" index 1 using 1:2  title "Maxdeg" with linespoints
+plot [][0:50000] "mindeg.stats" index 1 using 1:2  title "Mindeg" with linespoints, "maxdeg.stats" index 1 using 1:2  title "Maxdeg" with linespoints
+
+set title "Distribution Graph Hits"
+set ylabel "Number of Graphs" 1,0
+set xlabel "Graph Size" 1,0
+set output "graph-hits.mindeg.ps"
+plot [0:20][4:15] "mindeg.stats" index 2 using 1:2  title "Mindeg" with points, "maxdeg.stats" index 2 using 1:2  title "Maxdeg" with points
