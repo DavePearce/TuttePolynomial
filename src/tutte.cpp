@@ -1,4 +1,3 @@
-
 // (C) Copyright David James Pearce and Gary Haggard, 2007. 
 // Permission to copy, use, modify, sell and distribute this software 
 // is granted provided this copyright notice appears in all copies. 
