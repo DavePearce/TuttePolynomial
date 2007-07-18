@@ -167,12 +167,16 @@ void write_tree_nonleaf(unsigned int my_id, int left_id, int right_id, G const &
 
 void write_tree_start(unsigned int tid) {
   if(xml_flag) { write_xml_start(); }
-  cout << "=== TREE " << tid << " BEGIN ===" << endl;
+  else {
+    cout << "=== TREE " << tid << " BEGIN ===" << endl;
+  }
 }
 
 void write_tree_end(unsigned int tid) {
   if(xml_flag) { write_xml_end(); }
-  cout << "=== TREE " << tid << " END ===" << endl;
+  else {
+    cout << "=== TREE " << tid << " END ===" << endl;
+  }
 }
 
 /* This method determines which edge is chosen to delete contract upon.
@@ -323,9 +327,10 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       }
       */
     } else {     
-      key = graph_key(graph);      
-      if(cache.lookup(key,poly)) { 
-	if(write_tree) { write_tree_match(my_id,1,graph,cout); }
+      key = graph_key(graph); 
+      unsigned int match_id;
+      if(cache.lookup(key,poly,match_id)) { 
+	if(write_tree) { write_tree_match(my_id,match_id,graph,cout); }
 	hit_count++;
 	hit_size += graph.num_vertices();
 	poly *= xys;
@@ -360,7 +365,10 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
     // Finally, save computed polynomial
     if(key != NULL) {
-      cache.store(key,poly);
+      // there is, strictly speaking, a bug with using my_id
+      // here, since the graph being stored is not the same as that
+      // at the beginning.
+      cache.store(key,poly,my_id);
       delete [] key;  // free space used by key
     }    
     
@@ -667,7 +675,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),nedges) << ")" << endl;
       
       cout << "==================" << endl;
-      cout << "Size of Computation Tree: " << num_steps << " vertices." << endl;
+      cout << "Size of Computation Tree: " << num_steps << " graphs." << endl;
       cout << "Total Collapses: " << num_collapses << endl;
       cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
       cout << endl;

@@ -19,6 +19,7 @@ struct cache_node {
   struct cache_node *next;  
   struct cache_node *prev;  
   unsigned int hit_count;
+  unsigned int graph_id;
   unsigned int size;       // in bytes of node, including header
   // graph key comes here
   // followed by polynomial
@@ -239,7 +240,7 @@ public:
   }
 
   template<class P>
-  bool lookup(unsigned char const *key, P &dst) {
+  bool lookup(unsigned char const *key, P &dst, unsigned int &id) {
     // identify containing bucket
     unsigned int bucket = hash_graph_key(key) % nbuckets;
     struct cache_node *node_p = buckets[bucket].next;
@@ -252,6 +253,8 @@ public:
 	size_t sizeof_key = sizeof_graph_key(key_p);
 	bistream bin(key_p + sizeof_key, node_p->size - (sizeof_key + sizeof(struct cache_node)));
 	bin >> dst;
+	// set id
+	id = node_p->graph_id;
 	// update hit count
 	node_p->hit_count++;
 	// move node to front of bucket
@@ -269,7 +272,7 @@ public:
   }
 
   template<class P>  
-  void store(unsigned char const *key, P const &p) {
+  void store(unsigned char const *key, P const &p, unsigned int &id) {
     // allocate space for new node
     unsigned int sizeof_key = sizeof_graph_key(key);
     // convert poly into stream
@@ -285,6 +288,8 @@ public:
     insert_node_after(node_p,&(buckets[bucket]));
     // init hit count
     node_p->hit_count = 0;
+    // set graph_id
+    node_p->graph_id=id;
     // set node size
     node_p->size = sizeof(struct cache_node) + sizeof_key + bout.size();
     // load the key into the node

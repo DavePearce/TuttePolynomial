@@ -22,7 +22,7 @@ std::string graph_str(T const &graph) {
 	if(j->second == 1) {
 	  out << *i << "-" << j->first;
 	} else {
-	  out << *i << "-" << "-" << j->first << "(" << j->second << ")";
+	  out << *i << "-" << j->first << "(" << j->second << ")";
 	}
       } 
     }
