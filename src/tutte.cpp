@@ -69,10 +69,12 @@ unsigned long hit_count = 0;
 unsigned long hit_size = 0;
 unsigned int small_graph_threshold = 5;
 edgesel_t edge_selection_heuristic = MINIMISE_DEGREE;
-unsigned int xml_id = 2;
 simple_cache cache(1024*1024,100);
 static bool status_flag=false;
 static bool xml_flag=false;
+static unsigned int tree_id = 2;
+static bool write_tree=false;
+static bool write_full_tree=false;
 
 void print_status();
 
@@ -93,33 +95,84 @@ void write_xml_end() {
 }
 
 template<class G>
-void write_xml_match(unsigned int my_id, G const &graph) {
-  cout << "<graphnode>" << endl;
-  cout << "<id>" << my_id << "</id>" << endl;
-  cout << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
-  cout << "<edges>" << graph.num_edges() << "</edges>" << endl;
-  cout << "<match>1</match>" << endl;
-  cout << "</graphnode>" << endl;
+void write_xml_match(unsigned int my_id, unsigned int match_id, G const &graph, ostream &out) {
+  out << "<graphnode>" << endl;
+  out << "<id>" << my_id << "</id>" << endl;
+  out << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
+  out << "<edges>" << graph.num_edges() << "</edges>" << endl;
+  out << "<match>" << match_id << "</match>" << endl;
+  out << "</graphnode>" << endl;
 }
 
 template<class G>
-void write_xml_nonleaf(unsigned int my_id, int left_id, int right_id, G const &graph) {
-  cout << "<graphnode>" << endl;
-  cout << "<id>" << my_id << "</id>" << endl;
-  cout << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
-  cout << "<edges>" << graph.num_edges() << "</edges>" << endl;
-  cout << "<left>" << left_id << "</left>" << endl;
-  cout << "<right>" << right_id << "</right>" << endl;
-  cout << "</graphnode>" << endl;
+void write_xml_nonleaf(unsigned int my_id, int left_id, int right_id, G const &graph, ostream &out) {
+  out << "<graphnode>" << endl;
+  out << "<id>" << my_id << "</id>" << endl;
+  out << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
+  out << "<edges>" << graph.num_edges() << "</edges>" << endl;
+  out << "<left>" << left_id << "</left>" << endl;
+  out << "<right>" << right_id << "</right>" << endl;
+  out << "</graphnode>" << endl;
 }
 
 template<class G>
-void write_xml_leaf(unsigned int my_id, G const &graph) {
-  cout << "<graphnode>" << endl;
-  cout << "<id>" << my_id << "</id>" << endl;
-  cout << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
-  cout << "<edges>" << graph.num_edges() << "</edges>" << endl;
-  cout << "</graphnode>" << endl;
+void write_xml_leaf(unsigned int my_id, G const &graph, ostream &out) {
+  out << "<graphnode>" << endl;
+  out << "<id>" << my_id << "</id>" << endl;
+  out << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
+  out << "<edges>" << graph.num_edges() << "</edges>" << endl;
+  out << "</graphnode>" << endl;
+}
+
+/* Non-XML output methods
+ */
+
+template<class G>
+void write_tree_match(unsigned int my_id, unsigned int match_id, G const &graph, ostream &out) {
+  if(xml_flag) { write_xml_match(my_id,match_id,graph,out); }
+  else {
+    out << my_id << "=" << match_id << endl;
+  }
+}
+
+template<class G>
+void write_tree_leaf(unsigned int my_id, G const &graph, ostream &out) {
+  if(xml_flag) { 
+    write_xml_leaf(my_id,graph,out);
+  } else {
+    if(write_full_tree) { out << my_id << "=" << graph_str(graph) << endl;; }
+    else {
+      out << "=== " << my_id << " ===" << endl;
+      out << "|V|: " << graph.num_vertices() << endl;
+      out << "|E|: " << graph.num_edges() << endl;  
+    }
+  }
+}
+
+template<class G>
+void write_tree_nonleaf(unsigned int my_id, int left_id, int right_id, G const &graph, ostream &out) {
+  if(xml_flag) { 
+    write_xml_nonleaf(my_id,left_id,right_id,graph,out);
+  } else {
+    if(write_full_tree) { out << my_id << "=" << graph_str(graph) << endl; }
+    else {
+      out << "=== " << my_id << " ===" << endl;
+      out << "|V|: " << graph.num_vertices() << endl;
+      out << "|E|: " << graph.num_edges() << endl;  
+    }
+    out << my_id << "-e" << "=" << left_id << endl;
+    out << my_id << "/e" << "=" << right_id << endl;;
+  }
+}
+
+void write_tree_start(unsigned int tid) {
+  if(xml_flag) { write_xml_start(); }
+  cout << "=== TREE " << tid << " BEGIN ===" << endl;
+}
+
+void write_tree_end(unsigned int tid) {
+  if(xml_flag) { write_xml_end(); }
+  cout << "=== TREE " << tid << " END ===" << endl;
 }
 
 /* This method determines which edge is chosen to delete contract upon.
@@ -211,13 +264,13 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
   if(graph.is_tree()) {
     // termination for trees!
-    if(xml_flag) { write_xml_leaf(my_id, graph); }
+    if(write_tree) { write_tree_leaf(my_id, graph, cout); }
     poly += xy_term(graph.num_edges(),num_loops);
     num_collapses += graph.num_edges() + num_loops;
   } else if(graph.is_multi_tree()) {
     // termination for multi-graphs whose underlying
     // graph is a tree.
-    if(xml_flag) { write_xml_leaf(my_id, graph); }    
+    if(write_tree) { write_tree_leaf(my_id, graph, cout); }    
     P r(xy_term(0,num_loops));   
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
       for(typename G::edge_iterator j(graph.begin_edges(*i));
@@ -272,7 +325,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     } else {     
       key = graph_key(graph);      
       if(cache.lookup(key,poly)) { 
-	if(xml_flag) { write_xml_match(my_id,graph); }
+	if(write_tree) { write_tree_match(my_id,1,graph,cout); }
 	hit_count++;
 	hit_size += graph.num_vertices();
 	poly *= xys;
@@ -281,12 +334,11 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       }                
     }
     
-    // === XML OUTPUT STUFF ===
-    
-    unsigned int left_id = xml_id;
-    unsigned int right_id = xml_id+1;
-    xml_id = xml_id + 2; // allocate id's now so I know them!
-    if(xml_flag) { write_xml_nonleaf(my_id,left_id,right_id,graph); }
+    // === TREE OUTPUT STUFF ===    
+    unsigned int left_id = tree_id;
+    unsigned int right_id = tree_id+1;
+    tree_id = tree_id + 2; // allocate id's now so I know them!
+    if(write_tree) { write_tree_nonleaf(my_id,left_id,right_id,graph,cout); }
 
     // === END ===
 
@@ -527,26 +579,25 @@ void write_graph_sizes(fstream &out) {
 }
 
 void write_hit_counts(fstream &out) {
-  std::set<pair<unsigned int, unsigned int> > hs;
-  std::vector<triple<unsigned int, unsigned int, unsigned int> > table;
+  std::vector<unsigned int> vcount;
   out << endl << endl;
   out << "##############################" << endl;
   out << "# CACHE GRAPH HIT COUNT DATA #" << endl;
   out << "##############################" << endl;
-  out << "# Hit Count\tV\tE\tE'" << endl;
+  out << "# Hit Count\tV" << endl;
   int nmgraphs=0;
   int ngraphs=0;
 
   for(simple_cache::iterator i(cache.begin());i!=cache.end();++i) {
     adjacency_list<> g(graph_from_key<adjacency_list<> >(i.key()));
-    table.push_back(make_triple(g.num_vertices(),g.num_edges(),g.num_edges() - g.num_multiedges()));
-    hs.insert(make_pair(i.hit_count(),table.size()-1));
+    if(vcount.size() < g.num_vertices()) {
+      vcount.resize(g.num_vertices(),0);
+    }
+    vcount[g.num_vertices()] += i.hit_count();
   }
   
-  for(std::set<pair<unsigned int, unsigned int> >::iterator i(hs.begin());
-      i!=hs.end();++i) {
-    triple<unsigned int, unsigned int, unsigned int> const &t(table[i->second]);
-    out << i->first << "\t" << t.first << "\t" << t.second << "\t" << t.third << endl;
+  for(unsigned int i=0;i!=vcount.size();++i) {
+    out << i << "\t" << vcount[i] << endl;
   }
 }
 
@@ -577,7 +628,6 @@ void print_status() {
 template<class G, class P>
 void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean quiet_mode) {
   unsigned int ngraphs_completed=0;
-  if(xml_flag) { write_xml_start(); }
   while(!input.eof() && ngraphs_completed < ngraphs) {
     // first, reset all stats information
     cache.clear();  
@@ -591,24 +641,25 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 
     unsigned int nedges(start_graph.num_edges());
     if(start_graph.num_vertices() == 0) { break; }
-    if(xml_flag) {
-      // do nout for now
-    } else if(quiet_mode) {
+    if(quiet_mode) {
       cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();
     } else {
       cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
-      print_graph(cout,start_graph);    
+      cout << graph_str(start_graph) << endl;   
     }   
     
     my_timer timer;
     P tuttePoly;
-    
+
+    if(write_tree) { write_tree_start(ngraphs_completed); }    
+
     deleteContract<G,P>(start_graph,tuttePoly,1);        
 
-    if(xml_flag) {
-      // do nout for now.
-    } else if(quiet_mode) {
-      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
+    if(write_tree) { write_tree_end(ngraphs_completed); }
+
+    if(quiet_mode) {
+      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << num_collapses << "\t" << ((float)hit_size)/hit_count;
+      cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
     } else {
       cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
       
@@ -616,13 +667,13 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),nedges) << ")" << endl;
       
       cout << "==================" << endl;
-      cout << "Total Steps: " << num_steps << endl;
+      cout << "Size of Computation Tree: " << num_steps << " vertices." << endl;
       cout << "Total Collapses: " << num_collapses << endl;
       cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
       cout << endl;
       cout << "Cache stats:" << endl << "------------" << endl;
       cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
-      cout << "Avg Hit Size: " << ((float)hit_size)/hit_count << endl;
+      cout << "Avg Hit Size: " << ((float)hit_size)/hit_count << " vertices." << endl;
       cout << "# Entries: " << cache.num_entries() << endl;
       cout << "# Cache Hits: " << cache.num_hits() << endl;
       cout << "# Cache Misses: " << cache.num_misses() << endl;
@@ -632,7 +683,6 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     }
     ++ngraphs_completed;
   }
-  if(xml_flag) { write_xml_end(); }
 }
 
 // ---------------------------------------------------------------
@@ -672,6 +722,8 @@ int main(int argc, char *argv[]) {
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
   #define OPT_XML_OUT 32
+  #define OPT_TREE_OUT 33
+  #define OPT_FULLTREE_OUT 34
   #define OPT_SMALL 40
   #define OPT_MEDIUM 41
   #define OPT_LARGE 42
@@ -714,6 +766,8 @@ int main(int argc, char *argv[]) {
     {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
     {"simple-poly",no_argument,NULL,OPT_SIMPLE_POLY},
+    {"tree",no_argument,NULL,OPT_TREE_OUT},
+    {"full-tree",no_argument,NULL,OPT_FULLTREE_OUT},
     {"xml-tree",no_argument,NULL,OPT_XML_OUT},
     {"ngraphs",required_argument,NULL,OPT_NGRAPHS},
     {"quiet",no_argument,NULL,OPT_QUIET},
@@ -729,7 +783,9 @@ int main(int argc, char *argv[]) {
     "        --nauty-workspace=<amount> set size of nauty workspace, e.g. 10000",
     "        --small-graphs=size       set threshold for small graphs, e.g. 7",
     "        --ngraphs=n               number of graphs to process from input file",
-    "        --xml-tree                output computation tree as XML",
+    "        --tree                    output computation tree",
+    "        --full-tree               output full computation tree",
+    "        --xml-tree                    output computation tree as XML",
     "        --small                   use 32-bit integers only",
     "        --medium                  use 64-bit integers only",
     "        --large                   use unbound integers (default)",
@@ -783,7 +839,15 @@ int main(int argc, char *argv[]) {
       ngraphs = atoi(optarg);
       break;
     case OPT_XML_OUT:
+      write_tree=true;
       xml_flag=true;
+      break;
+    case OPT_FULLTREE_OUT:
+      write_tree=true;
+      write_full_tree=true;
+      break;
+    case OPT_TREE_OUT:
+      write_tree=true;
       break;
     // --- CACHE OPTIONS ---
     case 'c':

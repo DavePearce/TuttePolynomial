@@ -4,30 +4,32 @@
 #include <iostream>
 #include <set>
 #include <stdexcept>
+#include <sstream>
 #include <cstring>
 
 template<class T>
-void print_graph(std::ostream &ostr, T const &graph) {
-  ostr << "V = { ";
-  for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-    ostr << *i << " ";
-  }
-  ostr << "}" << std::endl;
-
-  ostr << "E = { ";
+std::string graph_str(T const &graph) {
+  std::ostringstream out;
+  out << "{";
+  bool first=true;
   for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     for(typename T::edge_iterator j(graph.begin_edges(*i));j!=graph.end_edges(*i);++j) {
       if(*i <= j->first) {
+	if(!first) {
+	  out << ",";
+	}
+	first=false;
 	if(j->second == 1) {
-	  ostr << *i << "--" << j->first << " ";
+	  out << *i << "-" << j->first;
 	} else {
-	  ostr << *i << "--" << j->first << "(" << j->second << ") ";
+	  out << *i << "-" << "-" << j->first << "(" << j->second << ")";
 	}
       } 
     }
   }
 
-  ostr << "}" << std::endl;
+  out << "}";
+  return out.str();
 }
 
 // ----------------------------------
