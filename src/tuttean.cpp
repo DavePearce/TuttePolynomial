@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <set>
 #include <vector>
-
+#include <getopt.h>
 #include "misc/triple.hpp"
 
 using namespace std;
@@ -177,12 +177,62 @@ vector<unsigned int> match_e_sizes(vector<node> const &data) {
   return sizes;
 }
 
+// ---------------------------------------------------------------
+// Format Conversion Methods
+// ---------------------------------------------------------------
+
+void write_dot(vector<node> const &data, ostream &out) {
+  out << "digraph {" << endl;
+  for(unsigned int i=0;i!=data.size();++i) {
+    if(data[i].type == NONTREE) {
+      out << i << " -> " << data[i].del_id << endl;
+      out << i << " -> " << data[i].con_id << endl;
+    } else if(data[i].type == MATCH) {
+      out << i << " -> " << data[i].match_id << endl;
+    }
+  }
+  out << "}" << endl;  
+}
 
 // ---------------------------------------------------------------
 // Main Method
 // ---------------------------------------------------------------
 
+#define OPT_HELP 0
+#define OPT_DOT 1
+
+struct option long_options[]={
+  {"help",no_argument,NULL,OPT_HELP},
+  {"dot",no_argument,NULL,OPT_DOT},
+  NULL
+};
+
 int main(int argc, char* argv[]) {
+  char *descriptions[]={
+    "        --help                    display this information",
+    " -d     --dot                     convert input tree to dot format",
+    NULL
+  };
+
+  unsigned int v;
+
+  while((v=getopt_long(argc,argv,"d",long_options,NULL)) != -1) {
+    switch(v) {      
+    case OPT_HELP:
+      cout << "usage: " << argv[0] << " [options] <input tree file>" << endl;
+      cout << "options:" << endl;
+      for(char **ptr=descriptions;*ptr != NULL; ptr++) {
+	cout << *ptr << endl;
+      }    
+      exit(1);
+    case 'd':
+    case OPT_DOT:
+      vector<node> data=read_input(cin);
+      write_dot(data,cout);
+      exit(1);
+    }
+  }
+
   try {
     vector<node> data=read_input(cin);
     cout << "Average match |V|: " << mean(match_v_sizes(data)) << endl;
