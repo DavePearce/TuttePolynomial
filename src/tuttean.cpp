@@ -96,6 +96,9 @@ vector<node> read_input(istream &input) {
 	  data[id].type = MATCH;
 	  data[id].match_id = match_id;
 	} else {
+	  if(data[id].type == UNUSED) {
+	    data[id].type = TREE;
+	  }
 	  data[id].graph = parse_graph(pos,line);	  
 	}
       } else if(line[pos] == '-') {
@@ -272,6 +275,56 @@ void write_dot(vector<node> const &data, ostream &out) {
   out << "}" << endl;  
 }
 
+// This method attempts to draw *all* the little graphs
+// as well.  It really will only work on small computation 
+// trees.
+void write_full_dot(vector<node> const &data, ostream &out) {
+  out << "graph {" << endl;
+  out << "\tcompound=true;" << endl;
+  out << "\tnodesep=0.05;" << endl;
+  out << "\tranksep=0.05;" << endl;
+
+  // first, we create the subgraph nodes
+  
+  vector<unsigned int> first(data.size(),0);
+  vector<unsigned int> last(data.size(),0);
+  unsigned int vindex=0;
+  for(unsigned int i=1;i<data.size();++i) {
+    if(data[i].type != MATCH && data[i].type != UNUSED) {
+      out << "\tsubgraph cluster" << i << " {" << endl;
+      out << "\t\t" << "style=invis;" << endl;
+      out << "\t\tnode [label=\"\",width=0.05,height=0.05]" << endl;
+      graph_t const &graph(data[i].graph);
+      unsigned int l = 0;
+      unsigned int f = 100000;
+      for(unsigned int j=0;j!=graph.size();++j) {	
+	out << "\t\t" << (vindex+graph[j].first) << "--" << (vindex+graph[j].second) << ";" << endl;
+	l = max(l,max(graph[j].first,graph[j].second));
+	f = min(f,min(graph[j].first,graph[j].second));
+      }
+      last[i] = vindex+l;
+      first[i] = vindex+f;
+      vindex += l+1;
+      out << "\t}" << endl;
+    }
+  }
+
+  // second, we create the edges between subgraphs
+  for(unsigned int i=1;i!=data.size();++i) {
+    if(data[i].type == NONTREE) {
+      unsigned int del = data[i].del_id;
+      unsigned int con = data[i].con_id;
+      if(data[del].type == MATCH) { del = data[del].match_id; }
+      if(data[con].type == MATCH) { con = data[con].match_id; }
+      out << "\t" << last[i] << " -- " << first[del] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << del << ",arrowhead=normal]" << endl;
+      out << "\t" << last[i] << " -- " << first[con] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << con << ",arrowhead=normal,style=dashed]" << endl;
+    }
+  }
+
+  out << "}" << endl;  
+}
+
+
 // ---------------------------------------------------------------
 // Main Method
 // ---------------------------------------------------------------
@@ -306,7 +359,7 @@ int main(int argc, char* argv[]) {
     case 'd':
     case OPT_DOT:
       vector<node> data=read_input(cin);
-      write_dot(data,cout);
+      write_full_dot(data,cout);
       exit(1);
     }
   }
