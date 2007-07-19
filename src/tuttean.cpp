@@ -7,6 +7,7 @@
 // Email: david.pearce@mcs.vuw.ac.nz
 
 #include <iostream>
+#include <iomanip>
 #include <sstream>
 #include <stdexcept>
 #include <set>
@@ -17,7 +18,7 @@
 
 using namespace std;
 
-typedef enum { TREE, MATCH, NONTREE } node_t;
+typedef enum { UNUSED, TREE, MATCH, NONTREE } node_t;
 typedef vector<triple<unsigned int, unsigned int, unsigned int> > graph_t;
 
 class node {
@@ -77,14 +78,16 @@ graph_t parse_graph(unsigned int &pos, string const &str) {
 
 vector<node> read_input(istream &input) {
   vector<node> data;
-  
+  node empty;
+  empty.type = UNUSED;
+
   while(!input.eof()) {
     string line;
     input >> line;
     unsigned int pos(0);
     if(isdigit(line[0])) {
       unsigned int id = parse_number(pos,line);
-      if(data.size() <= id) { data.resize(id+1); }
+      if(data.size() <= id) { data.resize(id+1,empty); }
       if(line[pos] == '=') {
 	match('=',pos,line);
 	if(isdigit(line[pos])) {
@@ -157,6 +160,19 @@ double mean(vector<unsigned int> const &data) {
   return ((double)sum) / data.size();
 }
 
+double sdev(vector<unsigned int> const &data) {
+  double x(mean(data));
+  double S(0);
+
+  for(vector<unsigned int>::const_iterator i(data.begin());
+      i!=data.end();++i) {
+    S += (*i - x) * (*i - x);
+  }
+
+  S = sqrt(S/data.size());
+  return S;
+}
+
 // ---------------------------------------------------------------
 // Analysis Methods
 // ---------------------------------------------------------------
@@ -166,7 +182,7 @@ vector<unsigned int> match_v_sizes(vector<node> const &data) {
   // now, perform some simple analysis
   for(unsigned int i=0;i!=data.size();++i) {
     if(data[i].type == MATCH) {
-      graph_t const &g(data[data[i].match_id].graph);
+      graph_t const &g(data[i].graph);
       sizes.push_back(num_vertices(g));
     }
   }      
@@ -178,7 +194,7 @@ vector<unsigned int> match_e_sizes(vector<node> const &data) {
   // now, perform some simple analysis
   for(unsigned int i=0;i!=data.size();++i) {
     if(data[i].type == MATCH) {
-      graph_t const &g(data[data[i].match_id].graph);
+      graph_t const &g(data[i].graph);
       sizes.push_back(num_edges(g));
     }
   }      
@@ -297,8 +313,10 @@ int main(int argc, char* argv[]) {
 
   try {
     vector<node> data=read_input(cin);
-    cout << "Average match |V|: " << mean(match_v_sizes(data)) << endl;
-    cout << "Average match |E|: " << mean(match_e_sizes(data)) << endl;
+    vector<unsigned int> match_vs(match_v_sizes(data));
+    vector<unsigned int> match_es(match_e_sizes(data));
+    cout << "Average match had " << setprecision(2) << mean(match_vs) << " vertices (+/-" << sdev(match_vs) << ")";
+    cout << ", and " << mean(match_es) << " edges (+/-" << sdev(match_es) << ")." << endl;
     unsigned int nmatches(count(MATCH,data));
     unsigned int nisomatches(count_identical_matches(data));
     double isoratio = round((((double) nisomatches) / nmatches) * 100);
