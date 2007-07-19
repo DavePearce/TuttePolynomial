@@ -334,10 +334,14 @@ void write_full_dot(vector<node> const &data, ostream &out) {
 
 #define OPT_HELP 0
 #define OPT_DOT 1
+#define OPT_STATS 2
+#define OPT_FULL 10
 
 struct option long_options[]={
   {"help",no_argument,NULL,OPT_HELP},
   {"dot",no_argument,NULL,OPT_DOT},
+  {"stats",no_argument,NULL,OPT_STATS},
+  {"full",no_argument,NULL,OPT_FULL},
   NULL
 };
 
@@ -345,42 +349,69 @@ int main(int argc, char* argv[]) {
   char *descriptions[]={
     "        --help                    display this information",
     " -d     --dot                     convert input tree to dot format",
+    " -f     --full                    convert (full) input tree",
+    " -s     --stats                   show various stats on tree",
     NULL
   };
 
   unsigned int v;
 
-  while((v=getopt_long(argc,argv,"d",long_options,NULL)) != -1) {
+  unsigned int mode = OPT_HELP;
+  bool full_mode=false;
+
+  while((v=getopt_long(argc,argv,"sfd",long_options,NULL)) != -1) {
     switch(v) {      
+    case OPT_HELP:
+      mode = OPT_HELP;
+      break;
+    case 'd':
+    case OPT_DOT:
+      mode = OPT_DOT;
+      break;
+    case 's':
+    case OPT_STATS:
+      mode = OPT_STATS;
+      break;
+    case 'f':
+    case OPT_FULL:
+      full_mode=true;
+      break;
+    }
+  }
+  
+  try {
+    switch(mode) {
     case OPT_HELP:
       cout << "usage: " << argv[0] << " [options] <input tree file>" << endl;
       cout << "options:" << endl;
       for(char **ptr=descriptions;*ptr != NULL; ptr++) {
 	cout << *ptr << endl;
       }    
-      exit(1);
-    case 'd':
+      exit(1);    
     case OPT_DOT:
+      {
+	vector<node> data=read_input(cin);
+	if(full_mode) {
+	  write_full_dot(data,cout);
+	} else {
+	write_dot(data,cout);
+	}
+	exit(1);
+      }
+    case OPT_STATS:
       vector<node> data=read_input(cin);
-      write_full_dot(data,cout);
-      exit(1);
+      vector<unsigned int> match_vs(match_v_sizes(data));
+      vector<unsigned int> match_es(match_e_sizes(data));
+      cout << "Average match had " << setprecision(2) << mean(match_vs) << " vertices (+/-" << sdev(match_vs) << ")";
+      cout << ", and " << mean(match_es) << " edges (+/-" << sdev(match_es) << ")." << endl;
+      unsigned int nmatches(count(MATCH,data));
+      unsigned int nisomatches(count_identical_matches(data));
+      double isoratio = round((((double) nisomatches) / nmatches) * 100);
+      cout << "There were " << nmatches << " matches, of which " << nisomatches << " (" << isoratio << "%) were identical." << endl;    
     }
-  }
-
-  try {
-    vector<node> data=read_input(cin);
-    vector<unsigned int> match_vs(match_v_sizes(data));
-    vector<unsigned int> match_es(match_e_sizes(data));
-    cout << "Average match had " << setprecision(2) << mean(match_vs) << " vertices (+/-" << sdev(match_vs) << ")";
-    cout << ", and " << mean(match_es) << " edges (+/-" << sdev(match_es) << ")." << endl;
-    unsigned int nmatches(count(MATCH,data));
-    unsigned int nisomatches(count_identical_matches(data));
-    double isoratio = round((((double) nisomatches) / nmatches) * 100);
-    cout << "There were " << nmatches << " matches, of which " << nisomatches << " (" << isoratio << "%) were identical." << endl;    
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
   } catch(exception const &e) {
     cout << "error: " << e.what() << endl;
-  }
-
+  }      
 }
