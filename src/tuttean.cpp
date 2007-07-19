@@ -298,7 +298,10 @@ void write_full_dot(vector<node> const &data, ostream &out) {
       unsigned int l = 0;
       unsigned int f = 100000;
       for(unsigned int j=0;j!=graph.size();++j) {	
-	out << "\t\t" << (vindex+graph[j].first) << "--" << (vindex+graph[j].second) << ";" << endl;
+	out << "\t\t" << (vindex+graph[j].first) << "--" << (vindex+graph[j].second);
+	// make multi-edges appear in bold
+	if(graph[j].third > 1) { out << " [style=bold]"; }
+	out << ";" << endl;
 	l = max(l,max(graph[j].first,graph[j].second));
 	f = min(f,min(graph[j].first,graph[j].second));
       }

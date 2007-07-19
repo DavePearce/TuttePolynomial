@@ -16,6 +16,7 @@ Code Improvements
 
 Easy Ideas
 ----------
+* Remove pendant multi-edges
 * Add Gary's small graph isomorphism tests
 * Removing "lines" by checking that one of their vertices is not on the spanning tree.  Adjust spanning tree to pick "bushy" vertices.
 * Remove triangles and other things?
