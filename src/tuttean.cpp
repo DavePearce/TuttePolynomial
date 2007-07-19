@@ -292,7 +292,8 @@ void write_full_dot(vector<node> const &data, ostream &out) {
   for(unsigned int i=1;i<data.size();++i) {
     if(data[i].type != MATCH && data[i].type != UNUSED) {
       out << "\tsubgraph cluster" << i << " {" << endl;
-      out << "\t\t" << "style=invis;" << endl;
+      out << "\t\t" << "label=\"" << i << "\";" << endl;
+      out << "\t\t" << "color=white;" << endl;
       out << "\t\tnode [label=\"\",width=0.05,height=0.05]" << endl;
       graph_t const &graph(data[i].graph);
       unsigned int l = 0;
@@ -311,16 +312,35 @@ void write_full_dot(vector<node> const &data, ostream &out) {
       out << "\t}" << endl;
     }
   }
-
+  
   // second, we create the edges between subgraphs
   for(unsigned int i=1;i!=data.size();++i) {
     if(data[i].type == NONTREE) {
       unsigned int del = data[i].del_id;
       unsigned int con = data[i].con_id;
-      if(data[del].type == MATCH) { del = data[del].match_id; }
-      if(data[con].type == MATCH) { con = data[con].match_id; }
-      out << "\t" << last[i] << " -- " << first[del] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << del << ",arrowhead=normal]" << endl;
-      out << "\t" << last[i] << " -- " << first[con] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << con << ",arrowhead=normal,style=dashed]" << endl;
+      unsigned int mid;
+      string dstyle="";
+      string cstyle="";
+      if(data[del].type == MATCH) { 
+	mid = data[del].match_id; 
+	if(data[del].graph == data[mid].graph) {
+	  dstyle = ",arrowhead=dot";
+	} else {
+	  dstyle = ",arrowhead=odot";
+	}
+	del = mid;
+      }
+      if(data[con].type == MATCH) { 
+	mid = data[con].match_id; 
+	if(data[con].graph == data[mid].graph) {
+	  cstyle = ",arrowhead=dot";
+	} else {
+	  cstyle = ",arrowhead=odot";
+	}
+	con = mid;
+      }      
+      out << "\t" << last[i] << " -- " << first[del] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << del << ",arrowhead=normal" << dstyle << "];" << endl;
+      out << "\t" << last[i] << " -- " << first[con] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << con << ",arrowhead=normal,style=dashed" << cstyle << "];" << endl;
     }
   }
 
