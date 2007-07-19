@@ -131,6 +131,7 @@ void write_tree_match(unsigned int my_id, unsigned int match_id, G const &graph,
   if(xml_flag) { write_xml_match(my_id,match_id,graph,out); }
   else {
     out << my_id << "=" << match_id << endl;
+    if(write_full_tree) { out << my_id << "=" << graph_str(graph) << endl; }
   }
 }
 
@@ -165,10 +166,7 @@ void write_tree_nonleaf(unsigned int my_id, int left_id, int right_id, G const &
 }
 
 void write_tree_start(unsigned int tid) {
-  if(xml_flag) { write_xml_start(); }
-  else {
-    cout << "=== TREE " << tid << " BEGIN ===" << endl;
-  }
+  if(xml_flag) { write_xml_start(); }  
 }
 
 void write_tree_end(unsigned int tid) {
@@ -648,13 +646,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 
     unsigned int nedges(start_graph.num_edges());
     if(start_graph.num_vertices() == 0) { break; }
-    if(quiet_mode) {
-      cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();
-    } else {
-      cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
-      cout << graph_str(start_graph) << endl;   
-    }   
-    
+
     my_timer timer;
     P tuttePoly;
 
@@ -665,9 +657,12 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     if(write_tree) { write_tree_end(ngraphs_completed); }
 
     if(quiet_mode) {
+      cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();    
       cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << num_collapses << "\t" << ((float)hit_size)/hit_count;
       cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
     } else {
+      cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
+      cout << graph_str(start_graph) << endl;   
       cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
       
       cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;

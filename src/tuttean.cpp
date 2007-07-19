@@ -12,6 +12,7 @@
 #include <set>
 #include <vector>
 #include <getopt.h>
+#include <cmath>
 #include "misc/triple.hpp"
 
 using namespace std;
@@ -140,6 +141,13 @@ unsigned int num_edges(graph_t const &g) {
   return e;
 }
 
+bool is_multigraph(graph_t const &g) {
+  for(graph_t::const_iterator i(g.begin());i!=g.end();++i) {
+    if(i->third > 1) { return true; }
+  }
+  return false;
+}
+
 double mean(vector<unsigned int> const &data) {
   unsigned long sum(0);
   for(vector<unsigned int>::const_iterator i(data.begin());
@@ -177,19 +185,73 @@ vector<unsigned int> match_e_sizes(vector<node> const &data) {
   return sizes;
 }
 
+unsigned int count(node_t type, vector<node> const &data) {
+  unsigned int c(0);
+  for(unsigned int i=0;i!=data.size();++i) {
+    if(data[i].type == MATCH) { c++; }
+  }
+  return c;
+}
+
+unsigned int count_identical_matches(vector<node> const &data) {
+  unsigned int c(0);
+  for(unsigned int i=0;i!=data.size();++i) {
+    if(data[i].type == MATCH && data[i].graph == data[data[i].match_id].graph) {
+      c++; 
+    }
+  }
+  return c;
+}
+
+
 // ---------------------------------------------------------------
 // Format Conversion Methods
 // ---------------------------------------------------------------
 
 void write_dot(vector<node> const &data, ostream &out) {
   out << "digraph {" << endl;
+  for(unsigned int i=1;i!=data.size();++i) {
+    if(data[i].type != MATCH) {
+      double size = 1 + num_vertices(data[i].graph);
+      size /= 10;    
+      out << "\t" << i << " [fontsize=9,width=" << size << ",height=" << size;
+      if(is_multigraph(data[i].graph)) {
+	out << ",style=filled";
+      }
+      out << "]" << endl;
+    }
+  }
+  
   for(unsigned int i=0;i!=data.size();++i) {
     if(data[i].type == NONTREE) {
-      out << i << " -> " << data[i].del_id << endl;
-      out << i << " -> " << data[i].con_id << endl;
-    } else if(data[i].type == MATCH) {
-      out << i << " -> " << data[i].match_id << endl;
-    }
+      unsigned int del = data[i].del_id;
+      unsigned int con = data[i].con_id;
+      unsigned int mid;
+      string dstyle="";
+      string cstyle="";
+      // bypass match nodes
+      if(data[del].type == MATCH) { 
+	mid = data[del].match_id; 
+	if(data[del].graph == data[mid].graph) {
+	  dstyle = "[arrowhead=dot]";
+	} else {
+	  dstyle = "[arrowhead=odot]";
+	}
+	del = mid;
+      }
+      if(data[con].type == MATCH) { 
+	mid = data[con].match_id; 
+	if(data[con].graph == data[mid].graph) {
+	  cstyle = ",arrowhead=dot";
+	} else {
+	  cstyle = ",arrowhead=odot";
+	}
+	con = mid;
+      }
+      // draw arcs
+      out << "\t" << i << " -> " << del << dstyle << endl;
+      out << "\t" << i << " -> " << con << " [style=dashed" << cstyle << "]" << endl;
+    } 
   }
   out << "}" << endl;  
 }
@@ -237,6 +299,10 @@ int main(int argc, char* argv[]) {
     vector<node> data=read_input(cin);
     cout << "Average match |V|: " << mean(match_v_sizes(data)) << endl;
     cout << "Average match |E|: " << mean(match_e_sizes(data)) << endl;
+    unsigned int nmatches(count(MATCH,data));
+    unsigned int nisomatches(count_identical_matches(data));
+    double isoratio = round((((double) nisomatches) / nmatches) * 100);
+    cout << "There were " << nmatches << " matches, of which " << nisomatches << " (" << isoratio << "%) were identical." << endl;    
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
   } catch(exception const &e) {
