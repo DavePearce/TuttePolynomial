@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include <set>
 #include <vector>
+#include <stack>
 #include <getopt.h>
 #include <cmath>
 #include "misc/triple.hpp"
@@ -275,10 +276,89 @@ void write_dot(vector<node> const &data, ostream &out) {
   out << "}" << endl;  
 }
 
+pair<unsigned int, unsigned int> domain(graph_t const &graph) {
+  unsigned int b=999999999;
+  unsigned int t=0;
+  for(unsigned int i=0;i!=graph.size();++i) {
+    t = max(t,max(graph[i].first,graph[i].second));
+    b = min(b,min(graph[i].first,graph[i].second));    
+  }
+  return make_pair(b,t);
+}
+
+graph_t edges(unsigned int v, graph_t const &graph) {
+  graph_t edges;
+  for(unsigned int i=0;i!=graph.size();++i) {
+    if(graph[i].first == v || graph[i].second == v) {
+      edges.push_back(graph[i]);
+    }
+  }
+  return edges;
+}
+
+graph_t bfs_layout_graph(graph_t const &graph, unsigned int *limit) {
+  // perform a breadth-first search to compute a spanning tree.
+  // then, can layout all other edges as we want.
+
+
+  std::deque<unsigned int> S;
+  pair<unsigned int, unsigned int> dom = domain(graph);
+  std::vector<bool> visited(dom.second+1,false);
+
+  // one of the most important things is how we choose the first node.
+  // I could certainly do more here, but this is a start.
+  unsigned int max(0);
+  unsigned int start(dom.first);
+  for(unsigned int i=dom.first;i!=dom.second;++i) {
+    unsigned int es = edges(i,graph).size();
+    if(es > max) { start = i; max = es; }
+  }
+
+  S.push_back(start);
+  visited[start]=true;
+
+  graph_t spanning_tree;
+
+  while(!S.empty()) {
+    unsigned int v(S.front());
+    S.pop_front();
+    graph_t es = edges(v,graph);
+
+    for(unsigned int j=0;j!=es.size();++j) {
+      unsigned int w = es[j].first;
+      if(w == v) { w = es[j].second; }
+
+      if(!visited[w]) { 
+	visited[w] = true;
+	S.push_back(w);
+	spanning_tree.push_back(es[j]);
+      } 
+    }
+  }
+  *limit = spanning_tree.size();
+  // ok, this is all rather inefficient ...
+  for(unsigned int j=0;j!=graph.size();++j) {
+    if(find(spanning_tree.begin(),spanning_tree.end(),graph[j]) == spanning_tree.end()) {
+      spanning_tree.push_back(graph[j]);
+    }
+  }
+  return spanning_tree;
+}
+
+typedef enum { NONE, BFS } layout_t;
+
+graph_t layout_graph(graph_t const &graph, unsigned int *limit, layout_t mode) {
+  if(mode == BFS) { return bfs_layout_graph(graph,limit); }
+  else {
+    *limit=graph.size();
+    return graph;
+  }
+}
+
 // This method attempts to draw *all* the little graphs
 // as well.  It really will only work on small computation 
 // trees.
-void write_full_dot(vector<node> const &data, ostream &out) {
+void write_full_dot(vector<node> const &data, layout_t small_mode, ostream &out) {
   out << "graph {" << endl;
   out << "\tcompound=true;" << endl;
   out << "\tnodesep=0.05;" << endl;
@@ -292,19 +372,34 @@ void write_full_dot(vector<node> const &data, ostream &out) {
   for(unsigned int i=1;i<data.size();++i) {
     if(data[i].type != MATCH && data[i].type != UNUSED) {
       out << "\tsubgraph cluster" << i << " {" << endl;
-      out << "\t\t" << "label=\"" << i << "\";" << endl;
-      out << "\t\t" << "color=white;" << endl;
+      // out << "\t\t" << "label=\"" << i << "\";" << endl;
+      // out << "\t\t" << "color=white;" << endl;
+      out << "\t\tstyle=invis" << endl;
       out << "\t\tnode [label=\"\",width=0.05,height=0.05]" << endl;
       graph_t const &graph(data[i].graph);
       unsigned int l = 0;
       unsigned int f = 100000;
-      for(unsigned int j=0;j!=graph.size();++j) {	
-	out << "\t\t" << (vindex+graph[j].first) << "--" << (vindex+graph[j].second);
+      unsigned int climit;
+      graph_t lgraph(layout_graph(graph,&climit,small_mode));
+      for(unsigned int j=0;j!=lgraph.size();++j) {	
+	out << "\t\t" << (vindex+lgraph[j].first) << "--" << (vindex+lgraph[j].second);
+	vector<string> styles;
 	// make multi-edges appear in bold
-	if(graph[j].third > 1) { out << " [style=bold]"; }
+	if(lgraph[j].third > 1) { styles.push_back("style=bold"); }
+        // only constrain edges in spanning tree
+	if(j >= climit) { styles.push_back("constraint=false"); }
+	// now, output styles (if there are any)
+	if(styles.size() > 0) {
+	  out << " [";
+	  for(unsigned int k=0;k!=styles.size();++k) {
+	    if(k!=0) { out << ","; }
+	    out << styles[k];
+	  }
+	  out << "]";
+	}
 	out << ";" << endl;
-	l = max(l,max(graph[j].first,graph[j].second));
-	f = min(f,min(graph[j].first,graph[j].second));
+	l = max(l,max(lgraph[j].first,lgraph[j].second));
+	f = min(f,min(lgraph[j].first,lgraph[j].second));
       }
       last[i] = vindex+l;
       first[i] = vindex+f;
@@ -356,12 +451,14 @@ void write_full_dot(vector<node> const &data, ostream &out) {
 #define OPT_DOT 1
 #define OPT_STATS 2
 #define OPT_FULL 10
+#define OPT_BFS 20
 
 struct option long_options[]={
   {"help",no_argument,NULL,OPT_HELP},
   {"dot",no_argument,NULL,OPT_DOT},
   {"stats",no_argument,NULL,OPT_STATS},
   {"full",no_argument,NULL,OPT_FULL},
+  {"bfs",no_argument,NULL,OPT_BFS},
   NULL
 };
 
@@ -371,12 +468,14 @@ int main(int argc, char* argv[]) {
     " -d     --dot                     convert input tree to dot format",
     " -f     --full                    convert (full) input tree",
     " -s     --stats                   show various stats on tree",
+    "        --bfs                     use bfs algorithm for small graph layout",
     NULL
   };
 
   unsigned int v;
 
   unsigned int mode = OPT_HELP;
+  unsigned int layout_mode = OPT_HELP;
   bool full_mode=false;
 
   while((v=getopt_long(argc,argv,"sfd",long_options,NULL)) != -1) {
@@ -396,6 +495,9 @@ int main(int argc, char* argv[]) {
     case OPT_FULL:
       full_mode=true;
       break;
+    case OPT_BFS:
+      layout_mode=OPT_BFS;
+      break;
     }
   }
   
@@ -412,7 +514,11 @@ int main(int argc, char* argv[]) {
       {
 	vector<node> data=read_input(cin);
 	if(full_mode) {
-	  write_full_dot(data,cout);
+	  if(layout_mode == OPT_BFS) {
+	    write_full_dot(data,BFS,cout);
+	  } else {
+	    write_full_dot(data,NONE,cout);
+	  }
 	} else {
 	write_dot(data,cout);
 	}
