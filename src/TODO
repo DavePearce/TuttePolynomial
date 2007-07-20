@@ -8,9 +8,9 @@ Webpage
 
 Code Improvements
 -----------------
+* Fix factor poly to permit general multiplications
 * Refactor graph_key to be a class somehow.  Might make sense for it to simply produce a bitstring.  Then, we have a
   function which produces a bitstring from a graph ... similar to what we have now.
-* Fix factor poly to permit general multiplications
 * Add support for decent stats reporting [breakdown of bucket length, proportion of memory used by graphs vs polynomial]
 * Add copyright messages.
 

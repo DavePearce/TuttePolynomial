@@ -27,6 +27,7 @@
 #include "cache/simple_cache.hpp"
 #include "misc/biguint.hpp"
 #include "misc/safe_arithmetic.hpp"
+#include "reductions.hpp"
 
 #include <set>
 
@@ -63,7 +64,6 @@ typedef enum { V_RANDOM, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DE
 unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
-unsigned long num_collapses = 0;
 unsigned long hit_count = 0;
 unsigned long hit_size = 0;
 unsigned int small_graph_threshold = 5;
@@ -267,7 +267,6 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     // termination for trees!
     if(write_tree) { write_tree_leaf(my_id, graph, cout); }
     poly += xy_term(graph.num_edges(),num_loops);
-    num_collapses += graph.num_edges() + num_loops;
   } else if(graph.is_multi_tree()) {
     // termination for multi-graphs whose underlying
     // graph is a tree.
@@ -291,20 +290,14 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 	}
       }
     }
-    num_collapses += graph.num_edges() + num_loops;
     poly += r;
   } else {
     // Now, remove any pendant vertices (i.e. vertices of degree one).
     unsigned int num_pendants(0);
 
-    while(graph.num_pendant_vertices() > 0) {
-      unsigned int l = graph.select_pendant_vertex();
-      graph.remove(l);
-      num_pendants++;
-    }
+    num_pendants = remove_pendants(graph);
 
     xy_term xys(num_pendants,num_loops);    
-    num_collapses += graph.num_edges() + num_loops;
 
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
@@ -658,7 +651,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 
     if(quiet_mode) {
       cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();    
-      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << num_collapses << "\t" << ((float)hit_size)/hit_count;
+      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << ((float)hit_size)/hit_count;
       cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
     } else {
       cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
@@ -670,7 +663,6 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       
       cout << "==================" << endl;
       cout << "Size of Computation Tree: " << num_steps << " graphs." << endl;
-      cout << "Total Collapses: " << num_collapses << endl;
       cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
       cout << endl;
       cout << "Cache stats:" << endl << "------------" << endl;
