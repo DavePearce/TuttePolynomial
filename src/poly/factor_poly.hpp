@@ -138,6 +138,42 @@ public:
     // and we're done!
   }
 
+  /* The more complicated general case.
+   * Big question as to whether this code can 
+   * be optimised any more.
+   */
+  void operator*=(yterms<T> const &p) {
+    // if this poly is empty do nothing
+    if(is_empty()) { return; }
+
+    if(p.size() == 1) {
+      // optimise simple case!
+      ymin += p.ymin;
+      ymax += p.ymax;
+      T const &v(p[p.ymin]);
+
+      for(unsigned int i=ymin;i<=ymax;++i) {
+	(*this)[i] *= v;
+      }
+    } else {    
+      yterms<T> r(p.ymin + ymin,p.ymax + ymax);
+      
+      for(unsigned int i=p.ymin;i<=p.ymax;++i) {
+	yterms<T> tmp(*this);
+	tmp.ymin += i;
+	tmp.ymax += i;
+	T const &v(p[i]);
+
+	for(unsigned int j=tmp.ymin;j<=tmp.ymax;++j) {
+	  tmp[j] *= v;
+	}
+	r += tmp;
+      }
+      
+      swap(r); // normal swap trick optimisation
+    }
+  }
+  
   /* ========================== */
   /* ======== OTHER FNS ======= */
   /* ========================== */  
@@ -377,6 +413,11 @@ public:
     }
     for(unsigned int i=0;i<nxterms;++i) { xterms[i] *= p; }
   }  
+
+  /* The more complicated general case
+   */
+  void operator*=(factor_poly<T> const &p) {
+  }
 
   /* ========================== */
   /* ======== OTHER OPS ======= */
