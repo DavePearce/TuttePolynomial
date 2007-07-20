@@ -208,7 +208,7 @@ vector<unsigned int> match_e_sizes(vector<node> const &data) {
 unsigned int count(node_t type, vector<node> const &data) {
   unsigned int c(0);
   for(unsigned int i=0;i!=data.size();++i) {
-    if(data[i].type == MATCH) { c++; }
+    if(data[i].type == type) { c++; }
   }
   return c;
 }
@@ -525,15 +525,23 @@ int main(int argc, char* argv[]) {
 	exit(1);
       }
     case OPT_STATS:
-      vector<node> data=read_input(cin);
-      vector<unsigned int> match_vs(match_v_sizes(data));
-      vector<unsigned int> match_es(match_e_sizes(data));
-      cout << "Average match had " << setprecision(2) << mean(match_vs) << " vertices (+/-" << sdev(match_vs) << ")";
-      cout << ", and " << mean(match_es) << " edges (+/-" << sdev(match_es) << ")." << endl;
-      unsigned int nmatches(count(MATCH,data));
-      unsigned int nisomatches(count_identical_matches(data));
-      double isoratio = round((((double) nisomatches) / nmatches) * 100);
-      cout << "There were " << nmatches << " matches, of which " << nisomatches << " (" << isoratio << "%) were identical." << endl;    
+      {
+	vector<node> data=read_input(cin);
+	unsigned int size(count(NONTREE,data) + count(TREE,data));      
+	unsigned int V = num_vertices(data[1].graph);
+	unsigned int E = num_edges(data[1].graph);
+	double msize(pow(2.0,(double) E-V+1));	
+	double compaction = (((double) size) / msize) * 100;
+	cout << "Tree has " << setprecision(2) << size << " nodes, out of a (rough) maximum of " << msize << " (" << compaction << "%)" <<endl;
+	vector<unsigned int> match_vs(match_v_sizes(data));
+	vector<unsigned int> match_es(match_e_sizes(data));
+	cout << "Average match had " << mean(match_vs) << " vertices (+/-" << sdev(match_vs) << ")";
+	cout << ", and " << mean(match_es) << " edges (+/-" << sdev(match_es) << ")." << endl;
+	unsigned int nmatches(count(MATCH,data));
+	unsigned int nisomatches(count_identical_matches(data));
+	double isoratio = round((((double) nisomatches) / nmatches) * 100);
+	cout << "There were " << nmatches << " matches, of which " << nisomatches << " (" << isoratio << "%) were identical." << endl;    
+      }
     }
   } catch(bad_alloc const &e) {
     cout << "error: insufficient memory!" << endl;
