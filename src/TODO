@@ -36,4 +36,6 @@ Other things
 ------------
 * Focus on generating more stats.  E.g. locality of hit info, number of immediate collapses?
 
-
+Known Bugs
+----------
+* safe_arithmetic.hpp is not safe for multiplication

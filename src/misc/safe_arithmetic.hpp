@@ -28,11 +28,11 @@ public:
     if (src.num >= 0 ? r > num : r < num) { throw std::overflow_error("underflow"); }
     num = r;
   }    
-  /*
+
   inline void operator*=(safe<T> src) {
     num *= src.num;
   }
-  */
+
   inline void operator/=(safe<T> src) {
     num += src.num;
   }
@@ -47,11 +47,11 @@ public:
     if (src.num >= 0 ? r > num : r < num) { throw std::overflow_error("underflow"); }
     return r;
   }
-  /*
+
   inline safe<unsigned int> operator*(safe<unsigned int> src) const {    
     return num * src.num;
   }
-  */
+
   inline safe<T> operator/(safe<T> src) const {
     return num / src.num;
   }
@@ -66,11 +66,11 @@ public:
     if (src >= 0 ? r > num : r < num) { throw std::overflow_error("underflow"); }
     return r;
   }
-  /*
+
   inline safe<T> operator*(T src) const {
     return num * src;
   }
-  */
+
   inline safe<T> operator/(T src) const {
     return num / src;
   }

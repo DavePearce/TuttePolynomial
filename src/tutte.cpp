@@ -279,12 +279,15 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 	unsigned int head = *i;
 	unsigned int tail = j->first;
 	unsigned int count = j->second;
-	if(head < tail) { 
+	if(head < tail) { 	 
 	  if(count > 1) {
-	    P tmp(r);
-	    tmp *= xy_term(1,0); // this could be optimised for sure!
-	    r *= xy_term(0,1,count-1);
-	    r += tmp;
+	    P tmp(xy_term(1,0));
+	    tmp += xy_term(0,1,count-1);
+	    r *= tmp;
+	    //	    P tmp(r);
+	    //	    tmp *= xy_term(1,0); // this could be optimised for sure!
+	    //	    r *= xy_term(0,1,count-1);
+	    //	    r += tmp;
 	  } else {
 	    r *= xy_term(1,0);
 	  }
