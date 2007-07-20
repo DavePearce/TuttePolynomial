@@ -417,6 +417,20 @@ public:
   /* The more complicated general case
    */
   void operator*=(factor_poly<T> const &p) {
+    factor_poly<T> r;
+
+    for(unsigned int i=0;i!=p.nxterms;++i) {
+      if(p.xterms[i].is_empty()) { continue; }
+      factor_poly<T> tmp(*this);
+      tmp *= xy_term(i,0);
+      yterms<T> const &ps(p.xterms[i]);
+      for(unsigned int j=0;j!=tmp.nxterms;++j) {
+	tmp.xterms[j] *= ps; 
+      }
+      r += tmp;
+    }
+    
+    this->swap(r);
   }
 
   /* ========================== */
