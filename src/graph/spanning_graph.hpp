@@ -37,6 +37,7 @@ public:
   unsigned int domain_size() const { return graph.domain_size(); }
   unsigned int num_vertices() const { return graph.num_vertices(); }
   unsigned int num_edges() const { return graph.num_edges(); }
+  unsigned int num_underlying_edges() const { return graph.num_underlying_edges(); }
   unsigned int num_spanning_edges() const { return spanning_tree.num_edges(); }
   unsigned int num_edges(unsigned int vertex) const { return graph.num_edges(vertex); }
   unsigned int num_underlying_edges(unsigned int vertex) const { return graph.num_underlying_edges(vertex); }

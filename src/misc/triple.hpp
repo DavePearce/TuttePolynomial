@@ -9,6 +9,7 @@ public:
   C third;
   
   triple(A a, B b, C c) : first(a), second(b), third(c) { }  
+  triple(triple const &t) : first(t.first), second(t.second), third(t.third) { }  
 };
 
 template<class A, class B, class C>
