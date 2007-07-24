@@ -334,17 +334,17 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     // === END ===
 
     // Try to apply the line theorem
-    vector<unsigned int> line = select_line<G>(graph);
+    vector<triple<unsigned int, unsigned int, unsigned int> > line = select_line<G>(graph);
 
     if(remove_lines && line.size() > 0) {
       // matched line, so begin by removing all internal
       // vertices
-      for(unsigned int i=1;i!=line.size()-1;++i) {
-	graph.remove(line[i]);
+      for(unsigned int i=0;i!=line.size()-1;++i) {
+	graph.remove(line[i].second);
       }
       // now, we contract on the line's endpoints
       G g2(graph); 
-      g2.contract_edge(line[0],line[line.size()-1]); 
+      g2.contract_edge(line[0].first,line[line.size()-1].second); 
 
       // recursively compute the polynomial   
       P p2;
@@ -354,7 +354,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       
       // now, build and apply the x factors
       P xs(X(0));
-      for(unsigned int k=1;k!=line.size()-1;++k) {
+      for(unsigned int k=1;k!=line.size();++k) {
 	xs += X(k);
       }      
       p2 *= xs;

@@ -69,9 +69,9 @@ P reduce_multi_pendants(G &graph) {
 }
 
 template<class G>
-std::vector<unsigned int> trace_line(unsigned int v, G const &graph) {
+std::vector<triple<unsigned int, unsigned int, unsigned int> > trace_line(unsigned int v, G const &graph) {
   // This is a crude, O(v) time algorithm for tracing out a line in the graph.
-  std::vector<unsigned int> line;
+  std::vector<triple<unsigned int, unsigned int, unsigned int> > line;
   unsigned int start=v; // needed to protect against cycles
 
   // First, find one end of the line  
@@ -89,9 +89,8 @@ std::vector<unsigned int> trace_line(unsigned int v, G const &graph) {
 
   // Second, traverse the entire line
   start = v;
-  line.push_back(v);
-  line.push_back(w);
   std::swap(v,w);
+  line.push_back(make_triple(w,v,1U));
 
   while(graph.num_edges(v) == 2) {
     // determine edge from w
@@ -101,24 +100,29 @@ std::vector<unsigned int> trace_line(unsigned int v, G const &graph) {
     if(u == start) { break; }
     w = v;
     v = u;
-    line.push_back(v); 
+    line.push_back(make_triple(w,v,1U)); 
   }  
 
   return line;
 }
 
 template<class G>
-std::vector<unsigned int> select_line(G const &graph) {
+std::vector<triple<unsigned int, unsigned int, unsigned int> > select_line(G const &graph) {
   std::vector<bool> visited(graph.domain_size(),false);
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {    
     if(!visited[*i] && graph.num_edges(*i) == 2) {
-      std::vector<unsigned int> line = trace_line(*i,graph);
+      std::vector<triple<unsigned int, unsigned int, unsigned int> > line = trace_line(*i,graph);
       // now, check line is not a line bridge
-      visited[line[0]] = true;
-      for(unsigned int j=1;j!=line.size();++j) {
-	visited[line[j]] = true;
-	if(!graph.on_spanning_tree(line[j-1],line[j])) {
+      for(unsigned int j=0;j!=line.size();++j) {
+	visited[line[j].first] = true;
+	if(!graph.on_spanning_tree(line[j].first,line[j].second)) {
 	  // Ok, it's definitely *not* a line bridge
+	  std::cout << "MATCHED: ";
+	  for(unsigned int k=0;k!=line.size();++k) {
+	    if(k!=0) { std::cout << ", "; }
+	    std::cout << line[k].first << "--" << line[k].second << "(" << line[k].third << ")";
+	  }
+	  std::cout << std::endl;
 	  return line;
 	}
       }
@@ -126,7 +130,7 @@ std::vector<unsigned int> select_line(G const &graph) {
   }
   
   // return nothing to signal no lines found
-  return std::vector<unsigned int>();
+  return std::vector<triple<unsigned int, unsigned int, unsigned int> >();
 }
 
 #endif
