@@ -45,4 +45,23 @@ public:
   }  
 };
 
+class Y : public xy_term {
+public:
+  Y(unsigned int p) : xy_term(0,p) {}
+  Y(unsigned int p, unsigned int pend) : xy_term(0,p,pend) {}
+};
+
+class X : public xy_term {
+public:
+  X(unsigned int p) : xy_term(p,0) {}
+
+  xy_term operator*(Y const &yt) const {
+    return xy_term(xpower,yt.ypower);
+  }  
+
+  X operator*(X const &xt) const {
+    return X(xpower * xt.xpower);
+  }
+};
+
 #endif

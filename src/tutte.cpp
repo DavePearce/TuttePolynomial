@@ -267,12 +267,12 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
   if(graph.is_tree()) {
     // termination for trees!
     if(write_tree) { write_tree_leaf(my_id, graph, cout); }
-    poly += xy_term(graph.num_edges(),num_loops);
+    poly += X(graph.num_edges()) * Y(num_loops);
   } else if(graph.is_multi_tree()) {
     // termination for multi-graphs whose underlying
     // graph is a tree.
     if(write_tree) { write_tree_leaf(my_id, graph, cout); }    
-    P r(xy_term(0,num_loops));   
+    P r = Y(num_loops);   
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
       for(typename G::edge_iterator j(graph.begin_edges(*i));
 	  j!=graph.end_edges(*i);++j) {		
@@ -280,20 +280,20 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 	unsigned int tail = j->first;
 	unsigned int count = j->second;
 	if(head < tail) { 	 	  
-	  P tmp(xy_term(1,0));
-	  if(count > 1) {  tmp += xy_term(0,1,count-1); }
+	  P tmp(X(1));
+	  if(count > 1) {  tmp += Y(1,count-1); }
 	  r *= tmp;
 	}
       }
     }
     poly += r;
   } else {
-    // Now, remove any pendant vertices (i.e. vertices of degree one).
-    unsigned int num_pendants(0);
-
-    num_pendants = remove_pendants(graph);
-
-    xy_term xys(num_pendants,num_loops);    
+    // Now, apply immediate reduction algorithms (e.g. for removing
+    // loops and/or pendant edges).
+    P reduction_factor = Y(num_loops);
+    // reduction_factor *= reduce_pendants<G,P>(graph);
+    reduction_factor *= reduce_multi_pendants<G,P>(graph);
+    reduction_factor *= reduce_lines<G,P>(graph);
 
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
@@ -319,7 +319,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 	if(write_tree) { write_tree_match(my_id,match_id,graph,cout); }
 	hit_count++;
 	hit_size += graph.num_vertices();
-	poly *= xys;
+	poly *= reduction_factor;
 	delete [] key; // free space used by key
 	return; 
       }                
@@ -346,7 +346,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     deleteContract(graph, poly, left_id);
     deleteContract(g2,p2, right_id);
 
-    if(e.third > 1) { p2 *= xy_term(0,0,e.third-1); }
+    if(e.third > 1) { p2 *= Y(0,e.third-1); }
     poly += p2;
 
     // Finally, save computed polynomial
@@ -360,7 +360,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     
     // do final multiplication here, since stored graph has pendants
     // and loops removed already.
-    poly *= xys;
+    poly *= reduction_factor;
   }
 }
 
@@ -651,7 +651,6 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
     } else {
       cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
-      cout << graph_str(start_graph) << endl;   
       cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
       
       cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
