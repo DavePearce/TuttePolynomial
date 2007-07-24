@@ -70,8 +70,7 @@ P reduce_multi_pendants(G &graph) {
 
 template<class G>
 std::vector<unsigned int> trace_line(unsigned int v, G const &graph) {
-  // this is a crude, O(v) time algorithm for identifying and
-  // collapsing lines in the graph.
+  // This is a crude, O(v) time algorithm for tracing out a line in the graph.
   std::vector<unsigned int> line;
   unsigned int start=v; // needed to protect against cycles
 
