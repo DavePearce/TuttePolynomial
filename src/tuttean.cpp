@@ -366,8 +366,8 @@ void write_full_dot(vector<node> const &data, layout_t small_mode, ostream &out)
 
   // first, we create the subgraph nodes
   
-  vector<unsigned int> first(data.size(),0);
-  vector<unsigned int> last(data.size(),0);
+  vector<int> first(data.size(),-1);
+  vector<int> last(data.size(),-1);
   unsigned int vindex=0;
   for(unsigned int i=1;i<data.size();++i) {
     if(data[i].type != MATCH && data[i].type != UNUSED) {
@@ -401,8 +401,10 @@ void write_full_dot(vector<node> const &data, layout_t small_mode, ostream &out)
 	l = max(l,max(lgraph[j].first,lgraph[j].second));
 	f = min(f,min(lgraph[j].first,lgraph[j].second));
       }
-      last[i] = vindex+l;
-      first[i] = vindex+f;
+      if(lgraph.size() > 0) {
+	last[i] = vindex+l;
+	first[i] = vindex+f;
+      }
       vindex += l+1;
       out << "\t}" << endl;
     }
@@ -433,9 +435,13 @@ void write_full_dot(vector<node> const &data, layout_t small_mode, ostream &out)
 	  cstyle = ",arrowhead=odot";
 	}
 	con = mid;
-      }      
-      out << "\t" << last[i] << " -- " << first[del] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << del << ",arrowhead=normal" << dstyle << "];" << endl;
-      out << "\t" << last[i] << " -- " << first[con] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << con << ",arrowhead=normal,style=dashed" << cstyle << "];" << endl;
+      }
+      if(first[del] != -1) {
+	out << "\t" << last[i] << " -- " << first[del] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << del << ",arrowhead=normal" << dstyle << "];" << endl;
+      } 
+      if (first[con] != -1) {
+	out << "\t" << last[i] << " -- " << first[con] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << con << ",arrowhead=normal,style=dashed" << cstyle << "];" << endl;
+      }
     }
   }
 
