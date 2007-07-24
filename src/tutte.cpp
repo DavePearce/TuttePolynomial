@@ -75,6 +75,7 @@ static bool xml_flag=false;
 static unsigned int tree_id = 2;
 static bool write_tree=false;
 static bool write_full_tree=false;
+static bool remove_lines=true;
 
 void print_status();
 
@@ -293,7 +294,6 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     P reduction_factor = Y(num_loops);
     // reduction_factor *= reduce_pendants<G,P>(graph);
     reduction_factor *= reduce_multi_pendants<G,P>(graph);
-    reduction_factor *= reduce_lines<G,P>(graph);
 
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
@@ -333,21 +333,49 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
     // === END ===
 
-    // Third, perform delete contract 
-    typename G::edge_t e = select_nontree_edge(graph);
+    // Try to apply the line theorem
+    vector<unsigned int> line = select_line<G>(graph);
 
-    graph.remove_edge(e.first,e.second,e.third);        
-    G g2(graph); 
-    g2.contract_edge(e.first,e.second); 
+    if(remove_lines && line.size() > 0) {
+      // matched line, so begin by removing all internal
+      // vertices
+      for(unsigned int i=1;i!=line.size()-1;++i) {
+	graph.remove(line[i]);
+      }
+      // now, we contract on the line's endpoints
+      G g2(graph); 
+      g2.contract_edge(line[0],line[line.size()-1]); 
 
-    // Fourth, recursively compute the polynomial   
-    P p2;
-    
-    deleteContract(graph, poly, left_id);
-    deleteContract(g2,p2, right_id);
+      // recursively compute the polynomial   
+      P p2;
+      
+      deleteContract(graph, p2, left_id);
+      deleteContract(g2, poly, right_id);
+      
+      // now, build and apply the x factors
+      P xs(X(0));
+      for(unsigned int k=1;k!=line.size()-1;++k) {
+	xs += X(k);
+      }      
+      p2 *= xs;
+      poly += p2;
+    } else {
+      // no line match, del-contract on single edge instead
+      typename G::edge_t e = select_nontree_edge(graph);
 
-    if(e.third > 1) { p2 *= Y(0,e.third-1); }
-    poly += p2;
+      graph.remove_edge(e.first,e.second,e.third);        
+      G g2(graph); 
+      g2.contract_edge(e.first,e.second); 
+
+      // Fourth, recursively compute the polynomial   
+      P p2;
+      
+      deleteContract(graph, poly, left_id);
+      deleteContract(g2,p2, right_id);
+      
+      if(e.third > 1) { p2 *= Y(0,e.third-1); }
+      poly += p2;
+    }
 
     // Finally, save computed polynomial
     if(key != NULL) {
@@ -716,6 +744,7 @@ int main(int argc, char *argv[]) {
   #define OPT_SMALL 40
   #define OPT_MEDIUM 41
   #define OPT_LARGE 42
+  #define OPT_NOLINES 43
   #define OPT_MAXDEGREE 50
   #define OPT_MAXMDEGREE 51
   #define OPT_MINDEGREE 52
@@ -763,6 +792,7 @@ int main(int argc, char *argv[]) {
     {"small",no_argument,NULL,OPT_SMALL},
     {"medium",no_argument,NULL,OPT_MEDIUM},
     {"large",no_argument,NULL,OPT_LARGE},
+    {"no-lines",no_argument,NULL,OPT_NOLINES},
     NULL
   };
   
@@ -778,6 +808,7 @@ int main(int argc, char *argv[]) {
     "        --small                   use 32-bit integers only",
     "        --medium                  use 64-bit integers only",
     "        --large                   use unbound integers (default)",
+    "        --no-lines                don't delete-contract on lines",
     " \ncache options:",
     " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
@@ -913,6 +944,9 @@ int main(int argc, char *argv[]) {
     case OPT_MEDIUM:
     case OPT_LARGE:
       size=v;
+      break;
+    case OPT_NOLINES:
+      remove_lines=false;
       break;
     default:
       cout << "Unrecognised parameter!" << endl;

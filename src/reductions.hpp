@@ -90,10 +90,10 @@ std::vector<unsigned int> trace_line(unsigned int v, G const &graph) {
   // Second, traverse the entire line
   start = v;
   line.push_back(v);
+  line.push_back(w);
   std::swap(v,w);
 
   while(graph.num_edges(v) == 2) {
-    line.push_back(v);
     // determine edge from w
     typename G::edge_iterator i(graph.begin_edges(v));
     unsigned int u = i->first;
@@ -101,32 +101,32 @@ std::vector<unsigned int> trace_line(unsigned int v, G const &graph) {
     if(u == start) { break; }
     w = v;
     v = u;
-  }
- 
+    line.push_back(v); 
+  }  
+
   return line;
 }
 
-template<class G, class P>
-P reduce_lines(G &graph) {
-  P r = Y(0);
-
+template<class G>
+std::vector<unsigned int> select_line(G const &graph) {
   std::vector<bool> visited(graph.domain_size(),false);
-  
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {    
-    if(!visited[*i] && graph.num_underlying_edges(*i) == 2) {
+    if(!visited[*i] && graph.num_edges(*i) == 2) {
       std::vector<unsigned int> line = trace_line(*i,graph);
-      // process line now!
-      std::cout << "MATCHED LINE: ";
-      for(unsigned int j=0;j!=line.size();++j) {
-	if(j!=0) { std::cout << "-"; }
-	std::cout << line[j];
+      // now, check line is not a line bridge
+      visited[line[0]] = true;
+      for(unsigned int j=1;j!=line.size();++j) {
+	visited[line[j]] = true;
+	if(!graph.on_spanning_tree(line[j-1],line[j])) {
+	  // Ok, it's definitely *not* a line bridge
+	  return line;
+	}
       }
-      std::cout << std::endl;
-      return r;      
     }
   }
   
-  return r;
+  // return nothing to signal no lines found
+  return std::vector<unsigned int>();
 }
 
 #endif
