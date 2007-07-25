@@ -268,16 +268,13 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
   P reduction_factor = Y(graph.remove_loops());
   // reduction_factor *= reduce_pendants<G,P>(graph);
   reduction_factor *= reduce_multi_pendants<G,P>(graph);
-
-  //  reduction_factor *= reduce_cycles<G,P>(graph);
+  reduction_factor *= reduce_cycles<G,P>(graph);
 
   if(graph.num_edges() == 0) {
     if(write_tree) { write_tree_leaf(my_id, graph, cout); }
     poly += reduction_factor;
     return;
   } else {
-    if(graph.is_tree()) { cout << "*** IS TREE ? ***" << endl; }
-    if(graph.is_multi_tree()) { cout << "*** IS TREE ? ***" << endl; }
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
     unsigned char *key = NULL;

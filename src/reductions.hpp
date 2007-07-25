@@ -45,7 +45,6 @@ P reduce_multi_pendants(G &graph) {
   
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     if(graph.num_underlying_edges(*i) == 1) {
-      std::cout << "GOT PENDANT: " << *i << std::endl;
       pendants.push_back(*i);
     }
   }
@@ -66,7 +65,6 @@ P reduce_multi_pendants(G &graph) {
     graph.remove(p);
     // Recursively eliminate any pendants created by this
     if(graph.num_underlying_edges(w) == 1) { 
-      std::cout << "ADDED PENDANT: " << w << std::endl;
       pendants.push_back(w); } 
   }
 
@@ -147,9 +145,13 @@ P reduce_cycles(G &graph) {
       }
 
       // Now, build its factor!
-      P xs(X(0)), acc(X(0));
+      P xs(X(1)), acc(X(1));
+      if(line[0].third > 1) { 
+	acc += Y(1,line[0].third-1); 
+	xs += Y(1,line[0].third-1); 
+      }
       
-      for(unsigned int k=0;k<line.size()-1;++k) {
+      for(unsigned int k=1;k<line.size()-1;++k) {
 	P tmp(X(1));
 	if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
 	if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
@@ -157,8 +159,8 @@ P reduce_cycles(G &graph) {
 	xs += acc;
       }      
       
-      P ys(Y(0));
-      for(unsigned int k=0;k<line.size();++k) {
+      P ys = Y(line[0].third,line[0].third);
+      for(unsigned int k=1;k<line.size();++k) {
 	if(line[k].third > 1) { ys *= Y(0,line[k].third-1); }
       }
       xs += ys;
