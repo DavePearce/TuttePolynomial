@@ -40,6 +40,7 @@ public:
   unsigned int num_underlying_edges() const { return graph.num_underlying_edges(); }
   unsigned int num_spanning_edges() const { return spanning_tree.num_edges(); }
   unsigned int num_edges(unsigned int vertex) const { return graph.num_edges(vertex); }
+  unsigned int num_edges(unsigned int v1, unsigned int v2) const { return graph.num_edges(v1,v2); }
   unsigned int num_underlying_edges(unsigned int vertex) const { return graph.num_underlying_edges(vertex); }
   unsigned int num_pendant_vertices() const { return pendant_vertices.size(); }
   unsigned int num_multiedges() const { return graph.num_multiedges(); }

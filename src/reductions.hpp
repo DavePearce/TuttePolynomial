@@ -77,7 +77,7 @@ std::vector<triple<unsigned int, unsigned int, unsigned int> > trace_line(unsign
   // First, find one end of the line  
   unsigned int w = graph.begin_edges(v)->first;
   
-  while(graph.num_edges(v) == 2) {    
+  while(graph.num_underlying_edges(v) == 2) {    
     // determine edge from w
     typename G::edge_iterator i(graph.begin_edges(v));
     unsigned int u = i->first;
@@ -90,9 +90,9 @@ std::vector<triple<unsigned int, unsigned int, unsigned int> > trace_line(unsign
   // Second, traverse the entire line
   start = v;
   std::swap(v,w);
-  line.push_back(make_triple(w,v,1U));
+  line.push_back(make_triple(w,v,graph.num_edges(w,v)));
 
-  while(graph.num_edges(v) == 2) {
+  while(graph.num_underlying_edges(v) == 2) {
     // determine edge from w
     typename G::edge_iterator i(graph.begin_edges(v));
     unsigned int u = i->first;
@@ -100,7 +100,7 @@ std::vector<triple<unsigned int, unsigned int, unsigned int> > trace_line(unsign
     if(u == start) { break; }
     w = v;
     v = u;
-    line.push_back(make_triple(w,v,1U)); 
+    line.push_back(make_triple(w,v,i->second)); 
   }  
 
   return line;
@@ -110,7 +110,7 @@ template<class G>
 std::vector<triple<unsigned int, unsigned int, unsigned int> > select_line(G const &graph) {
   std::vector<bool> visited(graph.domain_size(),false);
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {    
-    if(!visited[*i] && graph.num_edges(*i) == 2) {
+    if(!visited[*i] && graph.num_underlying_edges(*i) == 2) {
       std::vector<triple<unsigned int, unsigned int, unsigned int> > line = trace_line(*i,graph);
       // now, check line is not a line bridge
       for(unsigned int j=0;j!=line.size();++j) {
