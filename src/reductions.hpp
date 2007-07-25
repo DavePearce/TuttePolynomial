@@ -117,7 +117,7 @@ P reduce_cycles(G &graph) {
   std::vector<bool> visited(graph.domain_size(),false);
 
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {    
-    if(!graph.num_underlying_edges(*i) == 2) {
+    if(graph.num_underlying_edges(*i) == 2) {
       candidates.push_back(*i);
     }
   }
@@ -130,7 +130,7 @@ P reduce_cycles(G &graph) {
         
     std::vector<triple<unsigned int, unsigned int, unsigned int> > line = trace_line(c,graph);
 
-    if(line[0].first == line[line.size()-1].second) {
+    if(line[0].first == line[line.size()-1].second) {      
       // Found a cycle!
       for(unsigned int j=0;j!=line.size()-1;++j) {
 	visited[line[j].second]=true;
@@ -156,7 +156,7 @@ P reduce_cycles(G &graph) {
       r *= xs;
       
       // Finally, check if this has exposed another candidate
-      if(graph.num_edges(line[0].first) == 2) {
+      if(graph.num_underlying_edges(line[0].first) == 2) {
 	// yes it has!
 	candidates.push_back(line[0].first);
       }

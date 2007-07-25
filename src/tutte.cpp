@@ -270,37 +270,10 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
   reduction_factor *= reduce_multi_pendants<G,P>(graph);
   reduction_factor *= reduce_cycles<G,P>(graph);
 
-  if(graph.num_vertices() == 1) {
+  if(graph.num_edges() == 0) {
     if(write_tree) { write_tree_leaf(my_id, graph, cout); }
     poly += reduction_factor;
     return;
-  } else if(graph.is_tree()) {
-    // termination for trees!
-    std::cout << "************ GOT HERE ****************" << endl;
-    std::cout << "GRAPH: " << graph_str(graph) << endl;
-    if(write_tree) { write_tree_leaf(my_id, graph, cout); }
-    reduction_factor *= X(graph.num_edges());
-    poly += reduction_factor;
-  } else if(graph.is_multi_tree()) {
-    std::cout << "************ GOT HERE ****************" << endl;
-    // termination for multi-graphs whose underlying
-    // graph is a tree.
-    if(write_tree) { write_tree_leaf(my_id, graph, cout); }    
-    P r = reduction_factor;
-    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-      for(typename G::edge_iterator j(graph.begin_edges(*i));
-	  j!=graph.end_edges(*i);++j) {		
-	unsigned int head = *i;
-	unsigned int tail = j->first;
-	unsigned int count = j->second;
-	if(head < tail) { 	 	  
-	  P tmp(X(1));
-	  if(count > 1) {  tmp += Y(1,count-1); }
-	  r *= tmp;
-	}
-      }
-    }
-    poly += r;
   } else {
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
@@ -357,7 +330,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 	line = trace_line<G>(e.second,graph);
       }
 
-      // check whether line is actually a cycle [SHOULDN'T BE ABLE TO GET HERE?]
+      // if line is actually a cycle, then force a real line
       if(line[0].first == line[line.size()-1].second) { line.pop_back(); }
 
       // now, remove all internal vertices
