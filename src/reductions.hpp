@@ -69,7 +69,7 @@ P reduce_multi_pendants(G &graph) {
 }
 
 template<class G>
-std::vector<triple<unsigned int, unsigned int, unsigned int> > trace_line(unsigned int v, G const &graph) {
+std::vector<triple<unsigned int, unsigned int, unsigned int> > trace_line(unsigned int v, G const &graph) {  
   // This is a crude, O(v) time algorithm for tracing out a line in the graph.
   std::vector<triple<unsigned int, unsigned int, unsigned int> > line;
   unsigned int start=v; // needed to protect against cycles
@@ -106,6 +106,7 @@ std::vector<triple<unsigned int, unsigned int, unsigned int> > trace_line(unsign
   return line;
 }
 
+/*
 template<class G>
 std::vector<triple<unsigned int, unsigned int, unsigned int> > select_line(G const &graph) {
   std::vector<bool> visited(graph.domain_size(),false);
@@ -125,5 +126,6 @@ std::vector<triple<unsigned int, unsigned int, unsigned int> > select_line(G con
   // return nothing to signal no lines found
   return std::vector<triple<unsigned int, unsigned int, unsigned int> >();
 }
+*/
 
 #endif

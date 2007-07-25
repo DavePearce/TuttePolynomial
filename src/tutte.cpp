@@ -333,19 +333,29 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
     // === END ===
 
-    // Try to apply the line theorem
-    vector<triple<unsigned int, unsigned int, unsigned int> > line = select_line<G>(graph);
+    typename G::edge_t e = select_nontree_edge(graph);
+    
+    // check if edge is part of a line
+    if(remove_lines && (graph.num_underlying_edges(e.first) == 2 ||
+			graph.num_underlying_edges(e.second) == 2)) {
+      // Selected edge is part of a line, so apply
+      // the Line Theorem ...
+      vector<triple<unsigned int, unsigned int, unsigned int> > line;
 
-    if(remove_lines && line.size() > 0) {
-      // matched line, so begin by removing all internal
-      // vertices
+      if(graph.num_underlying_edges(e.first) == 2) {
+	line = trace_line<G>(e.first,graph);
+      } else {
+	line = trace_line<G>(e.second,graph);
+      }
+
+      // now, remove all internal vertices
       for(unsigned int i=0;i!=line.size()-1;++i) {
 	graph.remove(line[i].second);
       }
       // now, we contract on the line's endpoints
       G g2(graph); 
       g2.contract_edge(line[0].first,line[line.size()-1].second); 
-
+      
       // recursively compute the polynomial   
       P p2;
       
@@ -367,15 +377,14 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       for(unsigned int k=0;k<line.size();++k) {
 	if(line[k].third > 1) { poly *= Y(0,line[k].third-1); }
       }
-      poly += p2;
+      poly += p2;	      
     } else {
-      // no line match, del-contract on single edge instead
-      typename G::edge_t e = select_nontree_edge(graph);
-
+      // normal delete contract ...
+      
       graph.remove_edge(e.first,e.second,e.third);        
       G g2(graph); 
       g2.contract_edge(e.first,e.second); 
-
+      
       // Fourth, recursively compute the polynomial   
       P p2;
       
@@ -385,7 +394,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       if(e.third > 1) { p2 *= Y(0,e.third-1); }
       poly += p2;
     }
-
+    
     // Finally, save computed polynomial
     if(key != NULL) {
       // there is, strictly speaking, a bug with using my_id
