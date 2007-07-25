@@ -262,18 +262,31 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
   num_steps++;
 
-  // first, eliminate any loops
-  unsigned int num_loops = graph.remove_loops();  
+  // Apply immediate reduction algorithms (e.g. for removing
+  // loops, cycles and/or pendant edges).
 
-  if(graph.is_tree()) {
-    // termination for trees!
+  P reduction_factor = Y(graph.remove_loops());
+  // reduction_factor *= reduce_pendants<G,P>(graph);
+  reduction_factor *= reduce_multi_pendants<G,P>(graph);
+  reduction_factor *= reduce_cycles<G,P>(graph);
+
+  if(graph.num_vertices() == 1) {
     if(write_tree) { write_tree_leaf(my_id, graph, cout); }
-    poly += X(graph.num_edges()) * Y(num_loops);
+    poly += reduction_factor;
+    return;
+  } else if(graph.is_tree()) {
+    // termination for trees!
+    std::cout << "************ GOT HERE ****************" << endl;
+    std::cout << "GRAPH: " << graph_str(graph) << endl;
+    if(write_tree) { write_tree_leaf(my_id, graph, cout); }
+    reduction_factor *= X(graph.num_edges());
+    poly += reduction_factor;
   } else if(graph.is_multi_tree()) {
+    std::cout << "************ GOT HERE ****************" << endl;
     // termination for multi-graphs whose underlying
     // graph is a tree.
     if(write_tree) { write_tree_leaf(my_id, graph, cout); }    
-    P r = Y(num_loops);   
+    P r = reduction_factor;
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
       for(typename G::edge_iterator j(graph.begin_edges(*i));
 	  j!=graph.end_edges(*i);++j) {		
@@ -289,12 +302,6 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     }
     poly += r;
   } else {
-    // Now, apply immediate reduction algorithms (e.g. for removing
-    // loops and/or pendant edges).
-    P reduction_factor = Y(num_loops);
-    // reduction_factor *= reduce_pendants<G,P>(graph);
-    reduction_factor *= reduce_multi_pendants<G,P>(graph);
-
     // Second, attempt to evaluate small graphs directly.  For big graphs,
     // look them up in the cache.
     unsigned char *key = NULL;
@@ -324,7 +331,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 	return; 
       }                
     }
-    
+      
     // === TREE OUTPUT STUFF ===    
     unsigned int left_id = tree_id;
     unsigned int right_id = tree_id+1;
@@ -336,8 +343,10 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     typename G::edge_t e = select_nontree_edge(graph);
     
     // check if edge is part of a line
-    if(remove_lines && (graph.num_underlying_edges(e.first) == 2 ||
-			graph.num_underlying_edges(e.second) == 2)) {
+    if(remove_lines && 
+       !graph.on_spanning_tree(e.first,e.second) &&
+       (graph.num_underlying_edges(e.first) == 2 ||
+	graph.num_underlying_edges(e.second) == 2)) {
       // Selected edge is part of a line, so apply
       // the Line Theorem ...
       vector<triple<unsigned int, unsigned int, unsigned int> > line;
@@ -347,6 +356,9 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       } else {
 	line = trace_line<G>(e.second,graph);
       }
+
+      // check whether line is actually a cycle [SHOULDN'T BE ABLE TO GET HERE?]
+      if(line[0].first == line[line.size()-1].second) { line.pop_back(); }
 
       // now, remove all internal vertices
       for(unsigned int i=0;i!=line.size()-1;++i) {

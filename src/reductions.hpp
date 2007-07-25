@@ -82,9 +82,9 @@ std::vector<triple<unsigned int, unsigned int, unsigned int> > trace_line(unsign
     typename G::edge_iterator i(graph.begin_edges(v));
     unsigned int u = i->first;
     if(u == w) { u = (++i)->first; }
-    if(u == start) { break; }
     w = v;
     v = u;
+    if(v == start) { break; }
   }
 
   // Second, traverse the entire line
@@ -97,35 +97,73 @@ std::vector<triple<unsigned int, unsigned int, unsigned int> > trace_line(unsign
     typename G::edge_iterator i(graph.begin_edges(v));
     unsigned int u = i->first;
     if(u == w) { u = (++i)->first; }
-    if(u == start) { break; }
     w = v;
     v = u;
     line.push_back(make_triple(w,v,i->second)); 
+    if(v == start) { break; }
   }  
 
   return line;
 }
 
-/*
-template<class G>
-std::vector<triple<unsigned int, unsigned int, unsigned int> > select_line(G const &graph) {
+template<class G, class P>
+P reduce_cycles(G &graph) {
+  // This is not exactly the most efficient algorithm
+  // especially since it will quadratically visit
+  // lines which are not in fact cycles.
+  P r = Y(0);
+
+  std::vector<unsigned int> candidates;
   std::vector<bool> visited(graph.domain_size(),false);
+
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {    
-    if(!visited[*i] && graph.num_underlying_edges(*i) == 2) {
-      std::vector<triple<unsigned int, unsigned int, unsigned int> > line = trace_line(*i,graph);
-      // now, check line is not a line bridge
-      for(unsigned int j=0;j!=line.size();++j) {
-	visited[line[j].first] = true;
-	if(!graph.on_spanning_tree(line[j].first,line[j].second)) {
-	  return line;
-	}
+    if(!graph.num_underlying_edges(*i) == 2) {
+      candidates.push_back(*i);
+    }
+  }
+
+  while(!candidates.empty()) {
+    unsigned int c(candidates.back());
+    candidates.pop_back();    
+
+    if(visited[c]) { continue; }
+        
+    std::vector<triple<unsigned int, unsigned int, unsigned int> > line = trace_line(c,graph);
+
+    if(line[0].first == line[line.size()-1].second) {
+      // Found a cycle!
+      for(unsigned int j=0;j!=line.size()-1;++j) {
+	visited[line[j].second]=true;
+	graph.remove(line[j].second);
+      }
+
+      // Now, build its factor!
+      P xs(X(0)), acc(X(0));
+      
+      for(unsigned int k=0;k<line.size()-1;++k) {
+	P tmp(X(1));
+	if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
+	if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
+	acc *= tmp;
+	xs += acc;
+      }      
+      
+      P ys(Y(0));
+      for(unsigned int k=0;k<line.size();++k) {
+	if(line[k].third > 1) { ys *= Y(0,line[k].third-1); }
+      }
+      xs += ys;
+      r *= xs;
+      
+      // Finally, check if this has exposed another candidate
+      if(graph.num_edges(line[0].first) == 2) {
+	// yes it has!
+	candidates.push_back(line[0].first);
       }
     }
   }
-  
-  // return nothing to signal no lines found
-  return std::vector<triple<unsigned int, unsigned int, unsigned int> >();
+
+  return r;
 }
-*/
 
 #endif
