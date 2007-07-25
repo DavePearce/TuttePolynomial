@@ -116,13 +116,6 @@ std::vector<triple<unsigned int, unsigned int, unsigned int> > select_line(G con
       for(unsigned int j=0;j!=line.size();++j) {
 	visited[line[j].first] = true;
 	if(!graph.on_spanning_tree(line[j].first,line[j].second)) {
-	  // Ok, it's definitely *not* a line bridge
-	  std::cout << "MATCHED: ";
-	  for(unsigned int k=0;k!=line.size();++k) {
-	    if(k!=0) { std::cout << ", "; }
-	    std::cout << line[k].first << "--" << line[k].second << "(" << line[k].third << ")";
-	  }
-	  std::cout << std::endl;
 	  return line;
 	}
       }

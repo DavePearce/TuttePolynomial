@@ -359,13 +359,13 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       for(unsigned int k=0;k<line.size()-1;++k) {
 	P tmp(X(1));
 	if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
-	if(line[k+1].third > 1) { xs *= Y(1,line[k+1].third-1); }
+	if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
 	acc *= tmp;
 	xs += acc;
       }      
       p2 *= xs;
       for(unsigned int k=0;k<line.size();++k) {
-	if(line[k].third > 1) { poly *= Y(1,line[k].third-1); }
+	if(line[k].third > 1) { poly *= Y(0,line[k].third-1); }
       }
       poly += p2;
     } else {
