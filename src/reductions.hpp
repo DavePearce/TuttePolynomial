@@ -45,6 +45,7 @@ P reduce_multi_pendants(G &graph) {
   
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     if(graph.num_underlying_edges(*i) == 1) {
+      std::cout << "GOT PENDANT: " << *i << std::endl;
       pendants.push_back(*i);
     }
   }
@@ -52,7 +53,9 @@ P reduce_multi_pendants(G &graph) {
   while(pendants.size() > 0) {
     unsigned int p(pendants.back());
     pendants.pop_back();
-    // now, recursively eliminate any pendants created by this
+    // Check whether p is still a pendant
+    if(graph.num_edges(p) == 0) { continue; }
+    // Generate multiply factor
     typename G::edge_iterator i(graph.begin_edges(p));
     unsigned int w(i->first);
     unsigned int count(i->second);
@@ -60,9 +63,11 @@ P reduce_multi_pendants(G &graph) {
     P tmp(X(1));
     if(count > 1) {  tmp += Y(1,count-1); }
     r *= tmp;
-
     graph.remove(p);
-    if(graph.num_underlying_edges(w) == 1) { pendants.push_back(w); } 
+    // Recursively eliminate any pendants created by this
+    if(graph.num_underlying_edges(w) == 1) { 
+      std::cout << "ADDED PENDANT: " << w << std::endl;
+      pendants.push_back(w); } 
   }
 
   return r;
@@ -129,11 +134,15 @@ P reduce_cycles(G &graph) {
     if(visited[c]) { continue; }
         
     std::vector<triple<unsigned int, unsigned int, unsigned int> > line = trace_line(c,graph);
-
+    
+    // mark whole line as visited
+    for(unsigned int j=0;j!=line.size()-1;++j) {
+      visited[line[j].second]=true;
+    }
+    
     if(line[0].first == line[line.size()-1].second) {      
       // Found a cycle!
       for(unsigned int j=0;j!=line.size()-1;++j) {
-	visited[line[j].second]=true;
 	graph.remove(line[j].second);
       }
 
@@ -154,7 +163,7 @@ P reduce_cycles(G &graph) {
       }
       xs += ys;
       r *= xs;
-      
+
       // Finally, check if this has exposed another candidate
       if(graph.num_underlying_edges(line[0].first) == 2) {
 	// yes it has!
