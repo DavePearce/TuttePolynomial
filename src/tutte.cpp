@@ -262,13 +262,11 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
   num_steps++;
 
-  // Apply immediate reduction algorithms (e.g. for removing
+  // Apply immediate reduction algorithm (e.g. for removing
   // loops, cycles and/or pendant edges).
 
   P reduction_factor = Y(graph.remove_loops());
-  // reduction_factor *= reduce_pendants<G,P>(graph);
-  reduction_factor *= reduce_multi_pendants<G,P>(graph);
-  reduction_factor *= reduce_cycles<G,P>(graph);
+  reduction_factor *= reduce<G,P>(graph);
 
   if(graph.num_edges() == 0) {
     if(write_tree) { write_tree_leaf(my_id, graph, cout); }

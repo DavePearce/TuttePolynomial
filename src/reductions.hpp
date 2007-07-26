@@ -50,36 +50,6 @@ P reduce_cycle(line_t const &line, G &graph) {
   return xs;
 }
 
-template<class G, class P>
-P reduce_multi_pendants(G &graph) {
-  P r = Y(0);
-
-  std::vector<unsigned int> pendants;
-  
-  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-    if(graph.num_underlying_edges(*i) == 1) {
-      pendants.push_back(*i);
-    }
-  }
-
-  while(pendants.size() > 0) {
-    unsigned int p(pendants.back());
-    pendants.pop_back();
-    // Check whether p is still a pendant
-    if(graph.num_edges(p) == 0) { continue; }
-    // Generate multiply factor
-    typename G::edge_iterator i(graph.begin_edges(p));
-    unsigned int w(i->first);
-    
-    r *= reduce_pendant<G,P>(p,graph);
-    // Recursively eliminate any pendants created by this
-    if(graph.num_underlying_edges(w) == 1) { 
-      pendants.push_back(w); } 
-  }
-
-  return r;
-}
-
 template<class G>
 line_t trace_line(unsigned int v, G const &graph) {  
   // This is a crude, O(v) time algorithm for tracing out a line in the graph.
@@ -119,47 +89,74 @@ line_t trace_line(unsigned int v, G const &graph) {
 }
 
 template<class G, class P>
-P reduce_cycles(G &graph) {
-  // This is not exactly the most efficient algorithm
-  // especially since it will quadratically visit
-  // lines which are not in fact cycles.
+P reduce(G &graph) {
   P r = Y(0);
 
-  std::vector<unsigned int> candidates;
-  std::vector<bool> visited(graph.domain_size(),false);
+  // I make the following things static
+  // in an effort to improve performance.
+  static std::vector<line_t> cycles;
+  static std::vector<unsigned int> pendants;
+  static std::vector<bool> visited;
+  visited.resize(graph.domain_size());
+  // make sure to reset visited flags!
+  std::fill(visited.begin(),visited.end(),false);
 
+  // first, initialise the worklists
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {    
-    if(graph.num_underlying_edges(*i) == 2) {
-      candidates.push_back(*i);
+    if(!visited[*i] && graph.num_underlying_edges(*i) == 2) {
+      // mark all members as visited, to avoid revisiting
+      // them in a potentially quadratic fashion.
+      line_t line = trace_line(*i,graph);      
+      for(line_t::iterator j(line.begin());j!=line.end();++j) {
+	visited[j->second]=true;
+      }
+      // check if this is a cycle ...
+      if(line[0].first == line[line.size()-1].second) {      
+	// yes, it is!
+	cycles.push_back(line);
+      }
+    } else if(graph.num_underlying_edges(*i) == 1) {
+      // this is a pendant edge
+      pendants.push_back(*i);
     }
   }
 
-  while(!candidates.empty()) {
-    unsigned int c(candidates.back());
-    candidates.pop_back();    
+  while(!cycles.empty() || !pendants.empty()) {
+    unsigned int w; // this is a candidate cycle/pendant
 
-    if(visited[c]) { continue; }
-        
-    line_t line = trace_line(c,graph);
-    
-    // mark whole line as visited
-    for(unsigned int j=0;j!=line.size()-1;++j) {
-      visited[line[j].second]=true;
+    if(!pendants.empty()) {
+      unsigned int p(pendants.back());
+      pendants.pop_back();
+      // check that p is still a pendant
+      if(graph.num_edges(p) == 0) { continue; }
+      // identify the next candidate
+      w = graph.begin_edges(p)->first;
+      // now, remove it!
+      r *= reduce_pendant<G,P>(p,graph);
+    } else {
+      line_t &cycle(cycles.back());
+      r *= reduce_cycle<G,P>(cycle,graph);
+      w = cycle[0].first;
+      cycles.pop_back();
     }
     
-    if(line[0].first == line[line.size()-1].second) {      
-      
-      r *= reduce_cycle<G,P>(line,graph);
-
-      // Finally, check if this has exposed another candidate
-      if(graph.num_underlying_edges(line[0].first) == 2) {
-	// yes it has!
-	candidates.push_back(line[0].first);
+    // now, check whether w has become a cycle or pendant
+    if(!visited[w] && graph.num_underlying_edges(w) == 2) {
+      line_t line = trace_line(w,graph);      
+      visited[w]=true;
+      // check if this is a cycle ...
+      if(line[0].first == line[line.size()-1].second) {      
+	// yes, it is!
+	cycles.push_back(line);
       }
+    } else if(graph.num_underlying_edges(w) == 1) {
+      // this is a pendant edge
+      pendants.push_back(w);
     }
   }
 
   return r;
 }
+
 
 #endif
