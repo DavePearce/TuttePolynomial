@@ -833,7 +833,7 @@ int main(int argc, char *argv[]) {
 
   unsigned int v;
   unsigned int cache_size(calc_default_cache_size()); 
-  unsigned int cache_buckets(10000);     // default 10,000 buckets
+  unsigned int cache_buckets(1000000);     // default 1M buckets
   unsigned int poly_rep(OPT_FACTOR_POLY);
   unsigned int ngraphs(1);
   unsigned int size = OPT_LARGE;

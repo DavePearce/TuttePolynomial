@@ -97,11 +97,12 @@ P reduce(G &graph) {
   static std::vector<line_t> cycles;
   static std::vector<unsigned int> pendants;
   static std::vector<bool> visited;
+  // ensure enough space for this graph
   visited.resize(graph.domain_size());
   // make sure to reset visited flags!
   std::fill(visited.begin(),visited.end(),false);
 
-  // first, initialise the worklists
+  // now, initialise the worklists
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {    
     if(!visited[*i] && graph.num_underlying_edges(*i) == 2) {
       // mark all members as visited, to avoid revisiting
@@ -121,6 +122,9 @@ P reduce(G &graph) {
     }
   }
 
+  // apply the reductions, whilst ensuring that
+  // any further cycles / pendants exposed are
+  // also reduced upon.
   while(!cycles.empty() || !pendants.empty()) {
     unsigned int w; // this is a candidate cycle/pendant
 
