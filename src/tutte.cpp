@@ -192,7 +192,7 @@ typename G::edge_t select_nontree_edge(G graph) {
   typename G::edge_t r(-1,-1,-1);
   
   if(edge_selection_heuristic == RANDOM) {
-    unsigned int nedges = graph.num_edges() - graph.num_spanning_edges();
+    unsigned int nedges = graph.num_edges();
     rtarget = (unsigned int) (((double) nedges*rand()) / (1.0+RAND_MAX));
   }
 
@@ -204,8 +204,6 @@ typename G::edge_t select_nontree_edge(G graph) {
       
       if(head < tail) { // to avoid duplicates
 	unsigned int count = j->second;
-	// check whether edge on spanning tree
-	if(graph.on_spanning_tree(head,tail)) { count = count - 1; }
 	
 	if(count > 0) {
 	  unsigned int cost;
@@ -262,6 +260,13 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
   num_steps++;
 
+  // First up, check whether graph is connected or not.
+  
+  if(graph.num_components() > 1) {
+    // nope, it's not!
+    throw std::runtime_error("GRAPH DISCONNECTED");
+  }
+
   // Apply immediate reduction algorithm (e.g. for removing
   // loops, cycles and/or pendant edges).
 
@@ -315,7 +320,6 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     
     // check if edge is part of a line
     if(remove_lines && 
-       !graph.on_spanning_tree(e.first,e.second) &&
        (graph.num_underlying_edges(e.first) == 2 ||
 	graph.num_underlying_edges(e.second) == 2)) {
       // Selected edge is part of a line, so apply
@@ -753,8 +757,6 @@ int main(int argc, char *argv[]) {
   #define OPT_MINSDEGREE 54
   #define OPT_VERTEXORDER 55
   #define OPT_RANDOM 56
-  #define OPT_BFSTREE 57
-  #define OPT_DFSTREE 58
   #define OPT_RANDOM_ORDERING 60
   #define OPT_MINDEG_ORDERING 61
   #define OPT_MAXDEG_ORDERING 62
@@ -780,8 +782,6 @@ int main(int argc, char *argv[]) {
     {"minudeg-ordering",no_argument,NULL,OPT_MINUDEG_ORDERING},
     {"maxudeg-ordering",no_argument,NULL,OPT_MAXUDEG_ORDERING},
     {"random", no_argument,NULL,OPT_RANDOM},
-    {"bfs-spanning-tree", no_argument, NULL, OPT_BFSTREE},
-    {"dfs-spanning-tree", no_argument, NULL, OPT_DFSTREE},
     {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
     {"simple-poly",no_argument,NULL,OPT_SIMPLE_POLY},
@@ -838,7 +838,6 @@ int main(int argc, char *argv[]) {
   unsigned int ngraphs(1);
   unsigned int size = OPT_LARGE;
   bool quiet_mode=false;
-  bool bfs_tree = false;
   vorder_t vertex_ordering(V_NONE);
   string cache_stats_file("");
 
@@ -912,12 +911,6 @@ int main(int argc, char *argv[]) {
       break;
     case OPT_RANDOM:
       edge_selection_heuristic = RANDOM;
-      break;
-    case OPT_BFSTREE:
-      bfs_tree = true;
-      break;
-    case OPT_DFSTREE:
-      bfs_tree = false;
       break;
     case OPT_RANDOM_ORDERING:
       vertex_ordering = V_RANDOM;
@@ -997,23 +990,11 @@ int main(int argc, char *argv[]) {
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
       if(size == OPT_SMALL) {
-	if(bfs_tree) {
-	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,quiet_mode);
-	} else {
-	  run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,quiet_mode);
-	}
-      } else if(size == OPT_MEDIUM) {
-	if(bfs_tree) {
-	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,quiet_mode);
-	} else {
-	  run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,quiet_mode);
-	}
+	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,quiet_mode);
+      } else if(size == OPT_MEDIUM) {       
+	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,quiet_mode);
       } else {
-	if(bfs_tree) {
-	  run<bfs_spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,quiet_mode);
-	} else {
-	  run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,quiet_mode);
-	}
+	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,quiet_mode);
       }
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering,quiet_mode);
