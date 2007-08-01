@@ -22,12 +22,13 @@ public:
   typedef triple<unsigned int, unsigned int, unsigned int> edge_t;
 private:
   G graph;
-  std::vector<bool> visited;
+  mutable std::vector<bool> visited;
   std::vector<unsigned int> roots;
 public:
   spanning_graph(int n, bool bfs = false) : graph(n), visited(n)  {  }
 
   spanning_graph(G const &g, bool bfs = false) : graph(g), visited(g.domain_size()) {  
+    find_components();
   }
 
   unsigned int domain_size() const { return graph.domain_size(); }
@@ -80,13 +81,46 @@ public:
     return false;
   }
 
+  spanning_graph<G> extract_component(unsigned int i) {
+    // first, identify component
+    spanning_graph<G> g(component(i));
+    // now remove it!
+    for(typename G::vertex_iterator j(g.begin_verts());
+	j!=g.end_verts();++j) {
+      graph.remove(*j);
+    }
+    roots.erase(roots.begin()+i);
+    return g;
+  }
+
   void contract_edge(int from, int to) { 
-    graph.contract_edge(from,to); 
+    graph.contract_edge(from,to);     
+    if(roots.size() > 1) {
+      // This is needed, since during a contract operation
+      // an edge is first removed and then the end vertices
+      // are joined.  There maybe a way to avoid this 
+      // unnecessary recomputation.
+      find_components();
+    } else {
+      // safety check
+      std::replace(roots.begin(),roots.end(),to,from);
+    }
   }
 
   spanning_graph<G> component(unsigned int n) const {
+    // reset visited information
+    fill(visited.begin(),visited.end(),false);
     // this needs to be fixed
-    spanning_graph<G> r(graph);
+    spanning_graph<G> r(graph.domain_size());
+    add_component(roots[n],r);
+    // ok, this is a hack ... but it's needed
+    for(unsigned int i=0;i!=graph.domain_size();++i) {
+      if(i != roots[n] && r.num_edges(i) == 0) {
+	r.graph.remove(i);
+      }
+    }
+    r.roots.clear();
+    r.roots.push_back(n);
     return r;
   }
   
@@ -107,21 +141,34 @@ private:
       unsigned int v = *i;
       if(!visited[v]) { 
 	roots.push_back(v);
-	traverse(-1,v); 
+	traverse(v); 
       }
-    }      
+    }
   }
   
-  void traverse(int tail, int head) {
+  void traverse(unsigned int v) {
     // traverse edge tail->head
-    visited[head] = true;
+    visited[v] = true;
     // now, consider edges
-    for(typename G::edge_iterator i(graph.begin_edges(head));
-	i!=graph.end_edges(head);++i) {
+    for(typename G::edge_iterator i(graph.begin_edges(v));
+	i!=graph.end_edges(v);++i) {
       int next = i->first;
       if(!visited[next]) { 
-	traverse(head,next); 
+	traverse(next); 
       }     
+    }
+  }
+
+  void add_component(unsigned int v, spanning_graph<G> &component) const {
+    // traverse edge tail->head
+    visited[v] = true;
+    // now, consider edges
+    for(typename G::edge_iterator i(graph.begin_edges(v));
+	i!=graph.end_edges(v);++i) {
+      unsigned int next = i->first; // neighbour
+      unsigned int count = i->second; // mult edge count
+      if(v <= next) { component.add_edge(v,next,count); }
+      if(!visited[next]) { add_component(next,component); }     
     }
   }
 };
