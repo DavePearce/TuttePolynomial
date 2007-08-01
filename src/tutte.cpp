@@ -258,8 +258,6 @@ template<class G, class P>
 void deleteContract(G &graph, P &poly, unsigned int my_id) { 
   if(status_flag) { print_status(); }
   num_steps++;
-  // Apply immediate reduction algorithm (e.g. for removing
-  // loops, cycles and/or pendant edges).
 
   // === 1. APPLY SIMPLIFICATIONS ===
 
@@ -273,51 +271,38 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     return;
   } 
 
-  // === 3. CACHE LOOKUP ===
+  // === 3. CHECK IN CACHE ===
   unsigned char *key = NULL;
 
-  if(graph.num_components() == 1) {
-    if(graph.num_vertices() < small_graph_threshold) {      
-      // if this is a small 
-      /*
-	if(!graph.is_multi_graph()) { 
-	switch(graph.num_vertices()) {
-	case 4:
-	  return evaluate_simple_fours<Graph,Poly>(g) * ys * xs; 
-	case 5:
-	  return evaluate_simple_fives<Graph,Poly>(g) * ys * xs; 
-	default:
-	  break;
-	}
-      }
-      */
-    } else {     
-      key = graph_key(graph); 
-      unsigned int match_id;
-      if(cache.lookup(key,poly,match_id)) { 
-	if(write_tree) { write_tree_match(my_id,match_id,graph,cout); }
-	hit_count++;
-	hit_size += graph.num_vertices();
-	poly *= reduction_factor;
-	delete [] key; // free space used by key
-	return; 
-      }                
+  if(graph.num_components() == 1 && graph.num_vertices() >= small_graph_threshold) {      
+    key = graph_key(graph); 
+    unsigned int match_id;
+    if(cache.lookup(key,poly,match_id)) { 
+      if(write_tree) { write_tree_match(my_id,match_id,graph,cout); }
+      hit_count++;
+      hit_size += graph.num_vertices();
+      poly *= reduction_factor;
+      delete [] key; // free space used by key
+      return; 
     }
   }
 
-  // === TREE OUTPUT STUFF ===    
+  // TREE OUTPUT STUFF
   unsigned int left_id = tree_id;
   unsigned int right_id = tree_id+1;
   tree_id = tree_id + 2; // allocate id's now so I know them!
   if(write_tree) { write_tree_nonleaf(my_id,left_id,right_id,graph,cout); }
     
-  // === 4. CHECK FOR CONNECTEDNESS === 
+  // === 4. CHECK FOR (DIS)CONNECTEDNESS === 
 
   if(graph.num_components() > 1) {
     if(graph.num_components() > 2) { throw std::runtime_error("Two many components"); }    
 
+    cout << "DISCONNECTED GRAPH: " << graph_str(graph) << endl;
+
     P p1;
     G g2(graph.extract_component(1));
+    cout << "COMPONENT(1): " << graph_str(g2) << endl;
 
     deleteContract(graph, poly, left_id);
     deleteContract(g2, p1, right_id);    
@@ -331,7 +316,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
   // === 5. PERFORM DELETE / CONTRACT ===
 
   typename G::edge_t e = select_nontree_edge(graph);
-  
+  cout << "SELECTING: " << e.first << "--" << e.second << endl;  
   // check if edge is part of a line
   if(remove_lines && 
      (graph.num_underlying_edges(e.first) == 2 ||
@@ -381,7 +366,6 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     poly += p2;	      
   } else {
     // normal delete contract ...
-    
     graph.remove_edge(e.first,e.second,e.third);        
     G g2(graph); 
     g2.contract_edge(e.first,e.second); 
