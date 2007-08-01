@@ -57,25 +57,25 @@ public:
     graph.add_edge(from,to,count); 
   }
 
-  // THIS LOOP IS DEPRECATED
-  unsigned int remove_loops() {   
-    unsigned int c=0U;    
-    for(typename G::vertex_iterator i(graph.begin_verts());
-	i!=graph.end_verts();++i) {
-      c += graph.remove_all_edges(*i,*i);
+  bool remove_all_edges(int from, int to) {     
+    if(graph.remove_all_edges(from,to)) {
+      if(from != to) { find_components(); }
+      return true;
     }
-    return c;
+    return false;
   }
 
   bool remove_edge(int from, int to) {     
-    remove_edge(from,to,1);
+    return remove_edge(from,to,1);
   }
 
   bool remove_edge(int from, int to, int c) {     
     if(graph.remove_edge(from,to,c)) {    
-      // by removing an edge, we may have disconnected the
-      // graph ...
-      find_components();
+      if(from != to) {
+	// by removing an edge, we may have disconnected the
+	// graph ...
+	find_components();
+      }
       return true;
     }
     return false;

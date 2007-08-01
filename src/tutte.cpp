@@ -257,15 +257,13 @@ typename G::edge_t select_nontree_edge(G graph) {
 template<class G, class P>
 void deleteContract(G &graph, P &poly, unsigned int my_id) { 
   if(status_flag) { print_status(); }
-
   num_steps++;
   // Apply immediate reduction algorithm (e.g. for removing
   // loops, cycles and/or pendant edges).
 
   // === 1. APPLY SIMPLIFICATIONS ===
 
-  P reduction_factor = Y(graph.remove_loops());
-  reduction_factor *= reduce<G,P>(graph);
+  P reduction_factor = reduce<G,P>(graph);
 
   // === 2. CHECK FOR TERMINATION ===
 
@@ -317,26 +315,15 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
   if(graph.num_components() > 1) {
     if(graph.num_components() > 2) { throw std::runtime_error("Two many components"); }    
-    std::cout << graph_str(graph) << endl;
-    std::cout << "STAGE 1 --- " << graph.num_components() << std::endl;
-
-    // nope, it's not!    
-    G g2(graph.extract_component(1));
-
-    std::cout << graph_str(graph) << endl;
-    std::cout << graph_str(g2) << endl;
 
     P p1;
+    G g2(graph.extract_component(1));
+
     deleteContract(graph, poly, left_id);
     deleteContract(g2, p1, right_id);    
 
-    std::cout << "P1: " << poly.str() << std::endl;
-    std::cout << "P2: " << p1.str() << std::endl;
-
     poly *= p1;
     poly *= reduction_factor;
-
-    std::cout << "P1*P2: " << poly.str() << std::endl;
 
     return;
   }

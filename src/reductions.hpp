@@ -88,9 +88,20 @@ line_t trace_line(unsigned int v, G const &graph) {
   return line;
 }
 
+
+template<class G>
+unsigned int reduce_loops(G &graph) {   
+  unsigned int c=0U;    
+  for(typename G::vertex_iterator i(graph.begin_verts());
+      i!=graph.end_verts();++i) {
+    c += graph.remove_all_edges(*i,*i);
+  }
+  return c;
+}
+
 template<class G, class P>
 P reduce(G &graph) {
-  P r = Y(0);
+  P r = Y(reduce_loops(graph));
 
   // I make the following things static
   // in an effort to improve performance.
