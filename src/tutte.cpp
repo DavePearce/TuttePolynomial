@@ -302,6 +302,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
 
     P p1;
     G g2(graph.extract_component(1));
+    cout << "COMPONENT(0): " << graph_str(graph) << endl;
     cout << "COMPONENT(1): " << graph_str(g2) << endl;
 
     deleteContract(graph, poly, left_id);
