@@ -51,9 +51,10 @@ P reduce_cycle(line_t const &line, G &graph) {
 }
 
 template<class G>
-line_t trace_line(unsigned int v, G const &graph) {  
+line_t trace_line(unsigned int v, unsigned int u, G const &graph) {  
   // This is a crude, O(v) time algorithm for tracing out a line in the graph.
   line_t line;
+  if(graph.num_edges(v) != 2) { v = u; }
   unsigned int start=v; // needed to protect against cycles
 
   // First, find one end of the line  
@@ -88,7 +89,6 @@ line_t trace_line(unsigned int v, G const &graph) {
   return line;
 }
 
-
 template<class G>
 unsigned int reduce_loops(G &graph) {   
   unsigned int c=0U;    
@@ -118,7 +118,7 @@ P reduce(G &graph) {
     if(!visited[*i] && graph.num_underlying_edges(*i) == 2) {
       // mark all members as visited, to avoid revisiting
       // them in a potentially quadratic fashion.
-      line_t line = trace_line(*i,graph);      
+      line_t line = trace_line(*i,*i,graph);      
       for(line_t::iterator j(line.begin());j!=line.end();++j) {
 	visited[j->second]=true;
       }
@@ -157,7 +157,7 @@ P reduce(G &graph) {
     
     // now, check whether w has become a cycle or pendant
     if(!visited[w] && graph.num_underlying_edges(w) == 2) {
-      line_t line = trace_line(w,graph);      
+      line_t line = trace_line(w,w,graph);      
       visited[w]=true;
       // check if this is a cycle ...
       if(line[0].first == line[line.size()-1].second) {      
@@ -172,6 +172,44 @@ P reduce(G &graph) {
 
   return r;
 }
+
+/* Given a line x_1--y_1(k_1), ..., x_n--y_n(k_n), this method
+ * computes the product:
+ *
+ *  (X^P + Y^1 + ... Y^{k_1-1}) * (X^2 + Y^1 + ... Y^{k_2-1}) ...
+ */
+template<class G, class P>
+P line_product(unsigned int p, std::vector<typename G::edge_t> const &line) {
+  P r(Y(0));
+  for(unsigned int k=0;k<line.size();++k) {
+    P tmp = X(p);
+    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
+    r *= tmp;
+  }
+  return r;
+}
+
+/* This computes a very strange product for the line ...
+ * 
+ */
+template<class G, class P>
+P funny_product(std::vector<typename G::edge_t> const &line) {
+  // this one is just a bit on the wierd side
+  P xs(X(0));
+  P acc(X(0));
+  
+  for(unsigned int k=0;k<line.size()-1;++k) {
+    P tmp(X(1));
+    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
+    if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
+    acc *= tmp;
+    xs += acc;
+  }     
+
+  return xs;
+}
+
+
 
 
 #endif

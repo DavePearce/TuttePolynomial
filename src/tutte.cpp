@@ -65,8 +65,6 @@ typedef enum { V_RANDOM, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DE
 unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
-unsigned long hit_count = 0;
-unsigned long hit_size = 0;
 unsigned int small_graph_threshold = 5;
 edgesel_t edge_selection_heuristic = MINIMISE_DEGREE;
 simple_cache cache(1024*1024,100);
@@ -183,7 +181,7 @@ void write_tree_end(unsigned int tid) {
  */
 
 template<class G>
-typename G::edge_t select_nontree_edge(G graph) {
+typename G::edge_t select_edge(G graph) {
   // assumes this graph is NOT a tree 
   unsigned int best(0);
   unsigned int V(graph.num_vertices());
@@ -244,39 +242,6 @@ typename G::edge_t select_nontree_edge(G graph) {
   return r;
 } 
 
-/*
- * Misc helpers
- */
-
-template<class G, class P>
-P y_product(unsigned int p, vector<typename G::edge_t> const &line) {
-  P r(Y(0));
-  for(unsigned int k=0;k<line.size();++k) {
-    P tmp = X(p);
-    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
-    r *= tmp;
-  }
-  return r;
-}
-
-
-template<class G, class P>
-P funny_product(vector<typename G::edge_t> const &line) {
-  // this one is just a bit on the wierd side
-  P xs(X(0));
-  P acc(X(0));
-  
-  for(unsigned int k=0;k<line.size()-1;++k) {
-    P tmp(X(1));
-    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
-    if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
-    acc *= tmp;
-    xs += acc;
-  }     
-
-  return xs;
-}
-
 /* deleteContract is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
  * for one, and a contract operation for the other.
@@ -312,8 +277,6 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     unsigned int match_id;
     if(cache.lookup(key,poly,match_id)) { 
       if(write_tree) { write_tree_match(my_id,match_id,graph,cout); }
-      hit_count++;
-      hit_size += graph.num_vertices();
       poly *= reduction_factor;
       delete [] key; // free space used by key
       return; 
@@ -328,7 +291,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     
   // === 4. PERFORM DELETE / CONTRACT ===
 
-  typename G::edge_t e = select_nontree_edge(graph);
+  typename G::edge_t e = select_edge(graph);
 
   // check if edge is part of a line
   if(remove_lines && 
@@ -336,16 +299,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       graph.num_underlying_edges(e.second) == 2)) {
     // Selected edge is part of a line, so apply
     // the Line Theorem ...
-    vector<triple<unsigned int, unsigned int, unsigned int> > line;
-
-    if(graph.num_underlying_edges(e.first) == 2) {
-      line = trace_line<G>(e.first,graph);
-    } else {
-      line = trace_line<G>(e.second,graph);
-    }        
-
-    // if line is actually a cycle, then force a real line
-    if(line[0].first == line[line.size()-1].second) { line.pop_back(); }
+    line_t line = trace_line<G>(e.first,e.second,graph);
 
     // now, remove all internal vertices
     graph.remove_line(line);
@@ -358,7 +312,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       deleteContract(g2, p1, right_id);    
       
       poly *= p1;
-      poly *= y_product<G,P>(1,line);
+      poly *= line_product<G,P>(1,line);
     } else {
       // now, we contract on the line's endpoints
       G g2(graph); 
@@ -370,7 +324,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       deleteContract(g2, poly, right_id);
       
       p2 *= funny_product<G,P>(line);
-      poly *= y_product<G,P>(0,line);
+      poly *= line_product<G,P>(0,line);
       poly += p2;	      
     }
   } else {
@@ -399,7 +353,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       deleteContract(graph, poly, left_id);
       deleteContract(g2,p2, right_id);
       
-      if(e.third > 1) { p2 *= Y(0,e.third-1); }
+      p2 *= Y(0,e.third-1);
       poly += p2;
     }
   }
@@ -700,7 +654,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 
     if(quiet_mode) {
       cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();    
-      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << ((float)hit_size)/hit_count;
+      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps;
       cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
     } else {
       cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
@@ -715,7 +669,6 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       cout << endl;
       cout << "Cache stats:" << endl << "------------" << endl;
       cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
-      cout << "Avg Hit Size: " << ((float)hit_size)/hit_count << " vertices." << endl;
       cout << "# Entries: " << cache.num_entries() << endl;
       cout << "# Cache Hits: " << cache.num_hits() << endl;
       cout << "# Cache Misses: " << cache.num_misses() << endl;
