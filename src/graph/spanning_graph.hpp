@@ -57,12 +57,10 @@ public:
     graph.add_edge(from,to,count); 
   }
 
-  bool remove_all_edges(int from, int to) {     
-    if(graph.remove_all_edges(from,to)) {
-      if(from != to) { find_components(); }
-      return true;
-    }
-    return false;
+  unsigned int remove_all_edges(int from, int to) {     
+    unsigned int r = graph.remove_all_edges(from,to);
+    if(r > 0 && from != to) { find_components(); }
+    return r;
   }
 
   bool remove_line(std::vector<edge_t> const &line) {

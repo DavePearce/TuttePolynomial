@@ -337,16 +337,16 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     // Selected edge is part of a line, so apply
     // the Line Theorem ...
     vector<triple<unsigned int, unsigned int, unsigned int> > line;
-    
+
     if(graph.num_underlying_edges(e.first) == 2) {
       line = trace_line<G>(e.first,graph);
     } else {
       line = trace_line<G>(e.second,graph);
-    }
-    
+    }        
+
     // if line is actually a cycle, then force a real line
     if(line[0].first == line[line.size()-1].second) { line.pop_back(); }
-    
+
     // now, remove all internal vertices
     graph.remove_line(line);
 
@@ -354,8 +354,6 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       P p1; 
       G g2(graph.extract_component(1));
 
-      cout << "DISCONNECTING!" << endl;
-      
       deleteContract(graph, poly, left_id);
       deleteContract(g2, p1, right_id);    
       
@@ -365,17 +363,14 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       // now, we contract on the line's endpoints
       G g2(graph); 
       g2.contract_edge(line[0].first,line[line.size()-1].second); 
-      
       // recursively compute the polynomial   
       P p2;
       
-      deleteContract(graph, poly, left_id);
-      deleteContract(g2, p2, right_id);
+      deleteContract(graph, p2, left_id);
+      deleteContract(g2, poly, right_id);
       
-      // now, build and apply the x factors
-      
-      poly *= funny_product<G,P>(line);
-      p2 *= y_product<G,P>(0,line);
+      p2 *= funny_product<G,P>(line);
+      poly *= y_product<G,P>(0,line);
       poly += p2;	      
     }
   } else {
