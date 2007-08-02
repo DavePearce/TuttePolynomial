@@ -249,13 +249,16 @@ typename G::edge_t select_nontree_edge(G graph) {
  */
 
 template<class G, class P>
-P y_product(vector<typename G::edge_t> const &line) {
+P y_product(unsigned int p, vector<typename G::edge_t> const &line) {
   P r(Y(0));
   for(unsigned int k=0;k<line.size();++k) {
-    if(line[k].third > 1) { r *= Y(0,line[k].third-1); }
+    P tmp = X(p);
+    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
+    r *= tmp;
   }
   return r;
 }
+
 
 template<class G, class P>
 P funny_product(vector<typename G::edge_t> const &line) {
@@ -350,12 +353,14 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     if(graph.num_components() > 1) {
       P p1; 
       G g2(graph.extract_component(1));
+
+      cout << "DISCONNECTING!" << endl;
       
       deleteContract(graph, poly, left_id);
       deleteContract(g2, p1, right_id);    
       
       poly *= p1;
-      poly *= funny_product<G,P>(line);
+      poly *= y_product<G,P>(1,line);
     } else {
       // now, we contract on the line's endpoints
       G g2(graph); 
@@ -364,13 +369,13 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       // recursively compute the polynomial   
       P p2;
       
-      deleteContract(graph, p2, left_id);
-      deleteContract(g2, poly, right_id);
+      deleteContract(graph, poly, left_id);
+      deleteContract(g2, p2, right_id);
       
       // now, build and apply the x factors
       
-      p2 *= funny_product<G,P>(line);
-      poly *= y_product<G,P>(line);
+      poly *= funny_product<G,P>(line);
+      p2 *= y_product<G,P>(0,line);
       poly += p2;	      
     }
   } else {
@@ -387,6 +392,7 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
       P p2(X(1));
       if(e.third > 1) { p2 += Y(1,e.third-1); }
       poly *= p2;
+      poly *= p1;
     } else {
 
       G g2(graph); 

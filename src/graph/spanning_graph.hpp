@@ -69,8 +69,9 @@ public:
     if(line.size() == 1) { return remove_edge(line[0]); }
     // now, remove all internal vertices
     for(unsigned int i=0;i!=line.size()-1;++i) {
-      remove(line[i].second);
+      graph.remove(line[i].second);
     }
+    find_components();
   }
 
   bool remove_edge(int from, int to) {     
