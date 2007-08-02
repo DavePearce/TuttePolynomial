@@ -244,6 +244,36 @@ typename G::edge_t select_nontree_edge(G graph) {
   return r;
 } 
 
+/*
+ * Misc helpers
+ */
+
+template<class G, class P>
+P y_product(vector<typename G::edge_t> const &line) {
+  P r(Y(0));
+  for(unsigned int k=0;k<line.size();++k) {
+    if(line[k].third > 1) { r *= Y(0,line[k].third-1); }
+  }
+  return r;
+}
+
+template<class G, class P>
+P funny_product(vector<typename G::edge_t> const &line) {
+  // this one is just a bit on the wierd side
+  P xs(X(0));
+  P acc(X(0));
+  
+  for(unsigned int k=0;k<line.size()-1;++k) {
+    P tmp(X(1));
+    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
+    if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
+    acc *= tmp;
+    xs += acc;
+  }     
+
+  return xs;
+}
+
 /* deleteContract is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
  * for one, and a contract operation for the other.
@@ -293,31 +323,10 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
   tree_id = tree_id + 2; // allocate id's now so I know them!
   if(write_tree) { write_tree_nonleaf(my_id,left_id,right_id,graph,cout); }
     
-  // === 4. CHECK FOR (DIS)CONNECTEDNESS === 
-
-  if(graph.num_components() > 1) {
-    if(graph.num_components() > 2) { throw std::runtime_error("Two many components"); }    
-
-    cout << "DISCONNECTED GRAPH: " << graph_str(graph) << endl;
-
-    P p1;
-    G g2(graph.extract_component(1));
-    cout << "COMPONENT(0): " << graph_str(graph) << endl;
-    cout << "COMPONENT(1): " << graph_str(g2) << endl;
-
-    deleteContract(graph, poly, left_id);
-    deleteContract(g2, p1, right_id);    
-
-    poly *= p1;
-    poly *= reduction_factor;
-
-    return;
-  }
-
-  // === 5. PERFORM DELETE / CONTRACT ===
+  // === 4. PERFORM DELETE / CONTRACT ===
 
   typename G::edge_t e = select_nontree_edge(graph);
-  cout << "SELECTING: " << e.first << "--" << e.second << endl;  
+
   // check if edge is part of a line
   if(remove_lines && 
      (graph.num_underlying_edges(e.first) == 2 ||
@@ -336,51 +345,63 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     if(line[0].first == line[line.size()-1].second) { line.pop_back(); }
     
     // now, remove all internal vertices
-    for(unsigned int i=0;i!=line.size()-1;++i) {
-      graph.remove(line[i].second);
+    graph.remove_line(line);
+
+    if(graph.num_components() > 1) {
+      P p1; 
+      G g2(graph.extract_component(1));
+      
+      deleteContract(graph, poly, left_id);
+      deleteContract(g2, p1, right_id);    
+      
+      poly *= p1;
+      poly *= funny_product<G,P>(line);
+    } else {
+      // now, we contract on the line's endpoints
+      G g2(graph); 
+      g2.contract_edge(line[0].first,line[line.size()-1].second); 
+      
+      // recursively compute the polynomial   
+      P p2;
+      
+      deleteContract(graph, p2, left_id);
+      deleteContract(g2, poly, right_id);
+      
+      // now, build and apply the x factors
+      
+      p2 *= funny_product<G,P>(line);
+      poly *= y_product<G,P>(line);
+      poly += p2;	      
     }
-    // now, we contract on the line's endpoints
-    G g2(graph); 
-    g2.contract_edge(line[0].first,line[line.size()-1].second); 
-    
-    // recursively compute the polynomial   
-    P p2;
-    
-    deleteContract(graph, p2, left_id);
-    deleteContract(g2, poly, right_id);
-    
-    // now, build and apply the x factors
-    P xs(X(0));
-    P acc(X(0));
-    
-    for(unsigned int k=0;k<line.size()-1;++k) {
-      P tmp(X(1));
-      if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
-      if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
-      acc *= tmp;
-      xs += acc;
-    }      
-    p2 *= xs;
-    for(unsigned int k=0;k<line.size();++k) {
-      if(line[k].third > 1) { poly *= Y(0,line[k].third-1); }
-    }
-    poly += p2;	      
   } else {
     // normal delete contract ...
     graph.remove_edge(e.first,e.second,e.third);        
-    G g2(graph); 
-    g2.contract_edge(e.first,e.second); 
-    
-    // Fourth, recursively compute the polynomial   
-    P p2;
-    
-    deleteContract(graph, poly, left_id);
-    deleteContract(g2,p2, right_id);
-    
-    if(e.third > 1) { p2 *= Y(0,e.third-1); }
-    poly += p2;
+
+    if(graph.num_components() > 1) {
+      P p1; 
+      G g2(graph.extract_component(1));
+      
+      deleteContract(graph, poly, left_id);
+      deleteContract(g2, p1, right_id);    
+      
+      P p2(X(1));
+      if(e.third > 1) { p2 += Y(1,e.third-1); }
+      poly *= p2;
+    } else {
+
+      G g2(graph); 
+      g2.contract_edge(e.first,e.second); 
+      
+      // Fourth, recursively compute the polynomial   
+      P p2;
+      
+      deleteContract(graph, poly, left_id);
+      deleteContract(g2,p2, right_id);
+      
+      if(e.third > 1) { p2 *= Y(0,e.third-1); }
+      poly += p2;
+    }
   }
-  
   // Finally, save computed polynomial
   if(key != NULL) {
     // there is, strictly speaking, a bug with using my_id

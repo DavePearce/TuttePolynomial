@@ -12,7 +12,9 @@ public:
   unsigned short ypowerend;
 
   xy_term(unsigned short x, unsigned short y) : xpower(x), ypower(y), ypowerend(y) {}
-  xy_term(unsigned short x, unsigned short y, unsigned short yend) : xpower(x), ypower(y), ypowerend(yend) {}
+  xy_term(unsigned short x, unsigned short y, unsigned short yend) : xpower(x), ypower(y), ypowerend(yend) {
+    if(yend < y) { ypower = 0; ypowerend = 0; }
+  }
   
   bool operator<(xy_term const &t) const {
     return (xpower < t.xpower) || 

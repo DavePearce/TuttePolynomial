@@ -65,6 +65,14 @@ public:
     return false;
   }
 
+  bool remove_line(std::vector<edge_t> const &line) {
+    if(line.size() == 1) { return remove_edge(line[0]); }
+    // now, remove all internal vertices
+    for(unsigned int i=0;i!=line.size()-1;++i) {
+      remove(line[i].second);
+    }
+  }
+
   bool remove_edge(int from, int to) {     
     return remove_edge(from,to,1);
   }
@@ -72,6 +80,18 @@ public:
   bool remove_edge(int from, int to, int c) {     
     if(graph.remove_edge(from,to,c)) {    
       if(from != to) {
+	// by removing an edge, we may have disconnected the
+	// graph ...
+	find_components();
+      }
+      return true;
+    }
+    return false;
+  }
+
+  bool remove_edge(edge_t const &e) {     
+    if(graph.remove_edge(e.first,e.second,e.third)) {    
+      if(e.first != e.second) {
 	// by removing an edge, we may have disconnected the
 	// graph ...
 	find_components();
