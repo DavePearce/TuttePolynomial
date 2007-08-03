@@ -253,20 +253,20 @@ typename G::edge_t select_edge(G graph) {
  */
 
 template<class G, class P>
-void deleteContract(G &graph, P &poly, unsigned int my_id) { 
+P deleteContract(G &graph, unsigned int my_id) { 
   if(status_flag) { print_status(); }
   num_steps++;
 
   // === 1. APPLY SIMPLIFICATIONS ===
 
+  P poly;
   P reduction_factor = reduce<G,P>(graph);
 
   // === 2. CHECK FOR TERMINATION ===
 
   if(graph.num_edges() == 0) {
     if(write_tree) { write_tree_leaf(my_id, graph, cout); }
-    poly += reduction_factor;
-    return;
+    return reduction_factor;
   } 
 
   // === 3. CHECK IN CACHE ===
@@ -275,11 +275,12 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
   if(graph.num_components() == 1 && graph.num_vertices() >= small_graph_threshold) {      
     key = graph_key(graph); 
     unsigned int match_id;
-    if(cache.lookup(key,poly,match_id)) { 
+    P r;
+    if(cache.lookup(key,r,match_id)) { 
       if(write_tree) { write_tree_match(my_id,match_id,graph,cout); }
-      poly *= reduction_factor;
+      r *= reduction_factor;
       delete [] key; // free space used by key
-      return; 
+      return r;
     }
   }
 
@@ -305,26 +306,23 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     graph.remove_line(line);
 
     if(graph.num_components() > 1) {
-      P p1; 
       G g2(graph.extract_component(1));
-
-      deleteContract(graph, poly, left_id);
-      deleteContract(g2, p1, right_id);    
       
-      poly *= p1;
+      poly = deleteContract<G,P>(graph, left_id);
+      P p2 = deleteContract<G,P>(g2, right_id);    
+      
+      poly *= p2;
       poly *= line_product<G,P>(1,line);
     } else {
       // now, we contract on the line's endpoints
       G g2(graph); 
       g2.contract_edge(line[0].first,line[line.size()-1].second); 
       // recursively compute the polynomial   
-      P p2;
+      poly = deleteContract<G,P>(graph, left_id);
+      P p2 = deleteContract<G,P>(g2, right_id);
       
-      deleteContract(graph, p2, left_id);
-      deleteContract(g2, poly, right_id);
-      
-      p2 *= funny_product<G,P>(line);
-      poly *= line_product<G,P>(0,line);
+      poly *= funny_product<G,P>(line);
+      p2 *= line_product<G,P>(0,line);
       poly += p2;	      
     }
   } else {
@@ -332,26 +330,23 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
     graph.remove_edge(e.first,e.second,e.third);        
 
     if(graph.num_components() > 1) {
-      P p1; 
       G g2(graph.extract_component(1));
       
-      deleteContract(graph, poly, left_id);
-      deleteContract(g2, p1, right_id);    
+      poly = deleteContract<G,P>(graph, left_id);
+      P p2 = deleteContract<G,P>(g2, right_id);    
       
-      P p2(X(1));
-      if(e.third > 1) { p2 += Y(1,e.third-1); }
+      P p3(X(1));
+      if(e.third > 1) { p3 += Y(1,e.third-1); }
+      poly *= p3;
       poly *= p2;
-      poly *= p1;
     } else {
 
       G g2(graph); 
       g2.contract_edge(e.first,e.second); 
       
       // Fourth, recursively compute the polynomial   
-      P p2;
-      
-      deleteContract(graph, poly, left_id);
-      deleteContract(g2,p2, right_id);
+      poly = deleteContract<G,P>(graph, left_id);
+      P p2 = deleteContract<G,P>(g2, right_id);
       
       p2 *= Y(0,e.third-1);
       poly += p2;
@@ -369,6 +364,8 @@ void deleteContract(G &graph, P &poly, unsigned int my_id) {
   // do final multiplication here, since stored graph has pendants
   // and loops removed already.
   poly *= reduction_factor;
+
+  return poly;
 }
 
 // ---------------------------------------------------------------
@@ -644,11 +641,9 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     if(start_graph.num_vertices() == 0) { break; }
 
     my_timer timer;
-    P tuttePoly;
-
     if(write_tree) { write_tree_start(ngraphs_completed); }    
 
-    deleteContract<G,P>(start_graph,tuttePoly,1);        
+    P tuttePoly = deleteContract<G,P>(start_graph,1);        
 
     if(write_tree) { write_tree_end(ngraphs_completed); }
 

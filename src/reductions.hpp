@@ -50,6 +50,8 @@ P reduce_cycle(line_t const &line, G &graph) {
   return xs;
 }
 
+
+// THIS ALGORITHM IS BROKEN!
 template<class G>
 line_t trace_line(unsigned int v, unsigned int u, G const &graph) {  
   // This is a crude, O(v) time algorithm for tracing out a line in the graph.
