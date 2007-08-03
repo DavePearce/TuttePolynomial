@@ -337,8 +337,7 @@ P deleteContract(G &graph, unsigned int my_id) {
       
       P p3(X(1));
       if(e.third > 1) { p3 += Y(1,e.third-1); }
-      poly *= p3;
-      poly *= p2;
+      poly *= p3 * p2;
     } else {
 
       G g2(graph); 
@@ -348,8 +347,7 @@ P deleteContract(G &graph, unsigned int my_id) {
       poly = deleteContract<G,P>(graph, left_id);
       P p2 = deleteContract<G,P>(g2, right_id);
       
-      p2 *= Y(0,e.third-1);
-      poly += p2;
+      poly += p2 * Y(0,e.third-1);
     }
   }
   // Finally, save computed polynomial
@@ -360,12 +358,8 @@ P deleteContract(G &graph, unsigned int my_id) {
     cache.store(key,poly,my_id);
     delete [] key;  // free space used by key
   }    
-  
-  // do final multiplication here, since stored graph has pendants
-  // and loops removed already.
-  poly *= reduction_factor;
 
-  return poly;
+  return poly * reduction_factor;
 }
 
 // ---------------------------------------------------------------

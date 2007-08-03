@@ -441,6 +441,19 @@ public:
     }
   }
 
+  factor_poly<T> operator*(xy_term const &p) const {
+    factor_poly<T> r(*this);
+    r *= p;
+    return r;
+  }
+
+  factor_poly<T> operator*(factor_poly<T> const &p) const {
+    factor_poly<T> r(*this);
+    r *= p;
+    return r;
+  }
+
+
   /* ========================== */
   /* ======== OTHER OPS ======= */
   /* ========================== */
