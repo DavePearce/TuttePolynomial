@@ -771,7 +771,7 @@ int main(int argc, char *argv[]) {
     "        --small                   use 32-bit integers only",
     "        --medium                  use 64-bit integers only",
     "        --large                   use unbound integers (default)",
-    "        --no-lines                don't delete-contract on lines",
+    "        --with-lines              delete-contract on lines, not just edges",
     " \ncache options:",
     " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
