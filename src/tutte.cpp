@@ -313,11 +313,7 @@ P T(G &graph, unsigned int mid) {
 
   // === 1. APPLY SIMPLIFICATIONS ===
 
-  cout << "GRAPH BEFORE: " << graph_str(graph) << endl;
-
   P RF = reduce<G,P>(graph);
-
-  cout << "GRAPH AFTER: " << graph_str(graph) << endl;
 
   // === 2. CHECK FOR TERMINATION ===
 
