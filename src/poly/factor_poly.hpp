@@ -471,7 +471,7 @@ public:
     xterms[p.xpower].insert(n,p);
   }
   
-  std::string str() const {
+  std::string compact_str() const {
     std::string r="";
     bool first_time=true;
     for(unsigned int i=0;i<nxterms;++i) {    
@@ -488,6 +488,37 @@ public:
     }
     return r;
   }
+
+  // This method is such an ugly hack!
+  template<class X>
+  std::string utos(X n) const {
+    std::stringstream ss;
+    ss << n;
+    return ss.str();
+  }
+
+  std::string str() const {
+    std::string r="";
+    bool first_time=true;
+    for(unsigned int i=0;i<nxterms;++i) {    
+      if(!xterms[i].is_empty()) {
+	std::string xs;
+	if(i > 1) { xs = "*x^" + utos(i); }
+	else if (i == 1) { xs = "*x"; }
+
+	for(unsigned int j=xterms[i].ymin;j!=xterms[i].ymax;++j) {
+	  if(!first_time) { r += " + "; }
+	  first_time=false;    	
+	  std::string ys;
+	  if(j > 1) { ys = "*y^" + utos(j); }
+	  else if(j == 0) { ys = "*y"; }
+	  r += utos(xterms[i][j]) + xs + ys;
+	}
+      }
+    }
+    return r;
+  }
+
 
   biguint substitute(unsigned int x, unsigned int y) const {
     biguint r(0U);

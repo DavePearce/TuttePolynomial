@@ -41,14 +41,29 @@ using namespace std;
 class my_timer {
 private:
   struct timeval _start;
+  bool gtod;
 public:
-  my_timer(void) {
-    gettimeofday(&_start,NULL);
+  my_timer(bool _gtod = true) : gtod(_gtod) {
+    if(gtod) {
+      gettimeofday(&_start,NULL);
+    } else {
+      struct rusage ru;
+      getrusage(RUSAGE_SELF,&ru);
+      _start = ru.ru_utime; // measure time spent in user space
+    }
   }
 
   double elapsed(void) {
     struct timeval tmp;
-    gettimeofday(&tmp,NULL); 
+
+    if(gtod) {
+      gettimeofday(&tmp,NULL);
+    } else {
+      struct rusage ru;
+      getrusage(RUSAGE_SELF,&ru);
+      tmp = ru.ru_utime; 
+    }
+
     double end = tmp.tv_sec + (tmp.tv_usec / 1000000.0);
     double start = _start.tv_sec + (_start.tv_usec / 1000000.0);    
     return end - start;
@@ -73,7 +88,7 @@ static bool xml_flag=false;
 static unsigned int tree_id = 2;
 static bool write_tree=false;
 static bool write_full_tree=false;
-static bool remove_lines=true;
+static bool remove_lines=false;
 
 void print_status();
 
@@ -241,10 +256,8 @@ typename G::edge_t select_edge(G const &graph) {
     }
   }
   
-  if(best == 0) { 
-    std::cout << "GOT: " << graph_str(graph) << endl;
-    throw new std::runtime_error("internal failure"); 
-  }
+  if(best == 0) { throw new std::runtime_error("internal failure"); }
+
   return r;
 } 
 
@@ -628,7 +641,7 @@ void print_status() {
 // ---------------------------------------------------------------
 
 template<class G, class P>
-void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean quiet_mode) {
+void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean quiet_mode, boolean info_mode) {
   unsigned int ngraphs_completed=0;
   while(!input.eof() && ngraphs_completed < ngraphs) {
     // first, reset all stats information
@@ -644,7 +657,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     unsigned int nedges(start_graph.num_edges());
     if(start_graph.num_vertices() == 0) { break; }
 
-    my_timer timer;
+    my_timer timer(false);
     if(write_tree) { write_tree_start(ngraphs_completed); }    
 
     P tuttePoly = T<G,P>(start_graph,1);        
@@ -652,45 +665,22 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     if(write_tree) { write_tree_end(ngraphs_completed); }
 
     if(quiet_mode) {
-      cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();    
-      cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps;
-      cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
+      if(info_mode) {
+	cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();    
+	cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps;
+	cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
+      }
     } else {
-      cout << "VERTICES = " << start_graph.num_vertices() << ", EDGES = " << start_graph.num_edges() << endl << endl;
-      cout << "Tutte Polynomial: " << tuttePoly.str() << endl << endl;
-      
-      cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
-      cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),nedges) << ")" << endl;
-      
-      cout << "==================" << endl;
-      cout << "Size of Computation Tree: " << num_steps << " graphs." << endl;
-      cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
-      cout << endl;
-      cout << "Cache stats:" << endl << "------------" << endl;
-      cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
-      cout << "# Entries: " << cache.num_entries() << endl;
-      cout << "# Cache Hits: " << cache.num_hits() << endl;
-      cout << "# Cache Misses: " << cache.num_misses() << endl;
-      cout << "# Cache Collisions: " << cache.num_collisions() << endl;
-      cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
-      cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
+      cout << tuttePoly.str() << endl;
+      if(info_mode) {
+	cout << "=======" << endl << "Size of Computation Tree: " << num_steps << " graphs." << endl;
+	cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
+	cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
+	cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),nedges) << ")" << endl;	
+      }
     }
     ++ngraphs_completed;
   }
-}
-
-// ---------------------------------------------------------------
-// Misc helper Methods
-// ---------------------------------------------------------------
-
-// The purpose of this function is to figure out a good size for the
-// cache.  Ideally, i'd like 80% of physical memory.  However, it
-// seems to be a seriously non-trivial challenge to determine the
-// amount of physical memory in UNIX.
-long calc_default_cache_size() {
-  struct rlimit r;
-  getrlimit(RLIMIT_DATA,&r);    
-  return (r.rlim_cur / 10) * 8;
 }
 
 // ---------------------------------------------------------------
@@ -705,6 +695,7 @@ int main(int argc, char *argv[]) {
 
   #define OPT_HELP 0
   #define OPT_QUIET 1  
+  #define OPT_INFO 2
   #define OPT_SMALLGRAPHS 5
   #define OPT_NGRAPHS 6
   #define OPT_CACHESIZE 10
@@ -712,7 +703,6 @@ int main(int argc, char *argv[]) {
   #define OPT_CACHEREPLACEMENT 12
   #define OPT_CACHERANDOM 13
   #define OPT_CACHESTATS 14
-  #define OPT_NAUTYWORKSPACE 20
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
   #define OPT_XML_OUT 32
@@ -721,7 +711,7 @@ int main(int argc, char *argv[]) {
   #define OPT_SMALL 40
   #define OPT_MEDIUM 41
   #define OPT_LARGE 42
-  #define OPT_NOLINES 43
+  #define OPT_WITHLINES 43
   #define OPT_MAXDEGREE 50
   #define OPT_MAXMDEGREE 51
   #define OPT_MINDEGREE 52
@@ -737,11 +727,13 @@ int main(int argc, char *argv[]) {
   
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
+    {"info",no_argument,NULL,OPT_INFO},
+    {"quiet",no_argument,NULL,OPT_QUIET},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
-    {"cache-random-replacement",no_argument,NULL,OPT_CACHERANDOM},    
-    {"cache-stats",required_argument,NULL,OPT_CACHESTATS},
+    {"cache-random-replacement",no_argument,NULL,OPT_CACHERANDOM}, 
+    {"cache-stats",optional_argument,NULL,OPT_CACHESTATS},   
     {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
     {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
     {"minimise-sdegree", no_argument,NULL,OPT_MINSDEGREE},
@@ -754,30 +746,28 @@ int main(int argc, char *argv[]) {
     {"minudeg-ordering",no_argument,NULL,OPT_MINUDEG_ORDERING},
     {"maxudeg-ordering",no_argument,NULL,OPT_MAXUDEG_ORDERING},
     {"random", no_argument,NULL,OPT_RANDOM},
-    {"nauty-workspace",required_argument,NULL,OPT_NAUTYWORKSPACE},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
     {"simple-poly",no_argument,NULL,OPT_SIMPLE_POLY},
     {"tree",no_argument,NULL,OPT_TREE_OUT},
     {"full-tree",no_argument,NULL,OPT_FULLTREE_OUT},
     {"xml-tree",no_argument,NULL,OPT_XML_OUT},
     {"ngraphs",required_argument,NULL,OPT_NGRAPHS},
-    {"quiet",no_argument,NULL,OPT_QUIET},
     {"small",no_argument,NULL,OPT_SMALL},
     {"medium",no_argument,NULL,OPT_MEDIUM},
     {"large",no_argument,NULL,OPT_LARGE},
-    {"no-lines",no_argument,NULL,OPT_NOLINES},
+    {"with-lines",no_argument,NULL,OPT_WITHLINES},
     NULL
   };
   
   char *descriptions[]={
     "        --help                    display this information",
-    " -q     --quiet                   output stats summary as single line only (useful for generating data)",
-    "        --nauty-workspace=<amount> set size of nauty workspace, e.g. 10000",
+    " -i     --info                    output summary information regarding computation",
+    " -q     --quiet                   output info summary as single line only (useful for generating data)",
     "        --small-graphs=size       set threshold for small graphs, e.g. 7",
     "        --ngraphs=n               number of graphs to process from input file",
     "        --tree                    output computation tree",
     "        --full-tree               output full computation tree",
-    "        --xml-tree                    output computation tree as XML",
+    "        --xml-tree                output computation tree as XML",
     "        --small                   use 32-bit integers only",
     "        --medium                  use 64-bit integers only",
     "        --large                   use unbound integers (default)",
@@ -786,7 +776,7 @@ int main(int argc, char *argv[]) {
     " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     "        --cache-replacement=<amount> set ratio (between 0 .. 1) of cache to displace when full",
-    "        --cache-stats=<file>      write cache stats to file.  (doesn't make sense with --ngraphs>1)",
+    "        --cache-stats[=<file>]    print cache stats summary, or write detailed stats to file.",
     " \nedge selection heuristics:",
     "        --minimise-degree         minimise endpoint (underlying) degree sum",
     "        --minimise-sdegree        minimise single endpoint (underlying) degree",
@@ -804,16 +794,18 @@ int main(int argc, char *argv[]) {
   };
 
   unsigned int v;
-  unsigned int cache_size(calc_default_cache_size()); 
+  unsigned int cache_size(256 * 1024 * 1024); 
   unsigned int cache_buckets(1000000);     // default 1M buckets
   unsigned int poly_rep(OPT_FACTOR_POLY);
   unsigned int ngraphs(1);
   unsigned int size = OPT_LARGE;
   bool quiet_mode=false;
-  vorder_t vertex_ordering(V_NONE);
+  bool info_mode=false;
+  bool cache_stats=false;
+  vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
   string cache_stats_file("");
 
-  while((v=getopt_long(argc,argv,"qc:",long_options,NULL)) != -1) {
+  while((v=getopt_long(argc,argv,"qic:",long_options,NULL)) != -1) {
     switch(v) {      
     case OPT_HELP:
       cout << "usage: " << argv[0] << " [options] <input graph file>" << endl;
@@ -833,6 +825,10 @@ int main(int argc, char *argv[]) {
     case OPT_XML_OUT:
       write_tree=true;
       xml_flag=true;
+      break;
+    case 'i':
+    case OPT_INFO:
+      info_mode=true;
       break;
     case OPT_FULLTREE_OUT:
       write_tree=true;
@@ -856,7 +852,11 @@ int main(int argc, char *argv[]) {
       cache.set_random_replacement();
       break;
     case OPT_CACHESTATS:
-      cache_stats_file = string(optarg);
+      if(optarg == NULL) {
+	cache_stats=true;
+      } else {
+	cache_stats_file = string(optarg);
+      }
       break;
     // --- POLY OPTIONS ---
     case OPT_SIMPLE_POLY:
@@ -900,9 +900,6 @@ int main(int argc, char *argv[]) {
       vertex_ordering = V_MAXIMISE_UNDERLYING_DEGREE;
       break;
     // --- OTHER OPTIONS ---
-    case OPT_NAUTYWORKSPACE:
-      resize_nauty_workspace(parse_amount(optarg));
-      break;
     case OPT_SMALLGRAPHS:
       small_graph_threshold = parse_amount(optarg);      
       break;      
@@ -911,8 +908,8 @@ int main(int argc, char *argv[]) {
     case OPT_LARGE:
       size=v;
       break;
-    case OPT_NOLINES:
-      remove_lines=false;
+    case OPT_WITHLINES:
+      remove_lines=true;
       break;
     default:
       cout << "Unrecognised parameter!" << endl;
@@ -934,9 +931,7 @@ int main(int argc, char *argv[]) {
   // -------------------------------------------------
   // Initialise Cache 
   // -------------------------------------------------
-  if(!quiet_mode) {
-    cout << "Using " << cache_size/(1024*1024) << "M of cache." << endl;
-  }
+
   cache.resize(cache_size);
   cache.rebucket(cache_buckets);
 
@@ -962,15 +957,26 @@ int main(int argc, char *argv[]) {
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
       if(size == OPT_SMALL) {
-	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,quiet_mode);
+	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,quiet_mode,info_mode);
       } else if(size == OPT_MEDIUM) {       
-	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,quiet_mode);
+	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,quiet_mode,info_mode);
       } else {
-	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,quiet_mode);
+	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,quiet_mode,info_mode);
       }
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering,quiet_mode);
     }    
+
+    if(cache_stats) {
+      cout << endl << "Cache stats:" << endl << "------------" << endl;
+      cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
+      cout << "# Entries: " << cache.num_entries() << endl;
+      cout << "# Cache Hits: " << cache.num_hits() << endl;
+      cout << "# Cache Misses: " << cache.num_misses() << endl;
+      cout << "# Cache Collisions: " << cache.num_collisions() << endl;
+      cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
+      cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
+    }
 
     if(cache_stats_file != "") {
       fstream stats_out(cache_stats_file.c_str(),fstream::out);
