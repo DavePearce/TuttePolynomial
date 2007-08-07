@@ -175,43 +175,4 @@ P reduce(G &graph) {
   return r;
 }
 
-/* Given a line x_1--y_1(k_1), ..., x_n--y_n(k_n), this method
- * computes the product:
- *
- *  (X^P + Y^1 + ... Y^{k_1-1}) * (X^2 + Y^1 + ... Y^{k_2-1}) ...
- */
-template<class G, class P>
-P line_product(unsigned int p, std::vector<typename G::edge_t> const &line) {
-  P r(Y(0));
-  for(unsigned int k=0;k<line.size();++k) {
-    P tmp = X(p);
-    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
-    r *= tmp;
-  }
-  return r;
-}
-
-/* This computes a very strange product for the line ...
- * 
- */
-template<class G, class P>
-P funny_product(std::vector<typename G::edge_t> const &line) {
-  // this one is just a bit on the wierd side
-  P xs(X(0));
-  P acc(X(0));
-  
-  for(unsigned int k=0;k<line.size()-1;++k) {
-    P tmp(X(1));
-    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
-    if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
-    acc *= tmp;
-    xs += acc;
-  }     
-
-  return xs;
-}
-
-
-
-
 #endif

@@ -66,7 +66,7 @@ unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
-edgesel_t edge_selection_heuristic = MINIMISE_DEGREE;
+edgesel_t edge_selection_heuristic = MINIMISE_SDEGREE;
 simple_cache cache(1024*1024,100);
 static bool status_flag=false;
 static bool xml_flag=false;
@@ -255,6 +255,42 @@ line_t select_line(G const &graph) {
   }
 }
 
+/* Given a line x_1--y_1(k_1), ..., x_n--y_n(k_n), this method
+ * computes a very strange product for the line ...
+ */
+template<class G, class P>
+P FP(std::vector<typename G::edge_t> const &line) {
+  // this one is just a bit on the wierd side
+  P xs(X(0));
+  P acc(X(0));
+  
+  for(unsigned int k=0;k<line.size()-1;++k) {
+    P tmp(X(1));
+    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
+    if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
+    acc *= tmp;
+    xs += acc;
+  }     
+
+  return xs;
+}
+
+/* Given a line x_1--y_1(k_1), ..., x_n--y_n(k_n), this method
+ * computes the Line Product:
+ *
+ *  (X^p + Y^1 + ... Y^{k_1-1}) * (X^2 + Y^1 + ... Y^{k_2-1}) ...
+ */
+template<class G, class P>
+P LP(unsigned int p, std::vector<typename G::edge_t> const &line) {
+  P r(Y(0));
+  for(unsigned int k=0;k<line.size();++k) {
+    P tmp = X(p);
+    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
+    r *= tmp;
+  }
+  return r;
+}
+
 /* This is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
  * for one, and a contract operation for the other.
@@ -272,14 +308,13 @@ P T(G &graph, unsigned int mid) {
 
   // === 1. APPLY SIMPLIFICATIONS ===
 
-  P poly;
-  P reduction_factor = reduce<G,P>(graph);
+  P RF = reduce<G,P>(graph);
 
   // === 2. CHECK FOR TERMINATION ===
 
   if(graph.num_edges() == 0) {
     if(write_tree) { write_tree_leaf(mid, graph, cout); }
-    return reduction_factor;
+    return RF;
   } 
 
   // === 3. CHECK IN CACHE ===
@@ -291,9 +326,8 @@ P T(G &graph, unsigned int mid) {
     P r;
     if(cache.lookup(key,r,match_id)) { 
       if(write_tree) { write_tree_match(mid,match_id,graph,cout); }
-      r *= reduction_factor;
       delete [] key; // free space used by key
-      return r;
+      return r * RF;
     }
   }
 
@@ -305,20 +339,20 @@ P T(G &graph, unsigned int mid) {
     
   // === 4. PERFORM DELETE / CONTRACT ===
 
+  P poly;
   line_t line = select_line(graph);
-
   graph.remove_line(line);
 
   if(graph.num_components() > 1) {
-    G g2(graph.extract_component(1));      
-    poly = T<G,P>(graph, lid) * T<G,P>(g2, rid) * line_product<G,P>(1,line);
+    // graph has become disconnected
+    G g2(graph.extract_component(1));
+    poly = T<G,P>(graph, lid) * T<G,P>(g2, rid) * LP<G,P>(1,line);
   } else {
     // now, we contract on the line's endpoints
     G g2(graph); 
     g2.contract_edge(line[0].first,line[line.size()-1].second); 
     // recursively compute the polynomial   
-    poly = T<G,P>(graph, lid) * funny_product<G,P>(line);
-    poly += T<G,P>(g2, rid) * line_product<G,P>(0,line);
+    poly = (T<G,P>(graph, lid) * FP<G,P>(line)) + (T<G,P>(g2, rid) * LP<G,P>(0,line));
   }
 
   // Finally, save computed polynomial
@@ -330,7 +364,7 @@ P T(G &graph, unsigned int mid) {
     delete [] key;  // free space used by key
   }    
 
-  return poly * reduction_factor;
+  return poly * RF;
 }
 
 // ---------------------------------------------------------------
