@@ -181,7 +181,7 @@ void write_tree_end(unsigned int tid) {
  */
 
 template<class G>
-typename G::edge_t select_edge(G graph) {
+typename G::edge_t select_edge(G const &graph) {
   // assumes this graph is NOT a tree 
   unsigned int best(0);
   unsigned int V(graph.num_vertices());
@@ -221,7 +221,7 @@ typename G::edge_t select_edge(G graph) {
 	  case MINIMISE_MDEGREE:
 	    cost = V*V - ((graph.num_underlying_edges(head) * graph.num_underlying_edges(tail)));
 	    break;
-	  case VERTEX_ORDER:
+	  case VERTEX_ORDER:	    
 	    return typename G::edge_t(head,tail,count);
 	    break;
 	  case RANDOM:
@@ -238,11 +238,24 @@ typename G::edge_t select_edge(G graph) {
       }
     }
   }
+
   if(best == 0) { throw new std::runtime_error("internal failure"); }
   return r;
 } 
 
-/* deleteContract is the core algorithm for the tutte computation
+template<class G>
+line_t select_line(G const &graph) {
+  typename G::edge_t e = select_edge(graph);
+  if(remove_lines) { 
+    return trace_line<G>(e.first,e.second,graph); 
+  } else {
+    line_t line;
+    line.push_back(e);
+    return line;
+  }
+}
+
+/* This is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
  * for one, and a contract operation for the other.
  *
@@ -253,7 +266,7 @@ typename G::edge_t select_edge(G graph) {
  */
 
 template<class G, class P>
-P deleteContract(G &graph, unsigned int my_id) { 
+P T(G &graph, unsigned int mid) { 
   if(status_flag) { print_status(); }
   num_steps++;
 
@@ -265,7 +278,7 @@ P deleteContract(G &graph, unsigned int my_id) {
   // === 2. CHECK FOR TERMINATION ===
 
   if(graph.num_edges() == 0) {
-    if(write_tree) { write_tree_leaf(my_id, graph, cout); }
+    if(write_tree) { write_tree_leaf(mid, graph, cout); }
     return reduction_factor;
   } 
 
@@ -277,7 +290,7 @@ P deleteContract(G &graph, unsigned int my_id) {
     unsigned int match_id;
     P r;
     if(cache.lookup(key,r,match_id)) { 
-      if(write_tree) { write_tree_match(my_id,match_id,graph,cout); }
+      if(write_tree) { write_tree_match(mid,match_id,graph,cout); }
       r *= reduction_factor;
       delete [] key; // free space used by key
       return r;
@@ -285,77 +298,35 @@ P deleteContract(G &graph, unsigned int my_id) {
   }
 
   // TREE OUTPUT STUFF
-  unsigned int left_id = tree_id;
-  unsigned int right_id = tree_id+1;
+  unsigned int lid = tree_id;
+  unsigned int rid = tree_id+1;
   tree_id = tree_id + 2; // allocate id's now so I know them!
-  if(write_tree) { write_tree_nonleaf(my_id,left_id,right_id,graph,cout); }
+  if(write_tree) { write_tree_nonleaf(mid,lid,rid,graph,cout); }
     
   // === 4. PERFORM DELETE / CONTRACT ===
 
-  typename G::edge_t e = select_edge(graph);
+  line_t line = select_line(graph);
 
-  // check if edge is part of a line
-  if(remove_lines && 
-     (graph.num_underlying_edges(e.first) == 2 ||
-      graph.num_underlying_edges(e.second) == 2)) {
-    // Selected edge is part of a line, so apply
-    // the Line Theorem ...
-    line_t line = trace_line<G>(e.first,e.second,graph);
+  graph.remove_line(line);
 
-    // now, remove all internal vertices
-    graph.remove_line(line);
-
-    if(graph.num_components() > 1) {
-      G g2(graph.extract_component(1));
-      
-      poly = deleteContract<G,P>(graph, left_id);
-      P p2 = deleteContract<G,P>(g2, right_id);    
-      
-      poly *= p2;
-      poly *= line_product<G,P>(1,line);
-    } else {
-      // now, we contract on the line's endpoints
-      G g2(graph); 
-      g2.contract_edge(line[0].first,line[line.size()-1].second); 
-      // recursively compute the polynomial   
-      poly = deleteContract<G,P>(graph, left_id);
-      P p2 = deleteContract<G,P>(g2, right_id);
-      
-      poly *= funny_product<G,P>(line);
-      p2 *= line_product<G,P>(0,line);
-      poly += p2;	      
-    }
+  if(graph.num_components() > 1) {
+    G g2(graph.extract_component(1));      
+    poly = T<G,P>(graph, lid) * T<G,P>(g2, rid) * line_product<G,P>(1,line);
   } else {
-    // normal delete contract ...
-    graph.remove_edge(e.first,e.second,e.third);        
-
-    if(graph.num_components() > 1) {
-      G g2(graph.extract_component(1));
-      
-      poly = deleteContract<G,P>(graph, left_id);
-      P p2 = deleteContract<G,P>(g2, right_id);    
-      
-      P p3(X(1));
-      if(e.third > 1) { p3 += Y(1,e.third-1); }
-      poly *= p3 * p2;
-    } else {
-
-      G g2(graph); 
-      g2.contract_edge(e.first,e.second); 
-      
-      // Fourth, recursively compute the polynomial   
-      poly = deleteContract<G,P>(graph, left_id);
-      P p2 = deleteContract<G,P>(g2, right_id);
-      
-      poly += p2 * Y(0,e.third-1);
-    }
+    // now, we contract on the line's endpoints
+    G g2(graph); 
+    g2.contract_edge(line[0].first,line[line.size()-1].second); 
+    // recursively compute the polynomial   
+    poly = T<G,P>(graph, lid) * funny_product<G,P>(line);
+    poly += T<G,P>(g2, rid) * line_product<G,P>(0,line);
   }
+
   // Finally, save computed polynomial
   if(key != NULL) {
-    // there is, strictly speaking, a bug with using my_id
+    // there is, strictly speaking, a bug with using mid
     // here, since the graph being stored is not the same as that
     // at the beginning.
-    cache.store(key,poly,my_id);
+    cache.store(key,poly,mid);
     delete [] key;  // free space used by key
   }    
 
@@ -637,7 +608,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     my_timer timer;
     if(write_tree) { write_tree_start(ngraphs_completed); }    
 
-    P tuttePoly = deleteContract<G,P>(start_graph,1);        
+    P tuttePoly = T<G,P>(start_graph,1);        
 
     if(write_tree) { write_tree_end(ngraphs_completed); }
 
