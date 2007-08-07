@@ -103,17 +103,22 @@ unsigned int reduce_loops(G &graph) {
 
 template<class G, class P>
 P reduce(G &graph) {
+  // I'm sure this algorithm could be further simplified.
+
   P r = Y(reduce_loops(graph));
 
   // I make the following things static
   // in an effort to improve performance.
   static std::vector<line_t> cycles;
   static std::vector<unsigned int> pendants;
+  static std::vector<unsigned int> count;
   static std::vector<bool> visited;
   // ensure enough space for this graph
   visited.resize(graph.domain_size());
+  count.resize(graph.domain_size());
   // make sure to reset visited flags!
   std::fill(visited.begin(),visited.end(),false);
+  std::fill(count.begin(),count.end(),0);
 
   // now, initialise the worklists
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {    
@@ -128,6 +133,7 @@ P reduce(G &graph) {
       if(line[0].first == line[line.size()-1].second) {      
 	// yes, it is!
 	cycles.push_back(line);
+	count[line[0].first]++;
       }
     } else if(graph.num_underlying_edges(*i) == 1) {
       // this is a pendant edge
@@ -155,15 +161,16 @@ P reduce(G &graph) {
       r *= reduce_cycle<G,P>(cycle,graph);
       w = cycle[0].first;
       cycles.pop_back();
+      count[w]--;
+      // now, check whether w has become a cycle or pendant
     }
     
-    // now, check whether w has become a cycle or pendant
-    if(!visited[w] && graph.num_underlying_edges(w) == 2) {
+    if(count[w] == 0 && graph.num_underlying_edges(w) == 2) {
       line_t line = trace_line(w,w,graph);      
-      visited[w]=true;
       // check if this is a cycle ...
       if(line[0].first == line[line.size()-1].second) {      
 	// yes, it is!
+	count[line[0].first]++;
 	cycles.push_back(line);
       }
     } else if(graph.num_underlying_edges(w) == 1) {

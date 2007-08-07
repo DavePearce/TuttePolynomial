@@ -201,12 +201,11 @@ typename G::edge_t select_edge(G const &graph) {
       // if we're in lines mode, then we ignore "parts" of lines
       for(typename G::edge_iterator j(graph.begin_edges(*i));
 	  j!=graph.end_edges(*i);++j) {	
-	unsigned int head = *i;
 	unsigned int tail = j->first;
 	unsigned int tailc(graph.num_underlying_edges(tail));
 	unsigned int count = j->second;
 	
-	if(head < tail || tailc == 2) { // to avoid duplicates
+	if(head < tail || (remove_lines && tailc == 2)) { // to avoid duplicates
 	  unsigned int cost;
 	  switch(edge_selection_heuristic) {
 	  case MAXIMISE_DEGREE:
@@ -314,7 +313,11 @@ P T(G &graph, unsigned int mid) {
 
   // === 1. APPLY SIMPLIFICATIONS ===
 
+  cout << "GRAPH BEFORE: " << graph_str(graph) << endl;
+
   P RF = reduce<G,P>(graph);
+
+  cout << "GRAPH AFTER: " << graph_str(graph) << endl;
 
   // === 2. CHECK FOR TERMINATION ===
 
