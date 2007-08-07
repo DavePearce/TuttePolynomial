@@ -182,7 +182,7 @@ void write_tree_end(unsigned int tid) {
 
 template<class G>
 typename G::edge_t select_edge(G const &graph) {
-  // assumes this graph is NOT a tree 
+  // assumes this graph is NOT a cycle and NOT a tree
   unsigned int best(0);
   unsigned int V(graph.num_vertices());
   unsigned int rcount(0);
@@ -195,31 +195,34 @@ typename G::edge_t select_edge(G const &graph) {
   }
 
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-    for(typename G::edge_iterator j(graph.begin_edges(*i));
-	j!=graph.end_edges(*i);++j) {	
-      unsigned int head = *i;
-      unsigned int tail = j->first;
-      
-      if(head < tail) { // to avoid duplicates
+    unsigned int head = *i;
+    unsigned int headc(graph.num_underlying_edges(head));
+    if(!remove_lines || headc != 2) {      
+      // if we're in lines mode, then we ignore "parts" of lines
+      for(typename G::edge_iterator j(graph.begin_edges(*i));
+	  j!=graph.end_edges(*i);++j) {	
+	unsigned int head = *i;
+	unsigned int tail = j->first;
+	unsigned int tailc(graph.num_underlying_edges(tail));
 	unsigned int count = j->second;
 	
-	if(count > 0) {
+	if(head < tail || tailc == 2) { // to avoid duplicates
 	  unsigned int cost;
 	  switch(edge_selection_heuristic) {
 	  case MAXIMISE_DEGREE:
-	    cost = graph.num_underlying_edges(head) + graph.num_underlying_edges(tail);
+	    cost = headc + tailc;
 	    break;
 	  case MAXIMISE_MDEGREE:
-	    cost = graph.num_underlying_edges(head) * graph.num_underlying_edges(tail);
+	    cost = headc * tailc;
 	    break;
 	  case MINIMISE_DEGREE:
-	    cost = 2*V - (graph.num_underlying_edges(head) + graph.num_underlying_edges(tail));
+	    cost = 2*V - (headc + tailc);
 	    break;
 	  case MINIMISE_SDEGREE:
-	    cost = V - (std::min(graph.num_underlying_edges(head),graph.num_underlying_edges(tail)));
+	    cost = V - std::min(headc,tailc);
 	    break;
 	  case MINIMISE_MDEGREE:
-	    cost = V*V - ((graph.num_underlying_edges(head) * graph.num_underlying_edges(tail)));
+	    cost = V*V - (headc * tailc);
 	    break;
 	  case VERTEX_ORDER:	    
 	    return typename G::edge_t(head,tail,count);
@@ -234,12 +237,15 @@ typename G::edge_t select_edge(G const &graph) {
 	    r = typename G::edge_t(head,tail,count);
 	    best = cost;
 	  }     
-	} 
+	}
       }
     }
   }
-
-  if(best == 0) { throw new std::runtime_error("internal failure"); }
+  
+  if(best == 0) { 
+    std::cout << "GOT: " << graph_str(graph) << endl;
+    throw new std::runtime_error("internal failure"); 
+  }
   return r;
 } 
 
