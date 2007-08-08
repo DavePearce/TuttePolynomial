@@ -653,8 +653,9 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     // vertex ordering strategy
     G start_graph = read_graph<G>(input);
     start_graph = permute_graph<G>(start_graph,vertex_ordering);
-
-    unsigned int nedges(start_graph.num_edges());
+    
+    unsigned int V(start_graph.num_vertices());
+    unsigned int E(start_graph.num_edges());
     if(start_graph.num_vertices() == 0) { break; }
 
     my_timer timer(false);
@@ -666,17 +667,19 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 
     if(quiet_mode) {
       if(info_mode) {
-	cout << start_graph.num_vertices() << "\t" << start_graph.num_edges();    
+	cout << V << "\t" << E;    
 	cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps;
 	cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
       }
     } else {
       cout << tuttePoly.str() << endl;
       if(info_mode) {
-	cout << "=======" << endl << "Size of Computation Tree: " << num_steps << " graphs." << endl;
+	cout << "=======" << endl;
+	cout << "V = " << V << ", E = " << E << endl;
+	cout << "Size of Computation Tree: " << num_steps << " graphs." << endl;	
 	cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
 	cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
-	cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),nedges) << ")" << endl;	
+	cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),E) << ")" << endl;	
       }
     }
     ++ngraphs_completed;
@@ -764,7 +767,7 @@ int main(int argc, char *argv[]) {
     " -i     --info                    output summary information regarding computation",
     " -q     --quiet                   output info summary as single line only (useful for generating data)",
     "        --small-graphs=size       set threshold for small graphs, e.g. 7",
-    "        --ngraphs=n               number of graphs to process from input file",
+    " -n<x>  --ngraphs=<number>        number of graphs to process from input file",
     "        --tree                    output computation tree",
     "        --full-tree               output full computation tree",
     "        --xml-tree                output computation tree as XML",
@@ -773,7 +776,7 @@ int main(int argc, char *argv[]) {
     "        --large                   use unbound integers (default)",
     "        --with-lines              delete-contract on lines, not just edges",
     " \ncache options:",
-    " -c     --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
+    " -c<x>  --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     "        --cache-replacement=<amount> set ratio (between 0 .. 1) of cache to displace when full",
     "        --cache-stats[=<file>]    print cache stats summary, or write detailed stats to file.",
@@ -805,7 +808,7 @@ int main(int argc, char *argv[]) {
   vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
   string cache_stats_file("");
 
-  while((v=getopt_long(argc,argv,"qic:",long_options,NULL)) != -1) {
+  while((v=getopt_long(argc,argv,"qic:n:",long_options,NULL)) != -1) {
     switch(v) {      
     case OPT_HELP:
       cout << "usage: " << argv[0] << " [options] <input graph file>" << endl;
@@ -819,6 +822,7 @@ int main(int argc, char *argv[]) {
     case OPT_QUIET:      
       quiet_mode=true;
       break;
+    case 'n':
     case OPT_NGRAPHS:
       ngraphs = atoi(optarg);
       break;
