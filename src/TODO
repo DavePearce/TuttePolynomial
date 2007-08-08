@@ -4,11 +4,9 @@ Things to do!
 Webpage
 -------
 * Build one!
-* Get permission for using nauty in code? Don't need to ... the license gives permission.
 
 Code Improvements
 -----------------
-* Fix factor poly to permit general multiplications
 * Refactor graph_key to be a class somehow.  Might make sense for it to simply produce a bitstring.  Then, we have a
   function which produces a bitstring from a graph ... similar to what we have now.
 * Add support for decent stats reporting [breakdown of bucket length, proportion of memory used by graphs vs polynomial]
@@ -16,10 +14,7 @@ Code Improvements
 
 Easy Ideas
 ----------
-* Remove pendant multi-edges
 * Add Gary's small graph isomorphism tests
-* Removing "lines" by checking that one of their vertices is not on the spanning tree.  Adjust spanning tree to pick "bushy" vertices.
-* Remove triangles and other things?
 * Add support for more cache replacement policies
 * Add alternative(s) to adjacency list (i.e. Gary's optimised for contracting)
 * Fixup BIGUINT so it packs (i.e. removes trailing zeros) automatically and optimise multiplication?
@@ -39,3 +34,4 @@ Other things
 Known Bugs
 ----------
 * safe_arithmetic.hpp is not safe for multiplication
+

@@ -511,7 +511,7 @@ public:
 	  first_time=false;    	
 	  std::string ys;
 	  if(j > 1) { ys = "*y^" + utos(j); }
-	  else if(j == 0) { ys = "*y"; }
+	  else if(j == 1) { ys = "*y"; }
 	  r += utos(xterms[i][j]) + xs + ys;
 	}
       }
