@@ -45,7 +45,10 @@ public:
 
   unsigned int num_components() const { return roots.size(); }
  
-  bool clear(int v) { graph.clear(v); }
+  bool clear(int v) { 
+    find_components();
+    graph.clear(v); 
+  }
 
   void remove(int vertex) { 
     graph.remove(vertex); 
@@ -53,8 +56,10 @@ public:
   }
 
   void add_edge(int from, int to) { add_edge(from,to,1); }
+
   void add_edge(int from, int to, int count) { 
     graph.add_edge(from,to,count); 
+    find_components();
   }
 
   unsigned int remove_all_edges(int from, int to) {     

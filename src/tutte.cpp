@@ -661,6 +661,11 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     my_timer timer(false);
     if(write_tree) { write_tree_start(ngraphs_completed); }    
 
+    if(start_graph.num_components() > 1) { 
+      // safety check.  Could fix in future!
+      throw std::runtime_error("GRAPH IS DISCONNECTED!");
+    }
+
     P tuttePoly = T<G,P>(start_graph,1);        
 
     if(write_tree) { write_tree_end(ngraphs_completed); }
