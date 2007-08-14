@@ -506,7 +506,7 @@ public:
 	if(i > 1) { xs = "*x^" + utos(i); }
 	else if (i == 1) { xs = "*x"; }
 
-	for(unsigned int j=xterms[i].ymin;j!=xterms[i].ymax;++j) {
+	for(unsigned int j=xterms[i].ymin;j<=xterms[i].ymax;++j) {
 	  if(!first_time) { r += " + "; }
 	  first_time=false;    	
 	  std::string ys;
