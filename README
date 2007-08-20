@@ -23,20 +23,6 @@ Thanks!
 David J. Pearce
 Gary Haggard
 
-Installation Instructions 
-=========================
-
-At the moment, the compiling procedure is pretty "rough and ready".
-Ideally, you should just be able to type "make" from the root
-directory and it will build an executable called "tutte" in the src/
-directory.  If this fails, you'll need to modify the makefiles as
-necessary and/or contact us for help with your particular system.
-
-The system has been sucessfully compiled on the following platforms:
-
-1) NetBSD + Linux with GCC 4.1.2
-2) Windows (under Cygwin) with GCC 4.1.?
-
 License
 =======
 
@@ -84,3 +70,56 @@ nauty/ directory (see nauty.h for more details):
      B. D. McKay, nauty User's Guide (Version 1.5), Technical Report        
          TR-CS-90-02, Australian National University, Department of         
          Computer Science, 1990."      
+
+Installation Instructions 
+=========================
+
+At the moment, the compiling procedure is pretty "rough and ready".
+Ideally, you should just be able to type "make" from the root
+directory and it will build an executable called "tutte" in the src/
+directory.  If this fails, you'll need to modify the makefile(s) as
+necessary and/or contact us for help with your particular system.
+
+The system has been sucessfully compiled on the following platforms:
+
+1) NetBSD + Linux with GCC 4.1.2
+2) Windows (under Cygwin) with GCC 4.1.?
+
+Command-line Options
+====================
+
+Currently, the tutte program accepts a number of command-line options.
+You can run "tutte --help" to see a list.  We will not examine all of
+them here, but there are a few which you should know about:
+
+"-c<x> --cache-size=<x>" 
+
+The system uses an internal cache to store previously seen subgraphs,
+in order to prevent their (unnecessary) recomputation.  The size of
+this cache will certainly affect performance for largish (>15
+vertices) input graphs.  
+
+We do not recommend giving all available physical RAM to the cache,
+since this will result in thrashing.  Instead, 80--90% of physical RAM
+is ideal.  For example, suppose your machine has 1GB of physical RAM.
+Then, we'd use the switch "-c800M" to allocate 800 Megabytes of it to
+the internal cache.
+
+"-i --info" 
+
+This gives some information on the size of the computation tree which
+can be useful.  In particular, it tells you the size of the
+computation tree and gives values for T(1,1) and T(2,2) which can be
+used to help verify correctness.
+
+"--vertex-ordering"
+
+This selects an alternative edge selection heuristic which is known to
+perform better than the default on some graphs.  It may be that this
+should be the default, and you may find using this will improve
+performance dramatically for your problem.
+
+An example command-line we might us is:
+
+tutte -ic800M --vertex-ordering ../examples/edge20
+
