@@ -1,0 +1,86 @@
+Tutte Polynomial Generator (v0.9.5)
+===================================
+
+This is an early release of a program for computing tutte polynomials
+for undirected graphs.  As such, this version has had relatively
+little testing done on it and should be considered EXTREMELY
+EXPERIMENTAL.  There are almost certainly outstanding bugs in the code
+remaining to be fixed.  As such, this software is provided as is, and
+the the authors and their respective insititutions accept no
+responsibility for any problem arising from the use of this software.
+
+We would appreciated any bug reports you have and/or suggestions on
+improving the code.  We'd also be very interested in hearing about
+anyone interested in using the code for research (or other) purposes.
+In parituclar, whether or not the current version is fast enough to
+process the input graphs under examination.
+
+If you wish to be notified of updates to this software, please let us
+know.
+
+Thanks!
+
+David J. Pearce
+Gary Haggard
+
+Installation Instructions 
+=========================
+
+At the moment, the compiling procedure is pretty "rough and ready".
+Ideally, you should just be able to type "make" from the root
+directory and it will build an executable called "tutte" in the src/
+directory.  If this fails, you'll need to modify the makefiles as
+necessary and/or contact us for help with your particular system.
+
+The system has been sucessfully compiled on the following platforms:
+
+1) NetBSD + Linux with GCC 4.1.2
+2) Windows (under Cygwin) with GCC 4.1.?
+
+License
+=======
+
+The majority of files are currently under the following simple and quite
+unrestrictive license:
+
+ "(C) Copyright David James Pearce and Gary Haggard, 2007. 
+  Permission to copy, use, modify, sell and distribute this software 
+  is granted provided this copyright notice appears in all copies. 
+  This software is provided "as is" without express or implied 
+  warranty, and with no claim as to its suitability for any purpose.
+
+  Email: david.pearce@mcs.vuw.ac.nz"
+
+This license may not be removed from any of the files in question.
+
+This software makes use of Brendan McKay's excellent "Nauty" program
+for determining (amongst other things) whether two graphs are
+isomorphic or not.  You can find more information about this program
+here: http://cs.anu.edu.au/~bdm/nauty
+
+All files from the Nauty program are located in the nauty/
+subdirectory.  The following license applies to all files in the
+nauty/ directory (see nauty.h for more details): 
+
+  "Copyright (1984-2004) Brendan McKay.  All rights reserved.  Permission   
+   is hereby given for use and/or distribution with the exception of        
+   sale for profit or application with nontrivial military significance.    
+   You must not remove this copyright notice, and you must document any     
+   changes that you make to this program.                                   
+   This software is subject to this copyright only, irrespective of         
+   any copyright attached to any package of which this is a part.           
+                                                                            
+   This program is only provided "as is".  No responsibility will be taken  
+   by the author, his employer or his pet rabbit for any misfortune which  
+   befalls you because of its use.  I don't think it will delete all your   
+   files, burn down your computer room or turn your children against you,   
+   but if it does: stiff cheddar.  On the other hand, I very much welcome   
+   bug reports, or at least I would if there were any bugs.                 
+                                                        RIP, 1989          
+                                                                            
+   If you wish to acknowledge use of this program in published articles,    
+   please do so by citing the User's Guide:                                 
+                                                                            
+     B. D. McKay, nauty User's Guide (Version 1.5), Technical Report        
+         TR-CS-90-02, Australian National University, Department of         
+         Computer Science, 1990."      
