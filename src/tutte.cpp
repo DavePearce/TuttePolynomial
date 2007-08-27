@@ -326,8 +326,8 @@ P T(G &graph, unsigned int mid) {
 
   // === 1. APPLY SIMPLIFICATIONS ===
 
-  //  P RF = reduce<G,P>(graph);
-  P RF = Y(reduce_loops(graph));
+  P RF = reduce<G,P>(graph);
+  // P RF = Y(reduce_loops(graph));
 
   // === 2. CHECK FOR ARTICULATIONS, DISCONNECTS OR TREES ===
 
@@ -335,14 +335,12 @@ P T(G &graph, unsigned int mid) {
     //    if(write_tree) { write_tree_leaf(mid, graph, cout); }
     vector<G> biconnects;
     graph.extract_biconnected_components(biconnects);
-    cout << "EXTRACTED " << biconnects.size() << " COMPONENT(S)" << endl;
     for(unsigned int i=0;i!=biconnects.size();++i) {
       // NEED TO FIX MY ID!
       cout << "#" << i << " = " << graph_str(biconnects[i]) << endl;
       RF *= T<G,P>(biconnects[i],mid);
-      cout << "DONE" << endl;
     }
-    
+    // NEED TO SUPPORT THE TREE RESIDUE HERE!!!
     return RF;
   } 
 
