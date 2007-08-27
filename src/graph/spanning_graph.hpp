@@ -22,20 +22,17 @@ public:
   typedef triple<unsigned int, unsigned int, unsigned int> edge_t;
 private:
   G graph;
-  mutable std::vector<bool> visited;
+  std::vector<bool> visited;
   std::vector<unsigned int> lowlink;
   std::vector<unsigned int> dfsnum;
-  std::vector<unsigned int> stack;
   unsigned int vindex;
-  bool biconnected;
+  unsigned int nartics;
 public:
-  spanning_graph(int n, bool bfs = false) : graph(n), visited(n), lowlink(n), dfsnum(n)  {  
-    stack.reserve(n);
+  spanning_graph(int n, bool bfs = false) : graph(n), visited(n), lowlink(n), dfsnum(n), nartics(0)  {  
   }
 
   spanning_graph(G const &g, bool bfs = false) : graph(g), visited(g.domain_size()), 
 						 lowlink(g.domain_size()), dfsnum(g.domain_size()) {  
-    stack.reserve(g.domain_size());
     check_biconnectivity();
   }
 
@@ -45,22 +42,20 @@ public:
   unsigned int num_edges() const { return graph.num_edges(); }
   unsigned int num_edges(unsigned int vertex) const { return graph.num_edges(vertex); }
   unsigned int num_edges(unsigned int v1, unsigned int v2) const { return graph.num_edges(v1,v2); }
-
   unsigned int num_underlying_edges() const { return graph.num_underlying_edges(); }
   unsigned int num_underlying_edges(unsigned int vertex) const { return graph.num_underlying_edges(vertex); }
-
   unsigned int num_multiedges() const { return graph.num_multiedges(); }
 
-  unsigned int num_components() const { return roots.size(); }
- 
+  bool is_biconnected() const { return nartics == 1; }
+
   bool clear(int v) { 
-    find_components();
+    check_biconnectivity();
     graph.clear(v); 
   }
 
   void remove(int vertex) { 
     graph.remove(vertex); 
-    find_components();
+    check_biconnectivity();
   }
 
   void add_edge(int from, int to) { add_edge(from,to,1); }
@@ -72,7 +67,7 @@ public:
 
   unsigned int remove_all_edges(int from, int to) {     
     unsigned int r = graph.remove_all_edges(from,to);
-    if(r > 0 && from != to) { find_components(); }
+    if(r > 0 && from != to) { check_biconnectivity(); }
     return r;
   }
 
@@ -113,29 +108,37 @@ public:
     return false;
   }
 
-  spanning_graph<G> extract_component(unsigned int i) {
-    // first, identify component
-    spanning_graph<G> g(component(i));
-    // now remove it!
-    for(typename G::vertex_iterator j(g.begin_verts());
-	j!=g.end_verts();++j) {
-      graph.remove(*j);
-    }
-    roots.erase(roots.begin()+i);
-    return g;
-  }
-
   void contract_edge(int from, int to) { 
     graph.contract_edge(from,to);     
-    if(roots.size() > 1) {
-      // This is needed, since during a contract operation an edge is
-      // first removed and then the end vertices are joined.  There
-      // should be a way to avoid this unnecessary recomputation.
-      check_biconnectivity();
-    } else {
-      // safety check
-      std::replace(roots.begin(),roots.end(),to,from);
+    // This is needed, since during a contract operation an edge is
+    // first removed and then the end vertices are joined.  There
+    // should be a way to avoid this unnecessary recomputation.
+    check_biconnectivity();
+  }
+
+  void extract_biconnected_components(std::vector<spanning_graph<G> > &bcs) { // was retree
+    // Now, we traverse the entire graph and extract any and all biconnected components
+
+    // reset visited information
+    fill(visited.begin(),visited.end(),false);
+    vindex = 0;
+    std::vector<edge_t> cstack;
+    // now, check for connectedness
+    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+      if(!visited[*i]) { 
+	// dfs search to identify component roots
+	extract_biconnects(*i,*i,bcs,cstack);
+      }
     }
+    // finally, remove all edges present in the biconnects
+    for(unsigned int i=0;i!=bcs.size();++i) {
+      for(typename G::vertex_iterator j(bcs[i].begin_verts());
+	  j!=bcs[i].end_verts();++j) {
+	graph.remove(*j);
+      }
+    }
+
+    nartics=0; // this is a tree by definition now!!!!!
   }
 
   vertex_iterator begin_verts() const { return graph.begin_verts(); }
@@ -149,22 +152,20 @@ private:
     // reset visited information
     fill(visited.begin(),visited.end(),false);
     vindex = 0;
-    std::cout << "=== FIND COMPONENTS: " << graph_str(graph) << std::endl;
-    biconnectivity=false;
+    nartics=0;
     // dfs search to identify component roots
-    biconnect(*graph.begin_verts());
+    biconnect(*graph.begin_verts(),*graph.begin_verts());
     // now, check for connectedness
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
       if(!visited[*i]) { 
-	biconnected = false;
+	nartics++;
 	return; // short circuit remainder of computation
       }
     }
   }
   
-  void biconnect(unsigned int v) {
+  void biconnect(unsigned int u, unsigned int v) {
     // traverse edge tail->head
-    std::cout << "VISIT: " << v << std::endl;
     dfsnum[v] = vindex;
     visited[v] = true;
     lowlink[v] = vindex++;
@@ -173,20 +174,67 @@ private:
 	i!=graph.end_edges(v);++i) {
       int w = i->first;
       if(!visited[w]) { 
-	biconnect(w); 
+	biconnect(v,w); 
 	lowlink[v] = std::min(lowlink[v],lowlink[w]);
-	if(lowlink[w] >= dfsnum[v]) {
+	if(lowlink[w] == dfsnum[v]) {
 	  // v is an articulation point separating
 	  // the component containing w from others.
-	  std::cout << "IDENTIFIED ARTICULATION EDGE: " << v << "--" << w << std::endl;
-	  // should pop component from stack here.
+	  nartics++;
 	}
-      } else if(dfsnum[v] > dfsnum[w]) {	
+      } else if(u != w && dfsnum[v] > dfsnum[w]) {	
+	// this is a real back edge ...
+	lowlink[v] = std::min(lowlink[v],dfsnum[w]);
+      }
+    }
+  }
+
+  void extract_biconnects(unsigned int u, unsigned int v, 
+			  std::vector<spanning_graph<G> > &bcs,
+			  std::vector<edge_t> &cstack) {
+    // traverse edge tail->head
+    dfsnum[v] = vindex;
+    visited[v] = true;
+    lowlink[v] = vindex++;
+    // now, consider edges
+    for(typename G::edge_iterator i(graph.begin_edges(v));
+	i!=graph.end_edges(v);++i) {
+      int w = i->first;
+      edge_t e(v,w,i->second);
+
+      if(!visited[w]) { 
+	cstack.push_back(e);
+	extract_biconnects(v,w,bcs,cstack); 
+	lowlink[v] = std::min(lowlink[v],lowlink[w]);
+	if(lowlink[w] == dfsnum[v]) {
+	  // v is an articulation point separating
+	  // the component containing w from others.
+	  bcs.push_back(extract_biconnect(e,cstack));
+	} 
+      } else if(w != u && dfsnum[v] > dfsnum[w]) {	
 	// this is a back edge ...
 	lowlink[v] = std::min(lowlink[v],dfsnum[w]);
 	// which means we're in a biconnected component ...
+	cstack.push_back(e); 
       }
     }
+  }
+
+  spanning_graph<G> extract_biconnect(edge_t e, std::vector<edge_t> &cstack) {
+    spanning_graph<G> g(graph.domain_size());
+    edge_t c(0,0,0);
+    do {
+      c = cstack.back();
+      // in what follows, I use g.graph to avoid rechecking
+      // biconnectivity every time...
+      g.graph.add_edge(c.first,c.second,c.third); 
+      cstack.pop_back();
+    } while(c != e);
+
+    // finally, remove any dumb vertices!
+    for(unsigned int i=0;i!=graph.domain_size();++i) {
+      if(g.num_edges(i) == 0) { g.graph.remove(i); }
+    }
+    return g;
   }
 
   void add_component(unsigned int v, spanning_graph<G> &component) const {
