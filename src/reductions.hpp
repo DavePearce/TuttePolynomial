@@ -27,6 +27,24 @@ P reduce_pendant(unsigned int p, G &graph) {
 }
 
 template<class G, class P>
+P reduce_tree(G &graph) {
+  P r(Y(0));
+
+  for(typename G::vertex_iterator i(graph.begin_verts());
+      i!=graph.end_verts();++i) {
+    for(typename G::edge_iterator j(graph.begin_edges(*i));j!=graph.end_edges(*i);++j) {
+      if(*i >= j->first) {
+	P xy = X(1);
+	if(j->second > 1) { xy += Y(1,j->second-1); }
+	r *= xy;
+      }
+    }
+  }  
+  
+  return r;
+}
+
+template<class G, class P>
 P reduce_cycle(line_t const &line, G &graph) {
   // This is a somewhat icky piece of code for reducing 
   // a cycle.

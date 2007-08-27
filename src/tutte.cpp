@@ -256,7 +256,7 @@ typename G::edge_t select_edge(G const &graph) {
     }
   }
   
-  if(best == 0) { throw new std::runtime_error("internal failure"); }
+  if(best == 0) { throw std::runtime_error("internal failure"); }
 
   return r;
 } 
@@ -326,10 +326,10 @@ P T(G &graph, unsigned int mid) {
 
   // === 1. APPLY SIMPLIFICATIONS ===
 
-  P RF = reduce<G,P>(graph);
-  // P RF = Y(reduce_loops(graph));
+  // P RF = reduce<G,P>(graph);
+  P RF = Y(reduce_loops(graph));
 
-  // === 2. CHECK FOR ARTICULATIONS, DISCONNECTS OR TREES ===
+  // === 2. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
 
   if(!graph.is_biconnected()) {
     //    if(write_tree) { write_tree_leaf(mid, graph, cout); }
@@ -337,16 +337,15 @@ P T(G &graph, unsigned int mid) {
     graph.extract_biconnected_components(biconnects);
     for(unsigned int i=0;i!=biconnects.size();++i) {
       // NEED TO FIX MY ID!
-      cout << "#" << i << " = " << graph_str(biconnects[i]) << endl;
+      // need to spot cycles here!
       RF *= T<G,P>(biconnects[i],mid);
     }
-    // NEED TO SUPPORT THE TREE RESIDUE HERE!!!
+    RF *= reduce_tree<G,P>(graph);
     return RF;
   } 
 
   // === 3. CHECK IN CACHE ===
   unsigned char *key = NULL;
-
   if(graph.num_vertices() >= small_graph_threshold) {      
     key = graph_key(graph); 
     unsigned int match_id;
@@ -357,7 +356,6 @@ P T(G &graph, unsigned int mid) {
       return r * RF;
     }
   }
-
   // TREE OUTPUT STUFF
   unsigned int lid = tree_id;
   unsigned int rid = tree_id+1;
@@ -365,7 +363,6 @@ P T(G &graph, unsigned int mid) {
   if(write_tree) { write_tree_nonleaf(mid,lid,rid,graph,cout); }
     
   // === 4. PERFORM DELETE / CONTRACT ===
-
 
   line_t line = select_line(graph);
   graph.remove_line(line);
@@ -375,7 +372,6 @@ P T(G &graph, unsigned int mid) {
   g2.contract_edge(line[0].first,line[line.size()-1].second); 
   // recursively compute the polynomial   
   P poly = (T<G,P>(graph, lid) * FP<G,P>(line)) + (T<G,P>(g2, rid) * LP<G,P>(0,line));
-
   // Finally, save computed polynomial
   if(key != NULL) {
     // there is, strictly speaking, a bug with using mid
@@ -938,29 +934,28 @@ int main(int argc, char *argv[]) {
   // -------------------------------------------------
   // Initialise Cache 
   // -------------------------------------------------
-
-  cache.resize(cache_size);
-  cache.rebucket(cache_buckets);
-
+  try {
+    cache.resize(cache_size);
+    cache.rebucket(cache_buckets);
+    
   // -------------------------------------------------
   // Register alarm signal for printing status updates
   // -------------------------------------------------
 
-  if(!quiet_mode) {
-    struct sigaction sa;
-    memset(&sa,0,sizeof(sa));
-    sa.sa_handler = &timer_handler;
-    if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
-    alarm(status_interval); // trigger alarm in status_interval seconds
-  }
-
-  // -----------------------------------
-  // Now, begin solving the input graph!
-  // -----------------------------------
-
-  srand(time(NULL));
-
-  try {
+    if(!quiet_mode) {
+      struct sigaction sa;
+      memset(&sa,0,sizeof(sa));
+      sa.sa_handler = &timer_handler;
+      if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
+      alarm(status_interval); // trigger alarm in status_interval seconds
+    }
+    
+    // -----------------------------------
+    // Now, begin solving the input graph!
+    // -----------------------------------
+    
+    srand(time(NULL));
+        
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
       if(size == OPT_SMALL) {
@@ -991,11 +986,12 @@ int main(int argc, char *argv[]) {
       write_graph_sizes(stats_out);
       write_hit_counts(stats_out);
     }
-
-  } catch(bad_alloc const &e) {
-    cout << "error: insufficient memory!" << endl;
-  } catch(exception const &e) {
-    cout << "error: " << e.what() << endl;
+  } catch(std::runtime_error &e) {
+    cerr << "error: " << e.what() << endl;  
+  } catch(std::bad_alloc &e) {
+    cerr << "error: insufficient memory!" << endl;
+  } catch(std::exception &e) {
+    cerr << "error: " << e.what() << endl;
   }
 }
 

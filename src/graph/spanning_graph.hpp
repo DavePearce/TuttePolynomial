@@ -159,7 +159,7 @@ private:
     // now, check for connectedness
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
       if(!visited[*i]) { 
-	nartics++;
+	nartics += 2;
 	return; // short circuit remainder of computation
       }
     }
