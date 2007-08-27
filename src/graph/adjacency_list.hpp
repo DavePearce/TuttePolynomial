@@ -182,6 +182,16 @@ public:
     return remove_edge(from,to,1);
   } 
 
+  void remove(adjacency_list<T> const &g) {
+    for(vertex_iterator i(g.begin_verts());i!=g.end_verts();++i) {
+      for(edge_iterator j(g.begin_edges(*i));j!=g.end_edges(*i);++j) {
+	if(*i >= j->first) {
+	  remove_edge(*i,j->first,j->second);
+	}
+      }
+    }
+  }
+
   // Ok, this implementation is seriously inefficient! 
   // could use an indirection trick here as one solution?  
   //

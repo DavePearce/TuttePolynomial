@@ -326,19 +326,30 @@ P T(G &graph, unsigned int mid) {
 
   // === 1. APPLY SIMPLIFICATIONS ===
 
-  P RF = reduce<G,P>(graph);
+  //  P RF = reduce<G,P>(graph);
+  P RF = Y(reduce_loops(graph));
 
-  // === 2. CHECK FOR TERMINATION ===
+  // === 2. CHECK FOR ARTICULATIONS, DISCONNECTS OR TREES ===
 
-  if(graph.num_edges() == 0) {
-    if(write_tree) { write_tree_leaf(mid, graph, cout); }
+  if(!graph.is_biconnected()) {
+    //    if(write_tree) { write_tree_leaf(mid, graph, cout); }
+    vector<G> biconnects;
+    graph.extract_biconnected_components(biconnects);
+    cout << "EXTRACTED " << biconnects.size() << " COMPONENT(S)" << endl;
+    for(unsigned int i=0;i!=biconnects.size();++i) {
+      // NEED TO FIX MY ID!
+      cout << "#" << i << " = " << graph_str(biconnects[i]) << endl;
+      RF *= T<G,P>(biconnects[i],mid);
+      cout << "DONE" << endl;
+    }
+    
     return RF;
   } 
 
   // === 3. CHECK IN CACHE ===
   unsigned char *key = NULL;
 
-  if(graph.num_components() == 1 && graph.num_vertices() >= small_graph_threshold) {      
+  if(graph.num_vertices() >= small_graph_threshold) {      
     key = graph_key(graph); 
     unsigned int match_id;
     P r;
@@ -357,21 +368,15 @@ P T(G &graph, unsigned int mid) {
     
   // === 4. PERFORM DELETE / CONTRACT ===
 
-  P poly;
+
   line_t line = select_line(graph);
   graph.remove_line(line);
 
-  if(graph.num_components() > 1) {
-    // graph has become disconnected
-    G g2(graph.extract_component(1));
-    poly = T<G,P>(graph, lid) * T<G,P>(g2, rid) * LP<G,P>(1,line);
-  } else {
-    // now, we contract on the line's endpoints
-    G g2(graph); 
-    g2.contract_edge(line[0].first,line[line.size()-1].second); 
-    // recursively compute the polynomial   
-    poly = (T<G,P>(graph, lid) * FP<G,P>(line)) + (T<G,P>(g2, rid) * LP<G,P>(0,line));
-  }
+  // now, we contract on the line's endpoints
+  G g2(graph); 
+  g2.contract_edge(line[0].first,line[line.size()-1].second); 
+  // recursively compute the polynomial   
+  P poly = (T<G,P>(graph, lid) * FP<G,P>(line)) + (T<G,P>(g2, rid) * LP<G,P>(0,line));
 
   // Finally, save computed polynomial
   if(key != NULL) {
@@ -660,11 +665,6 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 
     my_timer timer(false);
     if(write_tree) { write_tree_start(ngraphs_completed); }    
-
-    if(start_graph.num_components() > 1) { 
-      // safety check.  Could fix in future!
-      throw std::runtime_error("GRAPH IS DISCONNECTED!");
-    }
 
     P tuttePoly = T<G,P>(start_graph,1);        
 

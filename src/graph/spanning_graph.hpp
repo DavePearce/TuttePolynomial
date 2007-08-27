@@ -131,12 +131,13 @@ public:
       }
     }
     // finally, remove all edges present in the biconnects
+    // how could this be optimised a little?
     for(unsigned int i=0;i!=bcs.size();++i) {
-      for(typename G::vertex_iterator j(bcs[i].begin_verts());
-	  j!=bcs[i].end_verts();++j) {
-	graph.remove(*j);
-      }
+      graph.remove(bcs[i].graph);
     }
+    // could remove any isolated vertices here,
+    // but I don't think it's necessary for the tutte
+    // algorithm!
 
     nartics=0; // this is a tree by definition now!!!!!
   }
@@ -152,7 +153,7 @@ private:
     // reset visited information
     fill(visited.begin(),visited.end(),false);
     vindex = 0;
-    nartics=0;
+    nartics = 0;
     // dfs search to identify component roots
     biconnect(*graph.begin_verts(),*graph.begin_verts());
     // now, check for connectedness
@@ -209,7 +210,10 @@ private:
 	  // v is an articulation point separating
 	  // the component containing w from others.
 	  bcs.push_back(extract_biconnect(e,cstack));
-	} 
+	} else if(lowlink[w] > dfsnum[v]) { 
+	  // v is not in a biconnected component with w
+	  cstack.pop_back(); 
+	}
       } else if(w != u && dfsnum[v] > dfsnum[w]) {	
 	// this is a back edge ...
 	lowlink[v] = std::min(lowlink[v],dfsnum[w]);
@@ -234,6 +238,9 @@ private:
     for(unsigned int i=0;i!=graph.domain_size();++i) {
       if(g.num_edges(i) == 0) { g.graph.remove(i); }
     }
+
+    g.nartics = 1; // since this is a biconnected component!
+
     return g;
   }
 
