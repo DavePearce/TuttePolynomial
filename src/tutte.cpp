@@ -334,10 +334,15 @@ P T(G &graph, unsigned int mid) {
     //    if(write_tree) { write_tree_leaf(mid, graph, cout); }
     vector<G> biconnects;
     graph.extract_biconnected_components(biconnects);
-    for(unsigned int i=0;i!=biconnects.size();++i) {
+    for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
       // NEED TO FIX MY ID!
       // need to spot cycles here!
-      RF *= T<G,P>(biconnects[i],mid);      
+      if(i->num_underlying_edges() == i->num_vertices()) {
+	// this is actually a cycle!
+	RF *= reduce_cycle<G,P>(*i);
+      } else {
+	RF *= T<G,P>(*i,mid);      
+      }
     }
 
     return RF * reduce_tree<G,P>(graph);

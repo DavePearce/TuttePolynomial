@@ -44,12 +44,17 @@ P reduce_tree(G &graph) {
 }
 
 template<class G, class P>
-P reduce_cycle(line_t const &line, G &graph) {
+P reduce_cycle(G &graph) {
   // This is a somewhat icky piece of code for reducing 
-  // a cycle.
+  // a cycle.  it's really a hack at the moment.
 
-  for(unsigned int j=0;j!=line.size()-1;++j) {
-    graph.remove(line[j].second);
+  std::vector<edge_t> line;
+  unsigned int last=graph.domain_size()+1;
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    typename G::edge_iterator j(graph.begin_edges(*i));
+    if(j->first == last) { ++j; }
+    line.push_back(edge_t(*i,j->first,j->second));
+    last = *i;
   }
     
   P xs(X(1)), acc(X(1));
@@ -124,87 +129,6 @@ unsigned int reduce_loops(G &graph) {
     c += graph.remove_all_edges(*i,*i);
   }
   return c;
-}
-
-template<class G, class P>
-P reduce(G &graph) {
-  // I'm sure this algorithm could be further simplified.
-
-  P r = Y(reduce_loops(graph));
-
-  // I make the following things static
-  // in an effort to improve performance.
-  static std::vector<line_t> cycles;
-  static std::vector<unsigned int> pendants;
-  static std::vector<unsigned int> count;
-  static std::vector<bool> visited;
-  // ensure enough space for this graph
-  visited.resize(graph.domain_size());
-  count.resize(graph.domain_size());
-  // make sure to reset visited flags!
-  std::fill(visited.begin(),visited.end(),false);
-  std::fill(count.begin(),count.end(),0);
-
-  // now, initialise the worklists
-  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {    
-    if(!visited[*i] && graph.num_underlying_edges(*i) == 2) {
-      // mark all members as visited, to avoid revisiting
-      // them in a potentially quadratic fashion.
-      line_t line = trace_line(*i,*i,graph);      
-      for(line_t::iterator j(line.begin());j!=line.end();++j) {
-	visited[j->second]=true;
-      }
-      // check if this is a cycle ...
-      if(line[0].first == line[line.size()-1].second) {      
-	// yes, it is!
-	cycles.push_back(line);
-	count[line[0].first]++;
-      }
-    } else if(graph.num_underlying_edges(*i) == 1) {
-      // this is a pendant edge
-      pendants.push_back(*i);
-    }
-  }
-
-  // apply the reductions, whilst ensuring that
-  // any further cycles / pendants exposed are
-  // also reduced upon.
-  while(!cycles.empty() || !pendants.empty()) {
-    unsigned int w; // this is a candidate cycle/pendant
-
-    if(!pendants.empty()) {
-      unsigned int p(pendants.back());
-      pendants.pop_back();
-      // check that p is still a pendant
-      if(graph.num_edges(p) == 0) { continue; }
-      // identify the next candidate
-      w = graph.begin_edges(p)->first;
-      // now, remove it!
-      r *= reduce_pendant<G,P>(p,graph);
-    } else {
-      line_t &cycle(cycles.back());
-      r *= reduce_cycle<G,P>(cycle,graph);
-      w = cycle[0].first;
-      cycles.pop_back();
-      count[w]--;
-      // now, check whether w has become a cycle or pendant
-    }
-    
-    if(count[w] == 0 && graph.num_underlying_edges(w) == 2) {
-      line_t line = trace_line(w,w,graph);      
-      // check if this is a cycle ...
-      if(line[0].first == line[line.size()-1].second) {      
-	// yes, it is!
-	count[line[0].first]++;
-	cycles.push_back(line);
-      }
-    } else if(graph.num_underlying_edges(w) == 1) {
-      // this is a pendant edge
-      pendants.push_back(w);
-    }
-  }
-
-  return r;
 }
 
 #endif
