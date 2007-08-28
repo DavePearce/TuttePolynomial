@@ -155,6 +155,7 @@ private:
     vindex = 0;
     nartics = 0;
     // dfs search to identify component roots
+    std::cout << "STARTING" << std::end;
     biconnect(*graph.begin_verts(),*graph.begin_verts());
     // now, check for connectedness
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
@@ -167,6 +168,7 @@ private:
   
   void biconnect(unsigned int u, unsigned int v) {
     // traverse edge tail->head
+    std::cout << "VISITING: " << u << "--" << v << std::endl;
     dfsnum[v] = vindex;
     visited[v] = true;
     lowlink[v] = vindex++;
@@ -180,6 +182,7 @@ private:
 	if(lowlink[w] == dfsnum[v]) {
 	  // v is an articulation point separating
 	  // the component containing w from others.
+	  std::cout << "INCREASING NARTICS" << std::endl;
 	  nartics++;
 	}
       } else if(u != w && dfsnum[v] > dfsnum[w]) {	

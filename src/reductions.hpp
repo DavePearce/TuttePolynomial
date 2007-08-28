@@ -30,8 +30,7 @@ template<class G, class P>
 P reduce_tree(G &graph) {
   P r(Y(0));
 
-  for(typename G::vertex_iterator i(graph.begin_verts());
-      i!=graph.end_verts();++i) {
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     for(typename G::edge_iterator j(graph.begin_edges(*i));j!=graph.end_edges(*i);++j) {
       if(*i >= j->first) {
 	P xy = X(1);

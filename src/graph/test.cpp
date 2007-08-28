@@ -11,9 +11,12 @@ typedef spanning_graph<adjacency_list<> > graph_t;
 
 int main(int c, char *argv[]) {
   cout << "=== SOURCE GRAPH ===" << endl;
-  graph_t g1(3);
+  graph_t g1(4);
   g1.add_edge(0,1);
-  g1.add_edge(2,2);
+  g1.add_edge(0,3);
+  g1.add_edge(1,2);
+  g1.add_edge(1,3);
+
   //  g1.add_edge(1,2);
   //  g1.add_edge(2,3);
   //  g1.add_edge(4,5);
