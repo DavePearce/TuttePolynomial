@@ -108,12 +108,16 @@ public:
     return false;
   }
 
-  void contract_edge(int from, int to) { 
-    graph.contract_edge(from,to);     
-    // This is needed, since during a contract operation an edge is
-    // first removed and then the end vertices are joined.  There
-    // should be a way to avoid this unnecessary recomputation.
-    check_biconnectivity();
+  void contract_line(std::vector<edge_t> line) {
+    if(line.size() == 1) { remove_edge(line[0]); }
+    else {
+      // now, remove all internal vertices
+      for(unsigned int i=0;i!=line.size()-1;++i) {
+	graph.remove(line[i].second);
+      }
+    }
+    graph.contract_edge(line[0].first,line[line.size()-1].second); 
+    // don't need to check biconnectivity here!
   }
 
   void extract_biconnected_components(std::vector<spanning_graph<G> > &bcs) { // was retree

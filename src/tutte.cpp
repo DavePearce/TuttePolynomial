@@ -79,6 +79,9 @@ typedef enum { V_RANDOM, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DE
 
 unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
+unsigned long num_bicomps = 0;
+unsigned long num_cycles = 0;
+unsigned long num_trees = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
 edgesel_t edge_selection_heuristic = MINIMISE_SDEGREE;
@@ -335,16 +338,17 @@ P T(G &graph, unsigned int mid) {
     vector<G> biconnects;
     graph.extract_biconnected_components(biconnects);
     for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
+      num_bicomps++;
       // NEED TO FIX MY ID!
-      // need to spot cycles here!
       if(i->num_underlying_edges() == i->num_vertices()) {
 	// this is actually a cycle!
+	num_cycles++;
 	RF *= reduce_cycle<G,P>(*i);
       } else {
 	RF *= T<G,P>(*i,mid);      
       }
     }
-
+    if(graph.num_edges() > 0) { num_trees++; }
     return RF * reduce_tree<G,P>(graph);
   } 
 
@@ -369,12 +373,12 @@ P T(G &graph, unsigned int mid) {
     
   // === 4. PERFORM DELETE / CONTRACT ===
 
-  line_t line = select_line(graph);
-  graph.remove_line(line);
-
-  // now, we contract on the line's endpoints
   G g2(graph); 
-  g2.contract_edge(line[0].first,line[line.size()-1].second); 
+  line_t line = select_line(graph);
+
+  // now, delete/contract on the line's endpoints
+  graph.remove_line(line);
+  g2.contract_line(line);
   // recursively compute the polynomial   
   P poly = (T<G,P>(graph, lid) * FP<G,P>(line)) + (T<G,P>(g2, rid) * LP<G,P>(0,line));
   // Finally, save computed polynomial
@@ -652,6 +656,9 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     cache.clear();  
     cache.reset_stats();
     num_steps = 0;
+    num_bicomps = 0;
+    num_trees = 0;
+    num_cycles = 0;
 
     // Create graph and then permute it according to 
     // vertex ordering strategy
@@ -672,7 +679,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     if(quiet_mode) {
       if(info_mode) {
 	cout << V << "\t" << E;    
-	cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps;
+	cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << num_bicomps << "\t" << num_cycles << "\t" << num_trees;
 	cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
       }
     } else {
@@ -681,6 +688,9 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << "=======" << endl;
 	cout << "V = " << V << ", E = " << E << endl;
 	cout << "Size of Computation Tree: " << num_steps << " graphs." << endl;	
+	cout << "Number of Biconnected Components Extracted: " << num_bicomps << "." << endl;	
+	cout << "Number of Cycles Terminated: " << num_cycles << "." << endl;	
+	cout << "Number of Trees Terminated: " << num_trees << "." << endl;	
 	cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
 	cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
 	cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),E) << ")" << endl;	
