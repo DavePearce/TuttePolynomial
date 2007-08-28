@@ -330,24 +330,17 @@ P T(G &graph, unsigned int mid) {
   P RF = Y(reduce_loops(graph));
 
   // === 2. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
-  cout << "GRAPH: " << graph_str(graph) << endl;
   if(!graph.is_biconnected()) {
     //    if(write_tree) { write_tree_leaf(mid, graph, cout); }
     vector<G> biconnects;
     graph.extract_biconnected_components(biconnects);
-    for(unsigned int i=0;i!=biconnects.size();++i) {
-      cout << "EXTRACTED: " << graph_str(biconnects[i]) << endl;
-    }
-    cout << "REMAINDER: " << graph_str(graph) << endl;
     for(unsigned int i=0;i!=biconnects.size();++i) {
       // NEED TO FIX MY ID!
       // need to spot cycles here!
       RF *= T<G,P>(biconnects[i],mid);      
     }
 
-    RF *= reduce_tree<G,P>(graph);
-    cout << "RESULT: " << RF.str() << endl;
-    return RF;
+    return RF * reduce_tree<G,P>(graph);
   } 
 
   // === 3. CHECK IN CACHE ===
@@ -372,11 +365,6 @@ P T(G &graph, unsigned int mid) {
   // === 4. PERFORM DELETE / CONTRACT ===
 
   line_t line = select_line(graph);
-  cout << "SELECTED LINE: " ;
-  for(unsigned int i=0;i!=line.size();++i) {
-    cout << " " << line[i].first << "-" << line[i].second;
-  }
-  cout << endl;
   graph.remove_line(line);
 
   // now, we contract on the line's endpoints
