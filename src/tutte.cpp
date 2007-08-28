@@ -332,29 +332,10 @@ P T(G &graph, unsigned int mid) {
   // P RF = reduce<G,P>(graph);
   P RF = Y(reduce_loops(graph));
 
-  // === 2. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
-  if(!graph.is_biconnected()) {
-    //    if(write_tree) { write_tree_leaf(mid, graph, cout); }
-    vector<G> biconnects;
-    graph.extract_biconnected_components(biconnects);
-    for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
-      num_bicomps++;
-      // NEED TO FIX MY ID!
-      if(i->num_underlying_edges() == i->num_vertices()) {
-	// this is actually a cycle!
-	num_cycles++;
-	RF *= reduce_cycle<G,P>(*i);
-      } else {
-	RF *= T<G,P>(*i,mid);      
-      }
-    }
-    if(graph.num_edges() > 0) { num_trees++; }
-    return RF * reduce_tree<G,P>(graph);
-  } 
+  // === 2. CHECK IN CACHE ===
 
-  // === 3. CHECK IN CACHE ===
   unsigned char *key = NULL;
-  if(graph.num_vertices() >= small_graph_threshold) {      
+  if(graph.num_vertices() >= small_graph_threshold && !graph.is_multitree()) {      
     key = graph_key(graph); 
     unsigned int match_id;
     P r;
@@ -365,22 +346,46 @@ P T(G &graph, unsigned int mid) {
     }
   }
 
-  // TREE OUTPUT STUFF
-  unsigned int lid = tree_id;
-  unsigned int rid = tree_id+1;
-  tree_id = tree_id + 2; // allocate id's now so I know them!
-  if(write_tree) { write_tree_nonleaf(mid,lid,rid,graph,cout); }
+  P poly;
+
+  // === 3. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
+
+  if(!graph.is_biconnected()) {
+    //    if(write_tree) { write_tree_leaf(mid, graph, cout); }
+    vector<G> biconnects;
+    graph.extract_biconnected_components(biconnects);
+    poly = reduce_tree<G,P>(graph);
+    if(graph.is_multitree()) { num_trees++; }
+    for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
+      num_bicomps++;
+      // NEED TO FIX MY ID!
+      if(i->is_multicycle()) {
+	// this is actually a cycle!
+	num_cycles++;
+	poly *= reduce_cycle<G,P>(*i);
+      } else {
+	poly *= T<G,P>(*i,mid);      
+      }
+    }
+  } else {
+    // TREE OUTPUT STUFF
+    unsigned int lid = tree_id;
+    unsigned int rid = tree_id+1;
+    tree_id = tree_id + 2; // allocate id's now so I know them!
+    if(write_tree) { write_tree_nonleaf(mid,lid,rid,graph,cout); }
     
-  // === 4. PERFORM DELETE / CONTRACT ===
+    // === 4. PERFORM DELETE / CONTRACT ===
+    
+    G g2(graph); 
+    line_t line = select_line(graph);
+    
+    // now, delete/contract on the line's endpoints
+    graph.remove_line(line);
+    g2.contract_line(line);
+    // recursively compute the polynomial   
+    poly = (T<G,P>(graph, lid) * FP<G,P>(line)) + (T<G,P>(g2, rid) * LP<G,P>(0,line));
+  }
 
-  G g2(graph); 
-  line_t line = select_line(graph);
-
-  // now, delete/contract on the line's endpoints
-  graph.remove_line(line);
-  g2.contract_line(line);
-  // recursively compute the polynomial   
-  P poly = (T<G,P>(graph, lid) * FP<G,P>(line)) + (T<G,P>(g2, rid) * LP<G,P>(0,line));
   // Finally, save computed polynomial
   if(key != NULL) {
     // there is, strictly speaking, a bug with using mid

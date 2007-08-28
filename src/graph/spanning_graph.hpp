@@ -47,7 +47,9 @@ public:
   unsigned int num_multiedges() const { return graph.num_multiedges(); }
 
   bool is_biconnected() const { return nartics == 1; }
-
+  bool is_multitree() const { return graph.num_underlying_edges() < graph.num_vertices(); }
+  bool is_multicycle() const { return nartics == 1 && graph.num_underlying_edges() == graph.num_vertices(); }
+  
   bool clear(int v) { 
     check_biconnectivity();
     graph.clear(v); 
@@ -109,8 +111,9 @@ public:
   }
 
   void contract_line(std::vector<edge_t> line) {
-    if(line.size() == 1) { remove_edge(line[0]); }
-    else {
+    if(line.size() == 1) { 
+      graph.remove_edge(line[0].first,line[0].second,line[0].third); 
+    } else {
       // now, remove all internal vertices
       for(unsigned int i=0;i!=line.size()-1;++i) {
 	graph.remove(line[i].second);
@@ -118,6 +121,7 @@ public:
     }
     graph.contract_edge(line[0].first,line[line.size()-1].second); 
     // don't need to check biconnectivity here!
+    check_biconnectivity();
   }
 
   void extract_biconnected_components(std::vector<spanning_graph<G> > &bcs) { // was retree
