@@ -183,7 +183,6 @@ private:
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
       if(!data.visited[*i]) { 
 	ncomponents ++;
-	nartics += 2;
 	return; // short circuit remainder of computation
       }
     }
@@ -205,7 +204,7 @@ private:
 	  // v is an articulation point separating
 	  // the component containing w from others.
 	  nartics++;
-	} else {
+	} else if(data.lowlink[w] > data.dfsnum[v]) {
 	  // v is not in an bicomp with w
 	  nartics += 2;
 	}
@@ -218,7 +217,7 @@ private:
 
   void extract_biconnects(unsigned int u, unsigned int v, 
 			  std::vector<spanning_graph<G> > &bcs,
-			  bc_dat &data) {
+			  bc_dat &data) {    
     // traverse edge tail->head
     data.dfsnum[v] = data.vindex;
     data.visited[v] = true;
@@ -265,6 +264,8 @@ private:
     for(unsigned int i=0;i!=graph.domain_size();++i) {
       if(g.num_edges(i) == 0) { g.graph.remove(i); }
     }
+
+    g.check_biconnectivity();
 
     g.nartics = 1; // since this is a biconnected component!
     g.ncomponents = 1;
