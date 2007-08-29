@@ -81,6 +81,7 @@ unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
 unsigned long num_bicomps = 0;
 unsigned long num_cycles = 0;
+unsigned long num_disbicomps = 0;
 unsigned long num_trees = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
@@ -356,6 +357,7 @@ P T(G &graph, unsigned int mid) {
     graph.extract_biconnected_components(biconnects);
     poly = reduce_tree<G,P>(graph);
     if(graph.is_multitree()) { num_trees++; }
+    if(biconnects.size() > 1) { num_disbicomps++; }
     for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
       num_bicomps++;
       // NEED TO FIX MY ID!
@@ -378,6 +380,8 @@ P T(G &graph, unsigned int mid) {
     
     G g2(graph); 
     line_t line = select_line(graph);
+
+    if(!graph.is_connected()) { cout << "ERROR" << endl; }
     
     // now, delete/contract on the line's endpoints
     graph.remove_line(line);
@@ -662,6 +666,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     cache.reset_stats();
     num_steps = 0;
     num_bicomps = 0;
+    num_disbicomps = 0;
     num_trees = 0;
     num_cycles = 0;
 
@@ -684,7 +689,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     if(quiet_mode) {
       if(info_mode) {
 	cout << V << "\t" << E;    
-	cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << num_bicomps << "\t" << num_cycles << "\t" << num_trees;
+	cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << num_bicomps << "\t" << num_disbicomps << "\t" << num_cycles << "\t" << num_trees;
 	cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
       }
     } else {
@@ -694,6 +699,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << "V = " << V << ", E = " << E << endl;
 	cout << "Size of Computation Tree: " << num_steps << " graphs." << endl;	
 	cout << "Number of Biconnected Components Extracted: " << num_bicomps << "." << endl;	
+	cout << "Number of Biconnected Components Separated: " << num_disbicomps << "." << endl;	
 	cout << "Number of Cycles Terminated: " << num_cycles << "." << endl;	
 	cout << "Number of Trees Terminated: " << num_trees << "." << endl;	
 	cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
