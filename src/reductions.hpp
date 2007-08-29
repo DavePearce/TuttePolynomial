@@ -44,19 +44,24 @@ P reduce_tree(G &graph) {
 }
 
 template<class G, class P>
-P reduce_cycle(G &graph) {
+P reduce_cycle(G const &graph) {
   // This is a somewhat icky piece of code for reducing 
   // a cycle.  it's really a hack at the moment.
 
-  std::vector<edge_t> line;
-  unsigned int last=graph.domain_size()+1;
-  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-    typename G::edge_iterator j(graph.begin_edges(*i));
+  static std::vector<edge_t> line;
+
+  unsigned int last = *graph.begin_verts();
+  unsigned int v = *graph.begin_verts();
+  unsigned int s = *graph.begin_verts();
+
+  do {
+    typename G::edge_iterator j(graph.begin_edges(v));
     if(j->first == last) { ++j; }
-    line.push_back(edge_t(*i,j->first,j->second));
-    last = *i;
-  }
-    
+    last = v;
+    line.push_back(edge_t(v,j->first,j->second));
+    v = j->first;
+  } while(v != s);
+
   P xs(X(1)), acc(X(1));
   if(line[0].third > 1) { 
     acc += Y(1,line[0].third-1); 
@@ -77,9 +82,20 @@ P reduce_cycle(G &graph) {
   }
   xs += ys;
 
+  line.clear(); // clear it for next time around
+
   return xs;
 }
 
+template<class G>
+unsigned int reduce_loops(G &graph) {   
+  unsigned int c=0U;    
+  for(typename G::vertex_iterator i(graph.begin_verts());
+      i!=graph.end_verts();++i) {
+    c += graph.remove_all_edges(*i,*i);
+  }
+  return c;
+}
 
 // THIS ALGORITHM IS BROKEN!
 template<class G>
@@ -119,16 +135,6 @@ line_t trace_line(unsigned int v, unsigned int u, G const &graph) {
   }  
 
   return line;
-}
-
-template<class G>
-unsigned int reduce_loops(G &graph) {   
-  unsigned int c=0U;    
-  for(typename G::vertex_iterator i(graph.begin_verts());
-      i!=graph.end_verts();++i) {
-    c += graph.remove_all_edges(*i,*i);
-  }
-  return c;
 }
 
 #endif

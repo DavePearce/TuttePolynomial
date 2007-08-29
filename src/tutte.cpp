@@ -381,8 +381,6 @@ P T(G &graph, unsigned int mid) {
     G g2(graph); 
     line_t line = select_line(graph);
 
-    if(!graph.is_connected()) { cout << "ERROR" << endl; }
-    
     // now, delete/contract on the line's endpoints
     graph.remove_line(line);
     g2.contract_line(line);
@@ -674,7 +672,13 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     // vertex ordering strategy
     G start_graph = read_graph<G>(input);
     start_graph = permute_graph<G>(start_graph,vertex_ordering);
-    
+
+    // remove useless vertices
+    for(typename G::vertex_iterator i(start_graph.begin_verts());
+	i!=start_graph.end_verts();++i) {
+      if(start_graph.num_edges(*i) == 0) { start_graph.remove(*i); }
+    }
+
     unsigned int V(start_graph.num_vertices());
     unsigned int E(start_graph.num_edges());
     if(start_graph.num_vertices() == 0) { break; }
