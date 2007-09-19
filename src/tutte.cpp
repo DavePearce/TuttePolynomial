@@ -113,6 +113,23 @@ void write_xml_end() {
 }
 
 template<class G>
+void write_xml_graph(G const &graph, ostream &out) {
+  out << "<graph>" << endl << "<struct>" << endl;
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename G::edge_iterator j(graph.begin_edges(*i));j!=graph.end_edges(*i);++j) {
+      if(*i <= j->first) {	
+	out << "<edge>" << endl;
+	out << "<sV>" << *i << "</sV>" << endl;
+	out << "<fV>" << j->first << "</fV>" << endl;
+	out << "<nE>" << j->second << "</nE>" << endl;
+	out << "</edge>" << endl;
+      } 
+    }
+  }
+  out << "</struct></graph>" << endl;
+}
+
+template<class G>
 void write_xml_match(unsigned int my_id, unsigned int match_id, G const &graph, ostream &out) {
   out << "<graphnode>" << endl;
   out << "<id>" << my_id << "</id>" << endl;
@@ -130,6 +147,7 @@ void write_xml_nonleaf(unsigned int my_id, int left_id, int right_id, G const &g
   out << "<edges>" << graph.num_edges() << "</edges>" << endl;
   out << "<left>" << left_id << "</left>" << endl;
   out << "<right>" << right_id << "</right>" << endl;
+  write_xml_graph(graph,out);
   out << "</graphnode>" << endl;
 }
 
@@ -139,6 +157,7 @@ void write_xml_leaf(unsigned int my_id, G const &graph, ostream &out) {
   out << "<id>" << my_id << "</id>" << endl;
   out << "<vertices>" << graph.num_vertices() << "</vertices>" << endl;
   out << "<edges>" << graph.num_edges() << "</edges>" << endl;
+  write_xml_graph(graph,out);
   out << "</graphnode>" << endl;
 }
 
@@ -150,7 +169,6 @@ void write_tree_match(unsigned int my_id, unsigned int match_id, G const &graph,
   if(xml_flag) { write_xml_match(my_id,match_id,graph,out); }
   else {
     out << my_id << "=" << match_id << endl;
-    if(write_full_tree) { out << my_id << "=" << graph_str(graph) << endl; }
   }
 }
 
@@ -160,27 +178,25 @@ void write_tree_leaf(unsigned int my_id, G const &graph, ostream &out) {
     write_xml_leaf(my_id,graph,out);
   } else {
     if(write_full_tree) { out << my_id << "=" << graph_str(graph) << endl;; }
-    else {
-      out << "=== " << my_id << " ===" << endl;
-      out << "|V|: " << graph.num_vertices() << endl;
-      out << "|E|: " << graph.num_edges() << endl;  
-    }
   }
 }
 
 template<class G>
-void write_tree_nonleaf(unsigned int my_id, int left_id, int right_id, G const &graph, ostream &out) {
+void write_tree_nonleaf(unsigned int my_id, int start_id, int count, G const &graph, ostream &out) {
   if(xml_flag) { 
-    write_xml_nonleaf(my_id,left_id,right_id,graph,out);
-  } else {
-    if(write_full_tree) { out << my_id << "=" << graph_str(graph) << endl; }
-    else {
-      out << "=== " << my_id << " ===" << endl;
-      out << "|V|: " << graph.num_vertices() << endl;
-      out << "|E|: " << graph.num_edges() << endl;  
+    if(count < 2) {
+      write_xml_nonleaf(my_id,start_id,-1,graph,out);
+    } else {
+      write_xml_nonleaf(my_id,start_id,start_id+1,graph,out);
     }
-    out << my_id << "-e" << "=" << left_id << endl;
-    out << my_id << "/e" << "=" << right_id << endl;;
+  } else {
+    out << my_id << "=";
+    for(int i=0;i!=count;++i) {
+      if(i != 0) { out << "+"; }
+      out << start_id+i; 
+    }
+    if(write_full_tree) { out <<  "=" << graph_str(graph); }
+    out << endl;
   }
 }
 
@@ -352,29 +368,36 @@ P T(G &graph, unsigned int mid) {
   // === 3. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
 
   if(!graph.is_biconnected()) {
-    //    if(write_tree) { write_tree_leaf(mid, graph, cout); }
     vector<G> biconnects;
+    G copyg(graph);
     graph.extract_biconnected_components(biconnects);
     poly = reduce_tree<G,P>(graph);
     if(graph.is_multitree()) { num_trees++; }
     if(biconnects.size() > 1) { num_disbicomps++; }
+    // figure out how many tree ids I need
+    unsigned int tid(tree_id);
+    tree_id += biconnects.size();
+    if(biconnects.size() > 0 && write_tree) { write_tree_nonleaf(mid,tid,tree_id-tid,copyg,cout); }
+    else if(write_tree) { write_tree_leaf(mid,graph,cout); }
+    // now, actually do the computation
     for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
       num_bicomps++;
-      // NEED TO FIX MY ID!
       if(i->is_multicycle()) {
 	// this is actually a cycle!
 	num_cycles++;
 	poly *= reduce_cycle<G,P>(*i);
+	if(write_tree) { write_tree_leaf(tid++,graph,cout); }
       } else {
-	poly *= T<G,P>(*i,mid);      
+	poly *= T<G,P>(*i,tid++);      
       }
     }
   } else {
+
     // TREE OUTPUT STUFF
     unsigned int lid = tree_id;
     unsigned int rid = tree_id+1;
     tree_id = tree_id + 2; // allocate id's now so I know them!
-    if(write_tree) { write_tree_nonleaf(mid,lid,rid,graph,cout); }
+    if(write_tree) { write_tree_nonleaf(mid,lid,2,graph,cout); }
     
     // === 4. PERFORM DELETE / CONTRACT ===
     

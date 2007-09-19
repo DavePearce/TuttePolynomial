@@ -19,24 +19,28 @@
 
 using namespace std;
 
-typedef enum { UNUSED, TREE, MATCH, NONTREE } node_t;
+typedef enum { UNUSED, LEAF, MATCH, NONLEAF } node_t;
 typedef vector<triple<unsigned int, unsigned int, unsigned int> > graph_t;
 
 class node {
 public:  
   node_t type;
-  unsigned int match_id;  
-  unsigned int con_id;
-  unsigned int del_id;
+  vector<int> subids;
   graph_t graph;
 };
+
+string str(int i) {
+  stringstream ss;
+  ss << i;
+  return ss.str();
+}
 
 // ---------------------------------------------------------------
 // Simple Input File Parser
 // ---------------------------------------------------------------
 
-void match(char c, unsigned int &pos, string const &str) {
-  if(pos >= str.length() || str[pos] != c) { throw runtime_error(string("syntax error -- expected '") + c + "', got '" + str[pos] + "'"); }
+void match(char c, unsigned int &pos, string const &s, int line_no) {
+  if(pos >= s.length() || s[pos] != c) { throw runtime_error(string("syntax error -- expected '") + c + "', got '" + s[pos] + "' at col " + str(pos) + ", line " + str(line_no)); }
   ++pos;
 }
 
@@ -51,24 +55,24 @@ int parse_number(unsigned int &pos, string const &str) {
   return r;
 }
 
-graph_t parse_graph(unsigned int &pos, string const &str) {
-  match('{',pos,str);
+graph_t parse_graph(unsigned int &pos, string const &str, int line_no) {
+  match('{',pos,str,line_no);
   bool first=true;
-  graph_t graph;
+  graph_t graph;  
 
   while(pos < str.length()) {
     if(str[pos] == '}') { return graph; }
-    if(!first) { match(',',pos,str); }
+    if(!first) { match(',',pos,str,line_no); }
     first=false;
 
     unsigned int h,t,c=1;
     h = parse_number(pos,str);
-    match('-',pos,str);
+    match('-',pos,str,line_no);
     t = parse_number(pos,str);
     if(str[pos] == '(') {
-      match('(',pos,str);
+      match('(',pos,str,line_no);
       c = parse_number(pos,str);
-      match(')',pos,str);
+      match(')',pos,str,line_no);
     }
     
     graph.push_back(make_triple(h,t,c));
@@ -81,6 +85,7 @@ vector<node> read_input(istream &input) {
   vector<node> data;
   node empty;
   empty.type = UNUSED;
+  int line_no=1;
 
   while(!input.eof()) {
     string line;
@@ -89,39 +94,35 @@ vector<node> read_input(istream &input) {
     if(isdigit(line[0])) {
       unsigned int id = parse_number(pos,line);
       if(data.size() <= id) { data.resize(id+1,empty); }
-      if(line[pos] == '=') {
-	match('=',pos,line);
-	if(isdigit(line[pos])) {
-	  // this is a match node
-	  unsigned int match_id = parse_number(pos,line);
-	  data[id].type = MATCH;
-	  data[id].match_id = match_id;
-	} else {
-	  if(data[id].type == UNUSED) {
-	    data[id].type = TREE;
-	  }
-	  data[id].graph = parse_graph(pos,line);	  
+      match('=',pos,line,line_no);
+      if(isdigit(line[pos])) {
+	// parse subgraphs      
+	vector<int> sgs;
+	sgs.push_back(parse_number(pos,line));
+	while(line[pos] == '+') {	
+	  sgs.push_back(parse_number(++pos,line));
 	}
-      } else if(line[pos] == '-') {
-	match('-',pos,line);
-	match('e',pos,line);
-	match('=',pos,line);
-	unsigned int del_id = parse_number(pos,line);
-	data[id].type = NONTREE;
-	data[id].del_id = del_id;      
-      } else if(line[pos] == '/') {
-	match('/',pos,line);
-	match('e',pos,line);
-	match('=',pos,line);
-	unsigned int con_id = parse_number(pos,line);
-	data[id].type = NONTREE;
-	data[id].con_id = con_id;
+	if(sgs.size() == 1 && sgs[0] < id) {
+	  data[id].type = MATCH;
+	  data[id].subids = sgs;
+	} else {
+	  // non-leaf tree
+	  data[id].type = NONLEAF;
+	  data[id].subids = sgs;
+	  // now parse solution if there is one
+	  if(line[pos] == '=') {
+	    pos++;
+	    data[id].graph = parse_graph(pos,line,line_no);	  
+	  }
+	}
       } else {
-	throw runtime_error(string("syntax error on '") + line[pos] + "'");
+	data[id].type = LEAF;
+	data[id].graph = parse_graph(pos,line,line_no);	  
       }
     } else {
       return data;
-    }
+    }  
+    line_no++;
   }
 
   return data;
@@ -213,6 +214,7 @@ unsigned int count(node_t type, vector<node> const &data) {
   return c;
 }
 
+/*
 unsigned int count_identical_matches(vector<node> const &data) {
   unsigned int c(0);
   for(unsigned int i=0;i!=data.size();++i) {
@@ -222,6 +224,7 @@ unsigned int count_identical_matches(vector<node> const &data) {
   }
   return c;
 }
+*/
 
 
 // ---------------------------------------------------------------
@@ -243,34 +246,15 @@ void write_dot(vector<node> const &data, ostream &out) {
   }
   
   for(unsigned int i=0;i!=data.size();++i) {
-    if(data[i].type == NONTREE) {
-      unsigned int del = data[i].del_id;
-      unsigned int con = data[i].con_id;
-      unsigned int mid;
-      string dstyle="";
-      string cstyle="";
-      // bypass match nodes
-      if(data[del].type == MATCH) { 
-	mid = data[del].match_id; 
-	if(data[del].graph == data[mid].graph) {
-	  dstyle = "[arrowhead=dot]";
-	} else {
-	  dstyle = "[arrowhead=odot]";
+    if(data[i].type == NONLEAF) {
+      for(unsigned int j=0;j!=data[i].subids.size();++j) {
+	unsigned int sid = data[i].subids[j];
+	if(data[sid].type == MATCH) {
+	  sid = data[sid].subids[0];
 	}
-	del = mid;
+	// draw arcs
+	out << "\t" << i << " -> " << sid << endl;
       }
-      if(data[con].type == MATCH) { 
-	mid = data[con].match_id; 
-	if(data[con].graph == data[mid].graph) {
-	  cstyle = ",arrowhead=dot";
-	} else {
-	  cstyle = ",arrowhead=odot";
-	}
-	con = mid;
-      }
-      // draw arcs
-      out << "\t" << i << " -> " << del << dstyle << endl;
-      out << "\t" << i << " -> " << con << " [style=dashed" << cstyle << "]" << endl;
     } 
   }
   out << "}" << endl;  
@@ -358,6 +342,7 @@ graph_t layout_graph(graph_t const &graph, unsigned int *limit, layout_t mode) {
 // This method attempts to draw *all* the little graphs
 // as well.  It really will only work on small computation 
 // trees.
+
 void write_full_dot(vector<node> const &data, layout_t small_mode, ostream &out) {
   out << "graph {" << endl;
   out << "\tcompound=true;" << endl;
@@ -412,42 +397,21 @@ void write_full_dot(vector<node> const &data, layout_t small_mode, ostream &out)
   
   // second, we create the edges between subgraphs
   for(unsigned int i=1;i!=data.size();++i) {
-    if(data[i].type == NONTREE) {
-      unsigned int del = data[i].del_id;
-      unsigned int con = data[i].con_id;
-      unsigned int mid;
-      string dstyle="";
-      string cstyle="";
-      if(data[del].type == MATCH) { 
-	mid = data[del].match_id; 
-	if(data[del].graph == data[mid].graph) {
-	  dstyle = ",arrowhead=dot";
-	} else {
-	  dstyle = ",arrowhead=odot";
+    if(data[i].type == NONLEAF) {
+      for(unsigned int j=0;j!=data[i].subids.size();++j) {
+	unsigned int sid = data[i].subids[j];
+	if(data[sid].type == MATCH) {
+	  sid = data[sid].subids[0];
 	}
-	del = mid;
-      }
-      if(data[con].type == MATCH) { 
-	mid = data[con].match_id; 
-	if(data[con].graph == data[mid].graph) {
-	  cstyle = ",arrowhead=dot";
-	} else {
-	  cstyle = ",arrowhead=odot";
-	}
-	con = mid;
-      }
-      if(first[del] != -1) {
-	out << "\t" << last[i] << " -- " << first[del] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << del << ",arrowhead=normal" << dstyle << "];" << endl;
-      } 
-      if (first[con] != -1) {
-	out << "\t" << last[i] << " -- " << first[con] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << con << ",arrowhead=normal,style=dashed" << cstyle << "];" << endl;
+	if(first[sid] != -1) {
+	  out << "\t" << last[i] << " -- " << first[sid] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << sid << ",arrowhead=normal" << "];" << endl;
+	} 
       }
     }
   }
 
   out << "}" << endl;  
 }
-
 
 // ---------------------------------------------------------------
 // Main Method
@@ -533,7 +497,7 @@ int main(int argc, char* argv[]) {
     case OPT_STATS:
       {
 	vector<node> data=read_input(cin);
-	unsigned int size(count(NONTREE,data) + count(TREE,data));      
+	unsigned int size(count(NONLEAF,data) + count(LEAF,data));      
 	unsigned int V = num_vertices(data[1].graph);
 	unsigned int E = num_edges(data[1].graph);
 	double msize(pow(2.0,(double) E-V+1));	
@@ -544,9 +508,9 @@ int main(int argc, char* argv[]) {
 	cout << "Average match had " << mean(match_vs) << " vertices (+/-" << sdev(match_vs) << ")";
 	cout << ", and " << mean(match_es) << " edges (+/-" << sdev(match_es) << ")." << endl;
 	unsigned int nmatches(count(MATCH,data));
-	unsigned int nisomatches(count_identical_matches(data));
-	double isoratio = round((((double) nisomatches) / nmatches) * 100);
-	cout << "There were " << nmatches << " matches, of which " << nisomatches << " (" << isoratio << "%) were identical." << endl;    
+	//	unsigned int nisomatches(count_identical_matches(data));
+	//	double isoratio = round((((double) nisomatches) / nmatches) * 100);
+	//	cout << "There were " << nmatches << " matches, of which " << nisomatches << " (" << isoratio << "%) were identical." << endl;    
       }
     }
   } catch(bad_alloc const &e) {
