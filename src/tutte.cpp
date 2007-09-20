@@ -370,7 +370,7 @@ P T(G &graph, unsigned int mid) {
   if(graph.is_multicycle()) {
     num_cycles++;
     poly = reduce_cycle<G,P>(graph);
-    if(write_tree) { write_tree_leaf(tree_id,graph,cout); }
+    if(write_tree) { write_tree_leaf(mid,graph,cout); }
   } else if(!graph.is_biconnected()) {
     vector<G> biconnects;
     G copyg(graph);
