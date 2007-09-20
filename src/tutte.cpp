@@ -367,7 +367,11 @@ P T(G &graph, unsigned int mid) {
 
   // === 3. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
 
-  if(!graph.is_biconnected()) {
+  if(graph.is_multicycle()) {
+    num_cycles++;
+    poly = reduce_cycle<G,P>(graph);
+    if(write_tree) { write_tree_leaf(tree_id,graph,cout); }
+  } else if(!graph.is_biconnected()) {
     vector<G> biconnects;
     G copyg(graph);
     graph.extract_biconnected_components(biconnects);
@@ -386,7 +390,7 @@ P T(G &graph, unsigned int mid) {
 	// this is actually a cycle!
 	num_cycles++;
 	poly *= reduce_cycle<G,P>(*i);
-	if(write_tree) { write_tree_leaf(tid++,graph,cout); }
+	if(write_tree) { write_tree_leaf(tid++,*i,cout); }
       } else {
 	poly *= T<G,P>(*i,tid++);      
       }
