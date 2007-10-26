@@ -84,9 +84,10 @@ unsigned long num_cycles = 0;
 unsigned long num_disbicomps = 0;
 unsigned long num_trees = 0;
 unsigned long old_num_steps = 0;
-unsigned int small_graph_threshold = 5;
-edgesel_t edge_selection_heuristic = VERTEX_ORDER;
-simple_cache cache(1024*1024,100);
+static int timeout = 15768000; // one years worth of timeout
+static unsigned int small_graph_threshold = 5;
+static edgesel_t edge_selection_heuristic = VERTEX_ORDER;
+static simple_cache cache(1024*1024,100);
 static bool status_flag=false;
 static bool reduce_multicycles=true;
 static bool reduce_multiedges=true;
@@ -341,6 +342,7 @@ P LP(unsigned int p, std::vector<typename G::edge_t> const &line) {
 
 template<class G, class P>
 P T(G &graph, unsigned int mid) { 
+  if(timeout <= 0) { return P(X(0)); }
   if(status_flag) { print_status(); }
   num_steps++;
 
@@ -666,6 +668,7 @@ static int status_interval = 5; // in seconds
 
 void timer_handler(int signum) {
   status_flag=true;
+  timeout -= status_interval;
   alarm(status_interval);
 }
 
@@ -757,6 +760,7 @@ int main(int argc, char *argv[]) {
   #define OPT_INFO 2
   #define OPT_SMALLGRAPHS 5
   #define OPT_NGRAPHS 6
+  #define OPT_TIMEOUT 7
   #define OPT_CACHESIZE 10
   #define OPT_CACHEBUCKETS 11  
   #define OPT_CACHEREPLACEMENT 12
@@ -792,6 +796,7 @@ int main(int argc, char *argv[]) {
     {"help",no_argument,NULL,OPT_HELP},
     {"info",no_argument,NULL,OPT_INFO},
     {"quiet",no_argument,NULL,OPT_QUIET},
+    {"timeout",required_argument,NULL,OPT_TIMEOUT},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
@@ -829,6 +834,7 @@ int main(int argc, char *argv[]) {
     "        --help                    display this information",
     " -i     --info                    output summary information regarding computation",
     " -q     --quiet                   output info summary as single line only (useful for generating data)",
+    " -t     --timeout=<x>             timeout after x seconds",
     "        --small-graphs=size       set threshold for small graphs, e.g. 7",
     " -n<x>  --ngraphs=<number>        number of graphs to process from input file",
     "        --tree                    output computation tree",
@@ -872,7 +878,7 @@ int main(int argc, char *argv[]) {
   vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
   string cache_stats_file("");
 
-  while((v=getopt_long(argc,argv,"qic:n:",long_options,NULL)) != -1) {
+  while((v=getopt_long(argc,argv,"qic:n:t:",long_options,NULL)) != -1) {
     switch(v) {      
     case OPT_HELP:
       cout << "usage: " << argv[0] << " [options] <input graph file>" << endl;
@@ -885,6 +891,10 @@ int main(int argc, char *argv[]) {
     case 'q':
     case OPT_QUIET:      
       quiet_mode=true;
+      break;
+    case 't':
+    case OPT_TIMEOUT:
+      timeout = atoi(optarg);
       break;
     case 'n':
     case OPT_NGRAPHS:
@@ -1016,13 +1026,11 @@ int main(int argc, char *argv[]) {
   // Register alarm signal for printing status updates
   // -------------------------------------------------
 
-    if(!quiet_mode) {
-      struct sigaction sa;
-      memset(&sa,0,sizeof(sa));
-      sa.sa_handler = &timer_handler;
-      if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
-      alarm(status_interval); // trigger alarm in status_interval seconds
-    }
+    struct sigaction sa;
+    memset(&sa,0,sizeof(sa));
+    sa.sa_handler = &timer_handler;
+    if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
+    alarm(status_interval); // trigger alarm in status_interval seconds
     
     // -----------------------------------
     // Now, begin solving the input graph!
