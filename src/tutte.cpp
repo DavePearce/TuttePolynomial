@@ -85,14 +85,16 @@ unsigned long num_disbicomps = 0;
 unsigned long num_trees = 0;
 unsigned long old_num_steps = 0;
 unsigned int small_graph_threshold = 5;
-edgesel_t edge_selection_heuristic = MINIMISE_SDEGREE;
+edgesel_t edge_selection_heuristic = VERTEX_ORDER;
 simple_cache cache(1024*1024,100);
 static bool status_flag=false;
+static bool reduce_multicycles=true;
+static bool reduce_multiedges=true;
+static bool reduce_lines=false;
 static bool xml_flag=false;
 static unsigned int tree_id = 2;
 static bool write_tree=false;
 static bool write_full_tree=false;
-static bool remove_lines=false;
 
 void print_status();
 
@@ -232,7 +234,7 @@ typename G::edge_t select_edge(G const &graph) {
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     unsigned int head = *i;
     unsigned int headc(graph.num_underlying_edges(head));
-    if(!remove_lines || headc != 2) {      
+    if(!reduce_lines || headc != 2) {      
       // if we're in lines mode, then we ignore "parts" of lines
       for(typename G::edge_iterator j(graph.begin_edges(*i));
 	  j!=graph.end_edges(*i);++j) {	
@@ -240,7 +242,7 @@ typename G::edge_t select_edge(G const &graph) {
 	unsigned int tailc(graph.num_underlying_edges(tail));
 	unsigned int count = j->second;
 	
-	if(head < tail || (remove_lines && tailc == 2)) { // to avoid duplicates
+	if(head < tail || (reduce_lines && tailc == 2)) { // to avoid duplicates
 	  unsigned int cost;
 	  switch(edge_selection_heuristic) {
 	  case MAXIMISE_DEGREE:
@@ -259,16 +261,16 @@ typename G::edge_t select_edge(G const &graph) {
 	    cost = V*V - (headc * tailc);
 	    break;
 	  case VERTEX_ORDER:	    
-	    return typename G::edge_t(head,tail,count);
+	    return typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
 	    break;
 	  case RANDOM:
 	    if(rcount == rtarget) {
-	      return typename G::edge_t(head,tail,count);
+	      return typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
 	    }
 	    rcount += count;	    
 	  }
-	  if(cost > best) {
-	    r = typename G::edge_t(head,tail,count);
+	  if(cost > best) {	    
+	    r = typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
 	    best = cost;
 	  }     
 	}
@@ -284,12 +286,10 @@ typename G::edge_t select_edge(G const &graph) {
 template<class G>
 line_t select_line(G const &graph) {
   typename G::edge_t e = select_edge(graph);
-  if(remove_lines) { 
+  if(reduce_lines) { 
     return trace_line<G>(e.first,e.second,graph); 
   } else {
-    line_t line;
-    line.push_back(e);
-    return line;
+    return line_t(1,e);
   }
 }
 
@@ -367,7 +367,7 @@ P T(G &graph, unsigned int mid) {
 
   // === 3. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
 
-  if(graph.is_multicycle()) {
+  if(reduce_multicycles && graph.is_multicycle()) {
     num_cycles++;
     poly = reduce_cycle<G,P>(graph);
     if(write_tree) { write_tree_leaf(mid,graph,cout); }
@@ -762,6 +762,7 @@ int main(int argc, char *argv[]) {
   #define OPT_CACHEREPLACEMENT 12
   #define OPT_CACHERANDOM 13
   #define OPT_CACHESTATS 14
+  #define OPT_NOCACHE 15
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
   #define OPT_XML_OUT 32
@@ -771,6 +772,8 @@ int main(int argc, char *argv[]) {
   #define OPT_MEDIUM 41
   #define OPT_LARGE 42
   #define OPT_WITHLINES 43
+  #define OPT_NOMULTICYCLES 44
+  #define OPT_NOMULTIEDGES 45
   #define OPT_MAXDEGREE 50
   #define OPT_MAXMDEGREE 51
   #define OPT_MINDEGREE 52
@@ -783,6 +786,7 @@ int main(int argc, char *argv[]) {
   #define OPT_MAXDEG_ORDERING 62
   #define OPT_MINUDEG_ORDERING 63
   #define OPT_MAXUDEG_ORDERING 64
+
   
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
@@ -793,6 +797,7 @@ int main(int argc, char *argv[]) {
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
     {"cache-random-replacement",no_argument,NULL,OPT_CACHERANDOM}, 
     {"cache-stats",optional_argument,NULL,OPT_CACHESTATS},   
+    {"no-caching",no_argument,NULL,OPT_NOCACHE},
     {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
     {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
     {"minimise-sdegree", no_argument,NULL,OPT_MINSDEGREE},
@@ -815,6 +820,8 @@ int main(int argc, char *argv[]) {
     {"medium",no_argument,NULL,OPT_MEDIUM},
     {"large",no_argument,NULL,OPT_LARGE},
     {"with-lines",no_argument,NULL,OPT_WITHLINES},
+    {"no-multicycles",no_argument,NULL,OPT_NOMULTICYCLES},
+    {"no-multiedges",no_argument,NULL,OPT_NOMULTIEDGES},
     NULL
   };
   
@@ -836,6 +843,7 @@ int main(int argc, char *argv[]) {
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     "        --cache-replacement=<amount> set ratio (between 0 .. 1) of cache to displace when full",
     "        --cache-stats[=<file>]    print cache stats summary, or write detailed stats to file.",
+    "        --no-caching              disable caching",
     " \nedge selection heuristics:",
     "        --minimise-degree         minimise endpoint (underlying) degree sum",
     "        --minimise-sdegree        minimise single endpoint (underlying) degree",
@@ -918,6 +926,9 @@ int main(int argc, char *argv[]) {
 	cache_stats_file = string(optarg);
       }
       break;
+    case OPT_NOCACHE:
+      small_graph_threshold = 10000;
+      break;
     // --- POLY OPTIONS ---
     case OPT_SIMPLE_POLY:
       poly_rep = OPT_SIMPLE_POLY;
@@ -969,7 +980,13 @@ int main(int argc, char *argv[]) {
       size=v;
       break;
     case OPT_WITHLINES:
-      remove_lines=true;
+      reduce_lines=true;
+      break;
+    case OPT_NOMULTICYCLES:
+      reduce_multicycles=false;
+      break;
+    case OPT_NOMULTIEDGES:
+      reduce_multiedges=false;
       break;
     default:
       cout << "Unrecognised parameter!" << endl;
