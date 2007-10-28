@@ -89,6 +89,7 @@ static unsigned int small_graph_threshold = 5;
 static edgesel_t edge_selection_heuristic = VERTEX_ORDER;
 static simple_cache cache(1024*1024,100);
 static bool status_flag=false;
+static bool verbose=true;
 static bool reduce_multicycles=true;
 static bool reduce_multiedges=true;
 static bool reduce_lines=false;
@@ -667,7 +668,7 @@ void write_hit_counts(fstream &out) {
 static int status_interval = 5; // in seconds
 
 void timer_handler(int signum) {
-  status_flag=true;
+  if(verbose) { status_flag=true; }
   timeout -= status_interval;
   alarm(status_interval);
 }
@@ -686,7 +687,7 @@ void print_status() {
 // ---------------------------------------------------------------
 
 template<class G, class P>
-void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean quiet_mode, boolean info_mode) {
+void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean info_mode) {
   unsigned int ngraphs_completed=0;
   while(!input.eof() && ngraphs_completed < ngraphs) {
     // first, reset all stats information
@@ -720,7 +721,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 
     if(write_tree) { write_tree_end(ngraphs_completed); }
 
-    if(quiet_mode) {
+    if(!verbose) {
       if(info_mode) {
 	cout << V << "\t" << E;    
 	cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << num_bicomps << "\t" << num_disbicomps << "\t" << num_cycles << "\t" << num_trees;
@@ -872,7 +873,6 @@ int main(int argc, char *argv[]) {
   unsigned int poly_rep(OPT_FACTOR_POLY);
   unsigned int ngraphs(1);
   unsigned int size = OPT_LARGE;
-  bool quiet_mode=false;
   bool info_mode=false;
   bool cache_stats=false;
   vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
@@ -890,7 +890,7 @@ int main(int argc, char *argv[]) {
           
     case 'q':
     case OPT_QUIET:      
-      quiet_mode=true;
+      verbose=false;
       break;
     case 't':
     case OPT_TIMEOUT:
@@ -1041,14 +1041,14 @@ int main(int argc, char *argv[]) {
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
       if(size == OPT_SMALL) {
-	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,quiet_mode,info_mode);
+	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,info_mode);
       } else if(size == OPT_MEDIUM) {       
-	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,quiet_mode,info_mode);
+	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,info_mode);
       } else {
-	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,quiet_mode,info_mode);
+	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode);
       }
     } else {
-      //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering,quiet_mode);
+      //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering);
     }    
 
     if(cache_stats) {
