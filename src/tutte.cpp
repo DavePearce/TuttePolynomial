@@ -84,6 +84,7 @@ unsigned long num_cycles = 0;
 unsigned long num_disbicomps = 0;
 unsigned long num_trees = 0;
 unsigned long old_num_steps = 0;
+static int current_timeout = 15768000; // one years worth of timeout
 static int timeout = 15768000; // one years worth of timeout
 static unsigned int small_graph_threshold = 5;
 static edgesel_t edge_selection_heuristic = VERTEX_ORDER;
@@ -343,7 +344,7 @@ P LP(unsigned int p, std::vector<typename G::edge_t> const &line) {
 
 template<class G, class P>
 P T(G &graph, unsigned int mid) { 
-  if(timeout <= 0) { return P(X(0)); }
+  if(current_timeout <= 0) { return P(X(0)); }
   if(status_flag) { print_status(); }
   num_steps++;
 
@@ -669,7 +670,7 @@ static int status_interval = 5; // in seconds
 
 void timer_handler(int signum) {
   if(verbose) { status_flag=true; }
-  timeout -= status_interval;
+  current_timeout -= status_interval;
   alarm(status_interval);
 }
 
@@ -698,6 +699,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     num_disbicomps = 0;
     num_trees = 0;
     num_cycles = 0;
+    current_timeout = timeout;
 
     // Create graph and then permute it according to 
     // vertex ordering strategy
