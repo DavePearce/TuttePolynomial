@@ -689,7 +689,7 @@ void print_status() {
 
 template<class G, class P>
 void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean info_mode) {
-  unsigned int ngraphs_completed=0;
+  unsigned int ngraphs_completed=0;  
   while(!input.eof() && ngraphs_completed < ngraphs) {
     // first, reset all stats information
     cache.clear();  
