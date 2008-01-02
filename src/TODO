@@ -12,6 +12,7 @@ Code Improvements
   function which produces a bitstring from a graph ... similar to what we have now.
 * Add support for decent stats reporting [breakdown of bucket length, proportion of memory used by graphs vs polynomial]
 * Add copyright messages.
+* Add support for 64 bit compile.
 
 Easy Ideas
 ----------
