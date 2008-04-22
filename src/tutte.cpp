@@ -742,6 +742,17 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
 	cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
 	cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),E) << ")" << endl;	
+
+	// The tutte at T(-1,-1) should always give a (positive or negative) power of 2.
+	biguint tmp = tuttePoly.substitute(-1,-1);
+	int power_2 = 0;
+	while(tmp != 1U && tmp != -1U) {
+	  biguint tmp2 = (tmp / 2U);
+	  if((tmp2*2U) != tmp) { break; }
+	  power_2++;
+	  tmp = tmp2;
+	}
+	cout << "T(-1,-1) = " << tmp << " * 2^" << power_2 << " (should be +/- a power of 2)" << endl;
       }
     }
     ++ngraphs_completed;
