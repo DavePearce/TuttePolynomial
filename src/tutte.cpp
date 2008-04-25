@@ -12,6 +12,7 @@
 #include <stack>
 #include <stdexcept>
 #include <algorithm>
+#include <climits>
 #include <cstdlib>
 #include <csignal>
 #include <getopt.h>
@@ -530,7 +531,7 @@ G permute_graph(G const &graph, vorder_t heuristic) {
     sort(order.begin(),order.end(),vo_multi<G,less<unsigned int> >(graph));
     break;
   case V_MAXIMISE_DEGREE:
-	 sort(order.begin(),order.end(),vo_multi<G,greater<unsigned int> >(graph));
+    sort(order.begin(),order.end(),vo_multi<G,greater<unsigned int> >(graph));
     break;
   default:
     // do nothing
@@ -730,7 +731,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
       }
     } else {
-      cout << tuttePoly.str() << endl;
+      cout << "TP[" << (ngraphs_completed+1) << "] = " << tuttePoly.str() << " :" << endl;
       if(info_mode) {
 	cout << "=======" << endl;
 	cout << "V = " << V << ", E = " << E << endl;
@@ -742,17 +743,10 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
 	cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
 	cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),E) << ")" << endl;	
-
-	// The tutte at T(-1,-1) should always give a (positive or negative) power of 2.
-	biguint tmp = tuttePoly.substitute(-1,-1);
-	int power_2 = 0;
-	while(tmp != 1U && tmp != -1U) {
-	  biguint tmp2 = (tmp / 2U);
-	  if((tmp2*2U) != tmp) { break; }
-	  power_2++;
-	  tmp = tmp2;
-	}
-	cout << "T(-1,-1) = " << tmp << " * 2^" << power_2 << " (should be +/- a power of 2)" << endl;
+	// The tutte at T(-1,-1) should always give a (positive or
+	// negative) power of 2.  Currently, we cannot generate this
+	// here, since you cannot pass negative numbers to
+	// substitite().
       }
     }
     ++ngraphs_completed;
@@ -885,7 +879,7 @@ int main(int argc, char *argv[]) {
   unsigned int cache_size(256 * 1024 * 1024); 
   unsigned int cache_buckets(1000000);     // default 1M buckets
   unsigned int poly_rep(OPT_FACTOR_POLY);
-  unsigned int ngraphs(1);
+  unsigned int ngraphs(UINT_MAX); // default is to do every graph in input file
   unsigned int size = OPT_LARGE;
   bool info_mode=false;
   bool cache_stats=false;
