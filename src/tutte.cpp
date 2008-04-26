@@ -903,7 +903,7 @@ int main(int argc, char *argv[]) {
       }    
       exit(1);          
     case OPT_VERSION:      
-      cout << "tutte version "  << MAJOR_VERSION << "." << MINOR_VERSION << "." << MINOR_REVISION << endl;
+      cout << "Tutte version "  << MAJOR_VERSION << "." << MINOR_VERSION << "." << MINOR_REVISION << endl;
       cout << "Developed by David J. Pearce, Gary Haggard and Gordon Royle, 2008" << endl;
       exit(0);
       break;
