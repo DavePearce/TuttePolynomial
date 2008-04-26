@@ -44,7 +44,7 @@ all: subdirs $(TARGET) lib$(LIBTARGET).so $(SLIBTARGET)
 install: install-subdirs install-target install-lib install-slib
 
 clean: clean-target clean-lib clean-slib clean-subdirs
-	rm -f *~ $(OBJS)
+	rm -f *~ $(OBJS) *.exe
 
 ##################################
 #### rules for building files ####
