@@ -731,7 +731,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
       }
     } else {
-      cout << "TP[" << (ngraphs_completed+1) << "] = " << tuttePoly.str() << " :" << endl;
+      cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
       if(info_mode) {
 	cout << "=======" << endl;
 	cout << "V = " << V << ", E = " << E << endl;
