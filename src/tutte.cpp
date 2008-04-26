@@ -35,6 +35,10 @@
 
 using namespace std;
 
+#define MAJOR_VERSION 0
+#define MINOR_VERSION 9
+#define MINOR_REVISION 7
+
 // ---------------------------------------------------------------
 // User-Defined Types
 // ---------------------------------------------------------------
@@ -766,6 +770,7 @@ int main(int argc, char *argv[]) {
   #define OPT_HELP 0
   #define OPT_QUIET 1  
   #define OPT_INFO 2
+  #define OPT_VERSION 4
   #define OPT_SMALLGRAPHS 5
   #define OPT_NGRAPHS 6
   #define OPT_TIMEOUT 7
@@ -802,6 +807,7 @@ int main(int argc, char *argv[]) {
   
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
+    {"version",no_argument,NULL,OPT_VERSION},
     {"info",no_argument,NULL,OPT_INFO},
     {"quiet",no_argument,NULL,OPT_QUIET},
     {"timeout",required_argument,NULL,OPT_TIMEOUT},
@@ -840,6 +846,7 @@ int main(int argc, char *argv[]) {
   
   char *descriptions[]={
     "        --help                    display this information",
+    "        --version                 display the version number of this program",
     " -i     --info                    output summary information regarding computation",
     " -q     --quiet                   output info summary as single line only (useful for generating data)",
     " -t     --timeout=<x>             timeout after x seconds",
@@ -894,8 +901,12 @@ int main(int argc, char *argv[]) {
       for(char **ptr=descriptions;*ptr != NULL; ptr++) {
 	cout << *ptr << endl;
       }    
-      exit(1);
-          
+      exit(1);          
+    case OPT_VERSION:      
+      cout << "tutte version "  << MAJOR_VERSION << "." << MINOR_VERSION << "." << MINOR_REVISION << endl;
+      cout << "Developed by David J. Pearce, Gary Haggard and Gordon Royle, 2008" << endl;
+      exit(0);
+      break;
     case 'q':
     case OPT_QUIET:      
       verbose=false;
