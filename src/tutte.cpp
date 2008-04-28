@@ -850,7 +850,7 @@ int main(int argc, char *argv[]) {
     " -i     --info                    output summary information regarding computation",
     " -q     --quiet                   output info summary as single line only (useful for generating data)",
     " -t     --timeout=<x>             timeout after x seconds",
-    "        --small-graphs=size       set threshold for small graphs, e.g. 7",
+    "        --small-graphs=size       set threshold for small graphs.  Default is 5.",
     " -n<x>  --ngraphs=<number>        number of graphs to process from input file",
     "        --tree                    output computation tree",
     "        --full-tree               output full computation tree",
