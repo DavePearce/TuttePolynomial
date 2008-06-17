@@ -37,7 +37,7 @@ using namespace std;
 
 #define MAJOR_VERSION 0
 #define MINOR_VERSION 9
-#define MINOR_REVISION 7
+#define MINOR_REVISION 8
 
 // ---------------------------------------------------------------
 // User-Defined Types
@@ -514,6 +514,39 @@ public:
   }
 };
 
+/* This method just compacts the vertex space used by the graph so
+ * that it is numbered contiguously from 0.  This is done by
+ * eliminating any vertices which have no edges.
+ */
+template<class G>
+G compact_graph(G const &graph) {
+  vector<unsigned int> labels(graph.num_vertices(),0);
+  int counter = 0;
+
+  for(unsigned int i=0;i!=graph.num_vertices();++i) {
+    if(graph.num_edges(i) > 0) {
+      labels[i] = counter++;
+    }
+  }
+ 
+  // now, create new permuted graph
+  G r(counter+1);
+  
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename G::edge_iterator j(graph.begin_edges(*i));
+	j!=graph.end_edges(*i);++j) {	      
+      unsigned int head(*i);
+      unsigned int tail(j->first);
+      unsigned int count(j->second);
+      if(head <= tail) {
+	r.add_edge(labels[head],labels[tail],count);
+      }
+    }
+  }
+  
+  return r;  
+}
+
 template<class G>
 G permute_graph(G const &graph, vorder_t heuristic) {
   vector<unsigned int> order;
@@ -693,11 +726,11 @@ void print_status() {
 // ---------------------------------------------------------------
 
 template<class G, class P>
-void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean info_mode) {
+void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode) {
   unsigned int ngraphs_completed=0;  
   while(!input.eof() && ngraphs_completed < ngraphs) {
     // first, reset all stats information
-    cache.clear();  
+    if(reset_mode) { cache.clear(); }
     cache.reset_stats();
     num_steps = 0;
     num_bicomps = 0;
@@ -708,14 +741,8 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 
     // Create graph and then permute it according to 
     // vertex ordering strategy
-    G start_graph = read_graph<G>(input);
+    G start_graph = compact_graph<G>(read_graph<G>(input));
     start_graph = permute_graph<G>(start_graph,vertex_ordering);
-
-    // remove useless vertices
-    for(typename G::vertex_iterator i(start_graph.begin_verts());
-	i!=start_graph.end_verts();++i) {
-      if(start_graph.num_edges(*i) == 0) { start_graph.remove(*i); }
-    }
 
     unsigned int V(start_graph.num_vertices());
     unsigned int E(start_graph.num_edges());
@@ -780,6 +807,7 @@ int main(int argc, char *argv[]) {
   #define OPT_CACHERANDOM 13
   #define OPT_CACHESTATS 14
   #define OPT_NOCACHE 15
+  #define OPT_NOCACHERESET 16
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
   #define OPT_XML_OUT 32
@@ -817,6 +845,7 @@ int main(int argc, char *argv[]) {
     {"cache-random",no_argument,NULL,OPT_CACHERANDOM}, 
     {"cache-stats",optional_argument,NULL,OPT_CACHESTATS},   
     {"no-caching",no_argument,NULL,OPT_NOCACHE},
+    {"no-reset",no_argument,NULL,OPT_NOCACHERESET},
     {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
     {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
     {"minimise-sdegree", no_argument,NULL,OPT_MINSDEGREE},
@@ -866,6 +895,7 @@ int main(int argc, char *argv[]) {
     "        --cache-replacement=<amount> set ratio (between 0 .. 1) of cache to displace when full",
     "        --cache-stats[=<file>]    print cache stats summary, or write detailed stats to file.",
     "        --no-caching              disable caching",
+    "        --no-reset                prevent the cache from being reset between graphs in a batch",
     " \nedge selection heuristics:",
     "        --minimise-degree         minimise endpoint (underlying) degree sum",
     "        --minimise-sdegree        minimise single endpoint (underlying) degree",
@@ -889,6 +919,7 @@ int main(int argc, char *argv[]) {
   unsigned int ngraphs(UINT_MAX); // default is to do every graph in input file
   unsigned int size = OPT_LARGE;
   bool info_mode=false;
+  bool reset_mode=true;
   bool cache_stats=false;
   vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
   string cache_stats_file("");
@@ -957,6 +988,9 @@ int main(int argc, char *argv[]) {
       break;
     case OPT_NOCACHE:
       small_graph_threshold = 10000;
+      break;
+    case OPT_NOCACHERESET:
+      reset_mode = false;
       break;
     // --- POLY OPTIONS ---
     case OPT_SIMPLE_POLY:
@@ -1060,11 +1094,11 @@ int main(int argc, char *argv[]) {
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
       if(size == OPT_SMALL) {
-	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,info_mode);
+	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
       } else if(size == OPT_MEDIUM) {       
-	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,info_mode);
+	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
       } else {
-	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode);
+	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
       }
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering);
