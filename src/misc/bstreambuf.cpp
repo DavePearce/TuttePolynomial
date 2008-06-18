@@ -18,3 +18,4 @@ bstreambuf& operator<<(bstreambuf &out, long val) { out.write(val); return out; 
 bstreambuf& operator<<(bstreambuf &out, unsigned long val) { out.write(val); return out; }
 bstreambuf& operator<<(bstreambuf &out, long long val) { out.write(val); return out; }
 bstreambuf& operator<<(bstreambuf &out, unsigned long long val) { out.write(val); return out; }
+bstreambuf& operator<<(bstreambuf &out, mpz_class const &val) { out.write(val); return out; }

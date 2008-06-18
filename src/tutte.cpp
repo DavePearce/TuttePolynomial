@@ -20,6 +20,8 @@
 #include <sys/resource.h>
 #include <ext/hash_map>
 
+#include <gmpxx.h> // GNU Multi-precision Library
+
 #include "graph/adjacency_list.hpp"
 #include "graph/spanning_graph.hpp"
 #include "poly/simple_poly.hpp"
@@ -813,9 +815,6 @@ int main(int argc, char *argv[]) {
   #define OPT_XML_OUT 32
   #define OPT_TREE_OUT 33
   #define OPT_FULLTREE_OUT 34
-  #define OPT_SMALL 40
-  #define OPT_MEDIUM 41
-  #define OPT_LARGE 42
   #define OPT_WITHLINES 43
   #define OPT_NOMULTICYCLES 44
   #define OPT_NOMULTIEDGES 45
@@ -864,9 +863,6 @@ int main(int argc, char *argv[]) {
     {"full-tree",no_argument,NULL,OPT_FULLTREE_OUT},
     {"xml-tree",no_argument,NULL,OPT_XML_OUT},
     {"ngraphs",required_argument,NULL,OPT_NGRAPHS},
-    {"small",no_argument,NULL,OPT_SMALL},
-    {"medium",no_argument,NULL,OPT_MEDIUM},
-    {"large",no_argument,NULL,OPT_LARGE},
     {"with-lines",no_argument,NULL,OPT_WITHLINES},
     {"no-multicycles",no_argument,NULL,OPT_NOMULTICYCLES},
     {"no-multiedges",no_argument,NULL,OPT_NOMULTIEDGES},
@@ -917,7 +913,6 @@ int main(int argc, char *argv[]) {
   unsigned int cache_buckets(1000000);     // default 1M buckets
   unsigned int poly_rep(OPT_FACTOR_POLY);
   unsigned int ngraphs(UINT_MAX); // default is to do every graph in input file
-  unsigned int size = OPT_LARGE;
   bool info_mode=false;
   bool reset_mode=true;
   bool cache_stats=false;
@@ -1037,11 +1032,6 @@ int main(int argc, char *argv[]) {
     case OPT_SMALLGRAPHS:
       small_graph_threshold = parse_amount(optarg);      
       break;      
-    case OPT_SMALL:
-    case OPT_MEDIUM:
-    case OPT_LARGE:
-      size=v;
-      break;
     case OPT_WITHLINES:
       reduce_lines=true;
       break;
@@ -1093,13 +1083,8 @@ int main(int argc, char *argv[]) {
         
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
-      if(size == OPT_SMALL) {
-	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned int> > >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
-      } else if(size == OPT_MEDIUM) {       
-	run<spanning_graph<adjacency_list<> >,factor_poly<safe<unsigned long long> > >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
-      } else {
-	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
-      }
+      run<spanning_graph<adjacency_list<> >,factor_poly<mpz_class> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
+      // run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering);
     }    
