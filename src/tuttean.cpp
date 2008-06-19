@@ -149,6 +149,16 @@ unsigned int num_edges(graph_t const &g) {
   return e;
 }
 
+unsigned int degree(int v, graph_t const &g) {
+  unsigned int e(0);
+  for(graph_t::const_iterator i(g.begin());i!=g.end();++i) {
+    if(i->first == v || i->second == v) {
+      e += i->third;
+    }
+  }
+  return e;
+}
+
 bool is_multigraph(graph_t const &g) {
   for(graph_t::const_iterator i(g.begin());i!=g.end();++i) {
     if(i->third > 1) { return true; }
@@ -231,10 +241,10 @@ unsigned int count_identical_matches(vector<node> const &data) {
 // Format Conversion Methods
 // ---------------------------------------------------------------
 
-void write_dot(vector<node> const &data, ostream &out) {
+void write_dot(int minv, vector<node> const &data, ostream &out) {
   out << "digraph {" << endl;
   for(unsigned int i=1;i!=data.size();++i) {
-    if(data[i].type != MATCH) {
+    if(data[i].type != MATCH && num_vertices(data[i].graph) >= minv) {
       double size = 1 + num_vertices(data[i].graph);
       size /= 10;    
       out << "\t" << i << " [fontsize=9,width=" << size << ",height=" << size;
@@ -252,8 +262,10 @@ void write_dot(vector<node> const &data, ostream &out) {
 	if(data[sid].type == MATCH) {
 	  sid = data[sid].subids[0];
 	}
-	// draw arcs
-	out << "\t" << i << " -> " << sid << endl;
+	if(num_vertices(data[sid].graph) >= minv) {
+	  // draw arcs
+	  out << "\t" << i << " -> " << sid << endl;
+	}
       }
     } 
   }
@@ -343,10 +355,14 @@ graph_t layout_graph(graph_t const &graph, unsigned int *limit, layout_t mode) {
 // as well.  It really will only work on small computation 
 // trees.
 
-void write_full_dot(vector<node> const &data, layout_t small_mode, ostream &out) {
+void write_full_dot(int minv, bool labels, vector<node> const &data, layout_t small_mode, ostream &out) {
   out << "graph {" << endl;
   out << "\tcompound=true;" << endl;
-  out << "\tnodesep=0.05;" << endl;
+  if(labels) {
+    out << "\tnodesep=0.5;" << endl;
+  } else {
+    out << "\tnodesep=0.1;" << endl;
+  }
   out << "\tranksep=0.05;" << endl;
 
   // first, we create the subgraph nodes
@@ -355,13 +371,25 @@ void write_full_dot(vector<node> const &data, layout_t small_mode, ostream &out)
   vector<int> last(data.size(),0);
   unsigned int vindex=0;
   for(unsigned int i=1;i<data.size();++i) {
-    if(data[i].type != MATCH && data[i].type != UNUSED) {
+    if(data[i].type != MATCH && data[i].type != UNUSED && num_vertices(data[i].graph) >= minv) {
       out << "\tsubgraph cluster" << i << " {" << endl;
-      // out << "\t\t" << "label=\"" << i << "\";" << endl;
-      // out << "\t\t" << "color=white;" << endl;
-      out << "\t\tstyle=invis" << endl;
-      out << "\t\tnode [label=\"\",width=0.05,height=0.05]" << endl;
+      if(labels) {
+	out << "\t\t" << "label=\"" << i << "\"" << endl;
+	out << "\t\t" << "color=white;" << endl;
+      } else {
+	out << "\t\tstyle=invis" << endl;
+      }
       graph_t const &graph(data[i].graph);
+      if(labels) {        
+	out << "\t\tnode [width=0.05,height=0.05]" << endl;	
+	for(int j=vindex;j!=(vindex+domain(graph).second+1);++j) {
+	  if(degree(j-vindex,graph) > 0) {
+	    out << "\t\t" << j << " [label=\"" << (j-vindex) << "\"]" << endl;
+	  }
+	}
+      } else {
+	out << "\t\tnode [label=\"\",width=0.05,height=0.05]" << endl;
+      }
       unsigned int l = 0;
       unsigned int f = 100000;
       unsigned int climit;
@@ -403,9 +431,11 @@ void write_full_dot(vector<node> const &data, layout_t small_mode, ostream &out)
 	if(data[sid].type == MATCH) {
 	  sid = data[sid].subids[0];
 	}
-	if(first[sid] != -1) {
-	  out << "\t" << last[i] << " -- " << first[sid] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << sid << ",arrowhead=normal" << "];" << endl;
-	} 
+	if(num_vertices(data[sid].graph) >= minv) {
+	  if(first[sid] != -1) {
+	    out << "\t" << last[i] << " -- " << first[sid] << " [minlen=5,ltail=cluster" << i << ",lhead=cluster" << sid << ",arrowhead=normal" << "];" << endl;
+	  } 
+	}
       }
     }
   }
@@ -422,6 +452,8 @@ void write_full_dot(vector<node> const &data, layout_t small_mode, ostream &out)
 #define OPT_STATS 2
 #define OPT_FULL 10
 #define OPT_BFS 20
+#define OPT_MINV 30
+#define OPT_LABELS 40
 
 struct option long_options[]={
   {"help",no_argument,NULL,OPT_HELP},
@@ -429,6 +461,8 @@ struct option long_options[]={
   {"stats",no_argument,NULL,OPT_STATS},
   {"full",no_argument,NULL,OPT_FULL},
   {"bfs",no_argument,NULL,OPT_BFS},
+  {"labels",no_argument,NULL,OPT_LABELS},
+  {"minv",required_argument,NULL,OPT_MINV},
   NULL
 };
 
@@ -439,16 +473,20 @@ int main(int argc, char* argv[]) {
     " -f     --full                    convert (full) input tree",
     " -s     --stats                   show various stats on tree",
     "        --bfs                     use bfs algorithm for small graph layout",
+    " -mX    --minv=X                  ignore graphs where |V| < X",
+    " -l     --labels                  show labels on vertices",
     NULL
   };
 
   unsigned int v;
+  unsigned int minv=0;
 
   unsigned int mode = OPT_HELP;
   unsigned int layout_mode = OPT_HELP;
   bool full_mode=false;
+  bool labels = false;
 
-  while((v=getopt_long(argc,argv,"sfd",long_options,NULL)) != -1) {
+  while((v=getopt_long(argc,argv,"sfdm:l",long_options,NULL)) != -1) {
     switch(v) {      
     case OPT_HELP:
       mode = OPT_HELP;
@@ -468,6 +506,14 @@ int main(int argc, char* argv[]) {
     case OPT_BFS:
       layout_mode=OPT_BFS;
       break;
+    case 'l':
+    case OPT_LABELS:
+      labels=true;
+      break;
+    case 'm':
+    case OPT_MINV:
+      minv = atoi(optarg);
+      break;
     }
   }
   
@@ -485,12 +531,12 @@ int main(int argc, char* argv[]) {
 	vector<node> data=read_input(cin);
 	if(full_mode) {
 	  if(layout_mode == OPT_BFS) {
-	    write_full_dot(data,BFS,cout);
+	    write_full_dot(minv,labels,data,BFS,cout);
 	  } else {
-	    write_full_dot(data,NONE,cout);
+	    write_full_dot(minv,labels,data,NONE,cout);
 	  }
 	} else {
-	write_dot(data,cout);
+	  write_dot(minv,data,cout);
 	}
 	exit(1);
       }
