@@ -772,14 +772,15 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     if(write_tree) { write_tree_end(ngraphs_completed); }
 
     if(!verbose) {
+      for(vector<pair<int,int> >::iterator i(evalpoints.begin());i!=evalpoints.end();++i) {
+	cout << tuttePoly.substitute(i->first,i->second) << "\t";
+      }
+      cout << endl;
+	
       if(info_mode) {
 	cout << V << "\t" << E;    
 	cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << num_bicomps << "\t" << num_disbicomps << "\t" << num_cycles << "\t" << num_trees;
 	cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2);
-	for(vector<pair<int,int> >::iterator i(evalpoints.begin());i!=evalpoints.end();++i) {
-	  cout << "\t" << tuttePoly.substitute(i->first,i->second);
-	}
-	cout << endl;
       } 
     } else {
       cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
