@@ -198,9 +198,9 @@ public:
   T const &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
   T &operator[](int i) { return coefficients[(i + fpadding) - ymin]; }
 
-  mpz_class substitute(unsigned int y) const {
+  mpz_class substitute(int y) const {
     if(coefficients != NULL) {
-      mpz_class r(0U);
+      mpz_class r(0);
       mpz_class p(y);	
       for(unsigned int i=ymin;i<=ymax;++i) {	
 	// ugly, gmp doesn't have pow(mpz_class,...)
@@ -533,12 +533,12 @@ public:
   }
 
 
-  mpz_class substitute(unsigned int x, unsigned int y) const {
+  mpz_class substitute(int x, int y) const {
     mpz_class r(0U);
     for(unsigned int i=0;i<nxterms;++i) {
 
       mpz_class tmp;  
-      mpz_ui_pow_ui(tmp.get_mpz_t(),x,i);	
+      mpz_pow_ui(tmp.get_mpz_t(),mpz_class(x).get_mpz_t(),i);	
       r += tmp * xterms[i].substitute(y);
     }
     return r;

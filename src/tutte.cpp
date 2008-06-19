@@ -744,6 +744,12 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     // Create graph and then permute it according to 
     // vertex ordering strategy
     G start_graph = compact_graph<G>(read_graph<G>(input));
+    if(start_graph.num_edges() == 0) {
+      // This can happen if the input file has extra whitespace at the
+      // end.  It also means that we can add comments into our graph
+      // files.
+      break;
+    }
     start_graph = permute_graph<G>(start_graph,vertex_ordering);
 
     unsigned int V(start_graph.num_vertices());
@@ -777,9 +783,21 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
 	cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),E) << ")" << endl;	
 	// The tutte at T(-1,-1) should always give a (positive or
-	// negative) power of 2.  Currently, we cannot generate this
-	// here, since you cannot pass negative numbers to
-	// substitite().
+	// negative) power of 2. 
+	mpz_class Tm1m1 = tuttePoly.substitute(-1,-1);
+	mpz_class Tm1m1pow = 0;
+	while((Tm1m1 % 2) == 0) {
+	  Tm1m1 = Tm1m1 / 2;
+	  Tm1m1pow++;
+	}
+	if(Tm1m1 == -1) {
+	  cout << "T(-1,-1) = -2^" << Tm1m1pow << endl;
+	} else if(Tm1m1 == 1) {
+	  cout << "T(-1,-1) = 2^" << Tm1m1pow << endl;
+	} else {
+	  // getting here indicates an error in the computation
+	  cout << "T(-1,-1) = 2^" << Tm1m1pow << " * " << Tm1m1 << endl;
+	}
       }
     }
     ++ngraphs_completed;
@@ -810,6 +828,7 @@ int main(int argc, char *argv[]) {
   #define OPT_CACHESTATS 14
   #define OPT_NOCACHE 15
   #define OPT_NOCACHERESET 16
+  #define OPT_GMP 20
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
   #define OPT_XML_OUT 32
@@ -838,6 +857,7 @@ int main(int argc, char *argv[]) {
     {"info",no_argument,NULL,OPT_INFO},
     {"quiet",no_argument,NULL,OPT_QUIET},
     {"timeout",required_argument,NULL,OPT_TIMEOUT},
+    {"gmp",no_argument,NULL,OPT_GMP},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
@@ -877,12 +897,10 @@ int main(int argc, char *argv[]) {
     " -t     --timeout=<x>             timeout after x seconds",
     "        --small-graphs=size       set threshold for small graphs.  Default is 5.",
     " -n<x>  --ngraphs=<number>        number of graphs to process from input file",
+    "        --gmp                     use GMP library to represent coefficients",
     "        --tree                    output computation tree",
     "        --full-tree               output full computation tree",
     "        --xml-tree                output computation tree as XML",
-    "        --small                   use 32-bit integers only",
-    "        --medium                  use 64-bit integers only",
-    "        --large                   use unbound integers (default)",
     "        --with-lines              delete-contract on lines, not just edges",
     " \ncache options:",
     " -c<x>  --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
@@ -916,6 +934,7 @@ int main(int argc, char *argv[]) {
   bool info_mode=false;
   bool reset_mode=true;
   bool cache_stats=false;
+  bool gmp_mode = false;
   vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
   string cache_stats_file("");
 
@@ -959,6 +978,9 @@ int main(int argc, char *argv[]) {
       break;
     case OPT_TREE_OUT:
       write_tree=true;
+      break;
+    case OPT_GMP:
+      gmp_mode=true;
       break;
     // --- CACHE OPTIONS ---
     case 'c':
@@ -1083,8 +1105,11 @@ int main(int argc, char *argv[]) {
         
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
-      run<spanning_graph<adjacency_list<> >,factor_poly<mpz_class> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
-      // run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
+      if(gmp_mode) {
+	run<spanning_graph<adjacency_list<> >,factor_poly<mpz_class> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
+      } else {
+	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
+      }
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering);
     }    
