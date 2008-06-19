@@ -96,6 +96,7 @@ static int timeout = 15768000; // one years worth of timeout
 static unsigned int small_graph_threshold = 5;
 static edgesel_t edge_selection_heuristic = VERTEX_ORDER;
 static simple_cache cache(1024*1024,100);
+static vector<pair<int,int> > evalpoints;
 static bool status_flag=false;
 static bool verbose=true;
 static bool reduce_multicycles=true;
@@ -599,6 +600,13 @@ G permute_graph(G const &graph, vorder_t heuristic) {
   return r;
 }
 
+pair<int,int> parse_evalpoint(char *str) {
+  char *endp=NULL;
+  int a = strtol(str,&endp,10);
+  int b = strtol(endp+1,&endp,10);
+  return make_pair(a,b);
+}
+
 unsigned int parse_amount(char *str) {
   char *endp=NULL;
   long r = strtol(str,&endp,10);
@@ -767,10 +775,19 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       if(info_mode) {
 	cout << V << "\t" << E;    
 	cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << num_bicomps << "\t" << num_disbicomps << "\t" << num_cycles << "\t" << num_trees;
-	cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2) << endl;
-      }
+	cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2);
+	for(vector<pair<int,int> >::iterator i(evalpoints.begin());i!=evalpoints.end();++i) {
+	  cout << "\t" << tuttePoly.substitute(i->first,i->second);
+	}
+	cout << endl;
+      } 
     } else {
       cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
+      
+      for(vector<pair<int,int> >::iterator i(evalpoints.begin());i!=evalpoints.end();++i) {
+	cout << "TP[" << (ngraphs_completed+1) << "](" << i->first << "," << i->second << ") = " << tuttePoly.substitute(i->first,i->second) << endl;
+      }
+
       if(info_mode) {
 	cout << "=======" << endl;
 	cout << "V = " << V << ", E = " << E << endl;
@@ -821,6 +838,7 @@ int main(int argc, char *argv[]) {
   #define OPT_SMALLGRAPHS 5
   #define OPT_NGRAPHS 6
   #define OPT_TIMEOUT 7
+  #define OPT_EVALPOINT 8
   #define OPT_CACHESIZE 10
   #define OPT_CACHEBUCKETS 11  
   #define OPT_CACHEREPLACEMENT 12
@@ -857,6 +875,7 @@ int main(int argc, char *argv[]) {
     {"info",no_argument,NULL,OPT_INFO},
     {"quiet",no_argument,NULL,OPT_QUIET},
     {"timeout",required_argument,NULL,OPT_TIMEOUT},
+    {"eval",required_argument,NULL,OPT_EVALPOINT},
     {"gmp",no_argument,NULL,OPT_GMP},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
@@ -895,6 +914,7 @@ int main(int argc, char *argv[]) {
     " -i     --info                    output summary information regarding computation",
     " -q     --quiet                   output info summary as single line only (useful for generating data)",
     " -t     --timeout=<x>             timeout after x seconds",
+    " -Tx,y  --eval=x,y                evaluate the computed polynomial at x,y",
     "        --small-graphs=size       set threshold for small graphs.  Default is 5.",
     " -n<x>  --ngraphs=<number>        number of graphs to process from input file",
     "        --gmp                     use GMP library to represent coefficients",
@@ -938,7 +958,7 @@ int main(int argc, char *argv[]) {
   vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
   string cache_stats_file("");
 
-  while((v=getopt_long(argc,argv,"qic:n:t:",long_options,NULL)) != -1) {
+  while((v=getopt_long(argc,argv,"qic:n:t:T:",long_options,NULL)) != -1) {
     switch(v) {      
     case OPT_HELP:
       cout << "usage: " << argv[0] << " [options] <input graph file>" << endl;
@@ -959,6 +979,10 @@ int main(int argc, char *argv[]) {
     case 't':
     case OPT_TIMEOUT:
       timeout = atoi(optarg);
+      break;
+    case 'T':
+    case OPT_EVALPOINT:
+      evalpoints.push_back(parse_evalpoint(optarg));
       break;
     case 'n':
     case OPT_NGRAPHS:
