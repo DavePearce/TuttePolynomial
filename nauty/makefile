@@ -67,21 +67,21 @@ AUTOHEADER = autoheader
 AUTOMAKE = automake-1.10
 AWK = gawk
 CC = gcc
-CCDEPMODE = depmode=gcc3
+CCDEPMODE = depmode=none
 CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
-CXXDEPMODE = depmode=gcc3
+CXXDEPMODE = depmode=none
 CXXFLAGS = -g -O2
-CYGPATH_W = cygpath -w
+CYGPATH_W = echo
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
 EGREP = /usr/bin/grep -E
-EXEEXT = .exe
+EXEEXT = 
 GREP = /usr/bin/grep
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
@@ -93,7 +93,7 @@ LIBOBJS =
 LIBS = 
 LTLIBOBJS = 
 MAKEINFO = makeinfo
-MKDIR_P = /usr/bin/mkdir -p
+MKDIR_P = .././install-sh -c -d
 OBJEXT = o
 PACKAGE = tutte-polynomial-tool
 PACKAGE_BUGREPORT = david.pearce@mcs.vuw.ac.nz
@@ -104,13 +104,13 @@ PACKAGE_VERSION = 0.9.9
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
-SHELL = /bin/sh
+SHELL = /bin/bash
 STRIP = 
 VERSION = 0.9.9
-abs_builddir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly/nauty
-abs_srcdir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly/nauty
-abs_top_builddir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly
-abs_top_srcdir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly
+abs_builddir = /u/staff/djp/projects/tuttepoly/nauty
+abs_srcdir = /u/staff/djp/projects/tuttepoly/nauty
+abs_top_builddir = /u/staff/djp/projects/tuttepoly
+abs_top_srcdir = /u/staff/djp/projects/tuttepoly
 ac_ct_CC = gcc
 ac_ct_CXX = g++
 am__include = include
@@ -130,13 +130,13 @@ host_alias =
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = $(SHELL) /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly/install-sh
+install_sh = $(SHELL) /u/staff/djp/projects/tuttepoly/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
 localstatedir = ${prefix}/var
 mandir = ${datarootdir}/man
-mkdir_p = /usr/bin/mkdir -p
+mkdir_p = $(top_builddir)/./install-sh -c -d
 oldincludedir = /usr/include
 pdfdir = ${docdir}
 prefix = /usr/local
@@ -206,18 +206,18 @@ include ./$(DEPDIR)/naututil.Po
 include ./$(DEPDIR)/nauty.Po
 
 .c.o:
-	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	source='$<' object='$@' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(COMPILE) -c $<
+#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+#	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+	source='$<' object='$@' libtool=no \
+	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+	$(COMPILE) -c $<
 
 .c.obj:
-	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-#	source='$<' object='$@' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+#	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+	source='$<' object='$@' libtool=no \
+	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
