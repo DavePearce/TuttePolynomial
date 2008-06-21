@@ -526,14 +526,14 @@ G compact_graph(G const &graph) {
   vector<unsigned int> labels(graph.num_vertices(),0);
   int counter = 0;
 
-  for(unsigned int i=0;i!=graph.num_vertices();++i) {
-    if(graph.num_edges(i) > 0) {
-      labels[i] = counter++;
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    if(graph.num_edges(*i) > 0) {
+      labels[*i] = counter++;
     }
   }
  
   // now, create new permuted graph
-  G r(counter+1);
+  G r(counter);
   
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     for(typename G::edge_iterator j(graph.begin_edges(*i));
