@@ -1,1 +1,1 @@
-SUBDIRS = tutte
+SUBDIRS = nauty tutte

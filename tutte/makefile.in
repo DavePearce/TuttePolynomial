@@ -43,12 +43,17 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_tutte_OBJECTS = tutte.$(OBJEXT)
+am_tutte_OBJECTS = tutte.$(OBJEXT) algorithms.$(OBJEXT) hash.$(OBJEXT) \
+	biguint.$(OBJEXT) bistream.$(OBJEXT) bstreambuf.$(OBJEXT)
 tutte_OBJECTS = $(am_tutte_OBJECTS)
-tutte_LDADD = $(LDADD)
+tutte_DEPENDENCIES = ../nauty/libnauty.a
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
+COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
+	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
+CCLD = $(CC)
+LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
 CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 	$(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS)
 CXXLD = $(CXX)
@@ -101,6 +106,7 @@ PACKAGE_STRING = @PACKAGE_STRING@
 PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+RANLIB = @RANLIB@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
@@ -147,11 +153,13 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-tutte_SOURCES = tutte.cpp
+AM_CPPFLAGS = -I$(top_srcdir)/nauty
+tutte_SOURCES = tutte.cpp graph/algorithms.cpp graph/hash.c misc/biguint.cpp misc/bistream.cpp misc/bstreambuf.cpp 
+tutte_LDADD = -lgmpxx -lgmp ../nauty/libnauty.a
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .cpp .o .obj
+.SUFFIXES: .c .cpp .o .obj
 $(srcdir)/makefile.in:  $(srcdir)/makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -214,7 +222,40 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/algorithms.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/biguint.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bistream.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bstreambuf.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/hash.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tutte.Po@am__quote@
+
+.c.o:
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(COMPILE) -c $<
+
+.c.obj:
+@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+
+hash.o: graph/hash.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hash.o -MD -MP -MF $(DEPDIR)/hash.Tpo -c -o hash.o `test -f 'graph/hash.c' || echo '$(srcdir)/'`graph/hash.c
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/hash.Tpo $(DEPDIR)/hash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='graph/hash.c' object='hash.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hash.o `test -f 'graph/hash.c' || echo '$(srcdir)/'`graph/hash.c
+
+hash.obj: graph/hash.c
+@am__fastdepCC_TRUE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT hash.obj -MD -MP -MF $(DEPDIR)/hash.Tpo -c -o hash.obj `if test -f 'graph/hash.c'; then $(CYGPATH_W) 'graph/hash.c'; else $(CYGPATH_W) '$(srcdir)/graph/hash.c'; fi`
+@am__fastdepCC_TRUE@	mv -f $(DEPDIR)/hash.Tpo $(DEPDIR)/hash.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	source='graph/hash.c' object='hash.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o hash.obj `if test -f 'graph/hash.c'; then $(CYGPATH_W) 'graph/hash.c'; else $(CYGPATH_W) '$(srcdir)/graph/hash.c'; fi`
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
@@ -229,6 +270,62 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCXX_FALSE@	$(CXXCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
+
+algorithms.o: graph/algorithms.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT algorithms.o -MD -MP -MF $(DEPDIR)/algorithms.Tpo -c -o algorithms.o `test -f 'graph/algorithms.cpp' || echo '$(srcdir)/'`graph/algorithms.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/algorithms.Tpo $(DEPDIR)/algorithms.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='graph/algorithms.cpp' object='algorithms.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o algorithms.o `test -f 'graph/algorithms.cpp' || echo '$(srcdir)/'`graph/algorithms.cpp
+
+algorithms.obj: graph/algorithms.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT algorithms.obj -MD -MP -MF $(DEPDIR)/algorithms.Tpo -c -o algorithms.obj `if test -f 'graph/algorithms.cpp'; then $(CYGPATH_W) 'graph/algorithms.cpp'; else $(CYGPATH_W) '$(srcdir)/graph/algorithms.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/algorithms.Tpo $(DEPDIR)/algorithms.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='graph/algorithms.cpp' object='algorithms.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o algorithms.obj `if test -f 'graph/algorithms.cpp'; then $(CYGPATH_W) 'graph/algorithms.cpp'; else $(CYGPATH_W) '$(srcdir)/graph/algorithms.cpp'; fi`
+
+biguint.o: misc/biguint.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT biguint.o -MD -MP -MF $(DEPDIR)/biguint.Tpo -c -o biguint.o `test -f 'misc/biguint.cpp' || echo '$(srcdir)/'`misc/biguint.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/biguint.Tpo $(DEPDIR)/biguint.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='misc/biguint.cpp' object='biguint.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o biguint.o `test -f 'misc/biguint.cpp' || echo '$(srcdir)/'`misc/biguint.cpp
+
+biguint.obj: misc/biguint.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT biguint.obj -MD -MP -MF $(DEPDIR)/biguint.Tpo -c -o biguint.obj `if test -f 'misc/biguint.cpp'; then $(CYGPATH_W) 'misc/biguint.cpp'; else $(CYGPATH_W) '$(srcdir)/misc/biguint.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/biguint.Tpo $(DEPDIR)/biguint.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='misc/biguint.cpp' object='biguint.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o biguint.obj `if test -f 'misc/biguint.cpp'; then $(CYGPATH_W) 'misc/biguint.cpp'; else $(CYGPATH_W) '$(srcdir)/misc/biguint.cpp'; fi`
+
+bistream.o: misc/bistream.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT bistream.o -MD -MP -MF $(DEPDIR)/bistream.Tpo -c -o bistream.o `test -f 'misc/bistream.cpp' || echo '$(srcdir)/'`misc/bistream.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/bistream.Tpo $(DEPDIR)/bistream.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='misc/bistream.cpp' object='bistream.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o bistream.o `test -f 'misc/bistream.cpp' || echo '$(srcdir)/'`misc/bistream.cpp
+
+bistream.obj: misc/bistream.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT bistream.obj -MD -MP -MF $(DEPDIR)/bistream.Tpo -c -o bistream.obj `if test -f 'misc/bistream.cpp'; then $(CYGPATH_W) 'misc/bistream.cpp'; else $(CYGPATH_W) '$(srcdir)/misc/bistream.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/bistream.Tpo $(DEPDIR)/bistream.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='misc/bistream.cpp' object='bistream.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o bistream.obj `if test -f 'misc/bistream.cpp'; then $(CYGPATH_W) 'misc/bistream.cpp'; else $(CYGPATH_W) '$(srcdir)/misc/bistream.cpp'; fi`
+
+bstreambuf.o: misc/bstreambuf.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT bstreambuf.o -MD -MP -MF $(DEPDIR)/bstreambuf.Tpo -c -o bstreambuf.o `test -f 'misc/bstreambuf.cpp' || echo '$(srcdir)/'`misc/bstreambuf.cpp
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/bstreambuf.Tpo $(DEPDIR)/bstreambuf.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='misc/bstreambuf.cpp' object='bstreambuf.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o bstreambuf.o `test -f 'misc/bstreambuf.cpp' || echo '$(srcdir)/'`misc/bstreambuf.cpp
+
+bstreambuf.obj: misc/bstreambuf.cpp
+@am__fastdepCXX_TRUE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -MT bstreambuf.obj -MD -MP -MF $(DEPDIR)/bstreambuf.Tpo -c -o bstreambuf.obj `if test -f 'misc/bstreambuf.cpp'; then $(CYGPATH_W) 'misc/bstreambuf.cpp'; else $(CYGPATH_W) '$(srcdir)/misc/bstreambuf.cpp'; fi`
+@am__fastdepCXX_TRUE@	mv -f $(DEPDIR)/bstreambuf.Tpo $(DEPDIR)/bstreambuf.Po
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	source='misc/bstreambuf.cpp' object='bstreambuf.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCXX_FALSE@	DEPDIR=$(DEPDIR) $(CXXDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCXX_FALSE@	$(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(AM_CXXFLAGS) $(CXXFLAGS) -c -o bstreambuf.obj `if test -f 'misc/bstreambuf.cpp'; then $(CYGPATH_W) 'misc/bstreambuf.cpp'; else $(CYGPATH_W) '$(srcdir)/misc/bstreambuf.cpp'; fi`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
