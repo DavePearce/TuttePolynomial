@@ -1,0 +1,5 @@
+bin_PROGRAMS = tuttean
+
+AM_CPPFLAGS = -I$(top_srcdir)/tutte
+
+tuttean_SOURCES = tuttean.cpp 

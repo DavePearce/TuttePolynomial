@@ -1,4 +1,4 @@
-Tutte Polynomial Generator (v0.9.5)
+Tutte Polynomial Generator (v0.9.X)
 ===================================
 
 This is an early release of a program for computing tutte polynomials
@@ -6,14 +6,14 @@ for undirected graphs.  As such, this version has had relatively
 little testing done on it and should be considered EXTREMELY
 EXPERIMENTAL.  There are almost certainly outstanding bugs in the code
 remaining to be fixed.  As such, this software is provided as is, and
-the the authors and their respective insititutions accept no
+the authors and their respective insititutions accept no
 responsibility for any problem arising from the use of this software.
 
-We would appreciated any bug reports you have and/or suggestions on
+We would appreciate any bug reports you have and/or suggestions on
 improving the code.  We'd also be very interested in hearing about
 anyone interested in using the code for research (or other) purposes.
-In parituclar, whether or not the current version is fast enough to
-process the input graphs under examination.
+In particular, whether or not the current version is fast enough to
+process the input graphs you want.
 
 If you wish to be notified of updates to this software, please let us
 know.
@@ -74,11 +74,17 @@ nauty/ directory (see nauty.h for more details):
 Installation Instructions 
 =========================
 
-At the moment, the compiling procedure is pretty "rough and ready".
-Ideally, you should just be able to type "make" from the root
-directory and it will build an executable called "tutte" in the src/
-directory.  If this fails, you'll need to modify the makefile(s) as
-necessary and/or contact us for help with your particular system.
+To compile the system, run the following:
+
+> ./configure
+> make
+
+This will build the executable "tutte" in the directory tutte/.  If
+you do not have the GMP library installed, you will need to disable
+GMP support by passing "--disable-gmp" to configure.  
+
+The configure script accepts many options, and to get a full list of
+them simply run "./configure --help".
 
 The system has been sucessfully compiled on the following platforms:
 

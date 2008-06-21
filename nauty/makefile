@@ -15,9 +15,9 @@
 
 
 
-pkgdatadir = $(datadir)/tutte-polynomial-tool
-pkglibdir = $(libdir)/tutte-polynomial-tool
-pkgincludedir = $(includedir)/tutte-polynomial-tool
+pkgdatadir = $(datadir)/tuttepoly
+pkglibdir = $(libdir)/tuttepoly
+pkgincludedir = $(includedir)/tuttepoly
 am__cd = CDPATH="$${ZSH_VERSION+.}$(PATH_SEPARATOR)" && cd
 install_sh_DATA = $(install_sh) -c -m 644
 install_sh_PROGRAM = $(install_sh) -c
@@ -31,7 +31,8 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 subdir = nauty
-DIST_COMMON = README $(srcdir)/makefile.am $(srcdir)/makefile.in
+DIST_COMMON = README $(srcdir)/makefile.am $(srcdir)/makefile.in \
+	config.guess
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -67,21 +68,21 @@ AUTOHEADER = autoheader
 AUTOMAKE = automake-1.10
 AWK = gawk
 CC = gcc
-CCDEPMODE = depmode=none
+CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
-CXXDEPMODE = depmode=none
+CXXDEPMODE = depmode=gcc3
 CXXFLAGS = -g -O2
-CYGPATH_W = echo
+CYGPATH_W = cygpath -w
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
 EGREP = /usr/bin/grep -E
-EXEEXT = 
+EXEEXT = .exe
 GREP = /usr/bin/grep
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
@@ -93,24 +94,24 @@ LIBOBJS =
 LIBS = 
 LTLIBOBJS = 
 MAKEINFO = makeinfo
-MKDIR_P = .././install-sh -c -d
+MKDIR_P = /usr/bin/mkdir -p
 OBJEXT = o
-PACKAGE = tutte-polynomial-tool
+PACKAGE = tuttepoly
 PACKAGE_BUGREPORT = david.pearce@mcs.vuw.ac.nz
-PACKAGE_NAME = Tutte Polynomial Tool
-PACKAGE_STRING = Tutte Polynomial Tool 0.9.9
-PACKAGE_TARNAME = tutte-polynomial-tool
+PACKAGE_NAME = tuttepoly
+PACKAGE_STRING = tuttepoly 0.9.9
+PACKAGE_TARNAME = tuttepoly
 PACKAGE_VERSION = 0.9.9
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
-SHELL = /bin/bash
+SHELL = /bin/sh
 STRIP = 
 VERSION = 0.9.9
-abs_builddir = /u/staff/djp/projects/tuttepoly/nauty
-abs_srcdir = /u/staff/djp/projects/tuttepoly/nauty
-abs_top_builddir = /u/staff/djp/projects/tuttepoly
-abs_top_srcdir = /u/staff/djp/projects/tuttepoly
+abs_builddir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly/nauty
+abs_srcdir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly/nauty
+abs_top_builddir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly
+abs_top_srcdir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly
 ac_ct_CC = gcc
 ac_ct_CXX = g++
 am__include = include
@@ -130,13 +131,13 @@ host_alias =
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = $(SHELL) /u/staff/djp/projects/tuttepoly/install-sh
+install_sh = $(SHELL) /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
 localstatedir = ${prefix}/var
 mandir = ${datarootdir}/man
-mkdir_p = $(top_builddir)/./install-sh -c -d
+mkdir_p = /usr/bin/mkdir -p
 oldincludedir = /usr/include
 pdfdir = ${docdir}
 prefix = /usr/local
@@ -206,18 +207,18 @@ include ./$(DEPDIR)/naututil.Po
 include ./$(DEPDIR)/nauty.Po
 
 .c.o:
-#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
-#	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-	source='$<' object='$@' libtool=no \
-	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-	$(COMPILE) -c $<
+	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
+	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+#	source='$<' object='$@' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(COMPILE) -c $<
 
 .c.obj:
-#	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
-#	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
-	source='$<' object='$@' libtool=no \
-	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-	$(COMPILE) -c `$(CYGPATH_W) '$<'`
+	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ `$(CYGPATH_W) '$<'`
+	mv -f $(DEPDIR)/$*.Tpo $(DEPDIR)/$*.Po
+#	source='$<' object='$@' libtool=no \
+#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
+#	$(COMPILE) -c `$(CYGPATH_W) '$<'`
 
 ID: $(HEADERS) $(SOURCES) $(LISP) $(TAGS_FILES)
 	list='$(SOURCES) $(HEADERS) $(LISP) $(TAGS_FILES)'; \
