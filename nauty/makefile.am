@@ -1,0 +1,3 @@
+noinst_LIBRARIES = libnauty.a
+
+libnauty_a_SOURCES = nautil.c naututil.c nauty.c nautinv.c nautaux.c naugraph.c
