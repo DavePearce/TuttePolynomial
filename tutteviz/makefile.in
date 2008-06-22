@@ -30,8 +30,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-bin_PROGRAMS = tuttean$(EXEEXT)
-subdir = tuttean
+bin_PROGRAMS = tutteviz$(EXEEXT)
+subdir = tutteviz
 DIST_COMMON = $(srcdir)/makefile.am $(srcdir)/makefile.in
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
@@ -43,9 +43,9 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_tuttean_OBJECTS = tuttean.$(OBJEXT)
-tuttean_OBJECTS = $(am_tuttean_OBJECTS)
-tuttean_LDADD = $(LDADD)
+am_tutteviz_OBJECTS = tutteviz.$(OBJEXT)
+tutteviz_OBJECTS = $(am_tutteviz_OBJECTS)
+tutteviz_LDADD = $(LDADD)
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
 depcomp = $(SHELL) $(top_srcdir)/depcomp
 am__depfiles_maybe = depfiles
@@ -54,8 +54,8 @@ CXXCOMPILE = $(CXX) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) \
 CXXLD = $(CXX)
 CXXLINK = $(CXXLD) $(AM_CXXFLAGS) $(CXXFLAGS) $(AM_LDFLAGS) $(LDFLAGS) \
 	-o $@
-SOURCES = $(tuttean_SOURCES)
-DIST_SOURCES = $(tuttean_SOURCES)
+SOURCES = $(tutteviz_SOURCES)
+DIST_SOURCES = $(tutteviz_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
@@ -149,7 +149,7 @@ target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir)/tutte
-tuttean_SOURCES = tuttean.cpp 
+tutteviz_SOURCES = tutteviz.cpp 
 all: all-am
 
 .SUFFIXES:
@@ -163,9 +163,9 @@ $(srcdir)/makefile.in:  $(srcdir)/makefile.am  $(am__configure_deps)
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  tuttean/makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --gnu  tutteviz/makefile'; \
 	cd $(top_srcdir) && \
-	  $(AUTOMAKE) --gnu  tuttean/makefile
+	  $(AUTOMAKE) --gnu  tutteviz/makefile
 .PRECIOUS: makefile
 makefile: $(srcdir)/makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -206,9 +206,9 @@ uninstall-binPROGRAMS:
 
 clean-binPROGRAMS:
 	-test -z "$(bin_PROGRAMS)" || rm -f $(bin_PROGRAMS)
-tuttean$(EXEEXT): $(tuttean_OBJECTS) $(tuttean_DEPENDENCIES) 
-	@rm -f tuttean$(EXEEXT)
-	$(CXXLINK) $(tuttean_OBJECTS) $(tuttean_LDADD) $(LIBS)
+tutteviz$(EXEEXT): $(tutteviz_OBJECTS) $(tutteviz_DEPENDENCIES) 
+	@rm -f tutteviz$(EXEEXT)
+	$(CXXLINK) $(tutteviz_OBJECTS) $(tutteviz_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -216,7 +216,7 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tuttean.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tutteviz.Po@am__quote@
 
 .cpp.o:
 @am__fastdepCXX_TRUE@	$(CXXCOMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<

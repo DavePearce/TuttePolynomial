@@ -157,7 +157,7 @@ sysconfdir = @sysconfdir@
 target_alias = @target_alias@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = nauty tutte tuttean
+SUBDIRS = nauty tutte tutteviz
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 

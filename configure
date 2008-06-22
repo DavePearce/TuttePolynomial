@@ -5959,7 +5959,7 @@ fi
 done
 
 
-ac_config_files="$ac_config_files makefile nauty/makefile tutte/makefile tuttean/makefile"
+ac_config_files="$ac_config_files makefile nauty/makefile tutte/makefile tutteviz/makefile"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6550,7 +6550,7 @@ do
     "makefile") CONFIG_FILES="$CONFIG_FILES makefile" ;;
     "nauty/makefile") CONFIG_FILES="$CONFIG_FILES nauty/makefile" ;;
     "tutte/makefile") CONFIG_FILES="$CONFIG_FILES tutte/makefile" ;;
-    "tuttean/makefile") CONFIG_FILES="$CONFIG_FILES tuttean/makefile" ;;
+    "tutteviz/makefile") CONFIG_FILES="$CONFIG_FILES tutteviz/makefile" ;;
 
   *) { { echo "$as_me:$LINENO: error: invalid argument: $ac_config_target" >&5
 echo "$as_me: error: invalid argument: $ac_config_target" >&2;}
