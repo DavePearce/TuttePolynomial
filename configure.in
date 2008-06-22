@@ -38,5 +38,5 @@ AC_CHECK_FUNCS([alarm gettimeofday memmove memset pow sqrt strtol])
 AC_CONFIG_FILES([makefile
                  nauty/makefile
 		 tutte/makefile
-		 tuttean/makefile])
+		 tutteviz/makefile])
 AC_OUTPUT
