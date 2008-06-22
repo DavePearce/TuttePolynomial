@@ -13,9 +13,6 @@
 
 using namespace std;
 
-#define PACK(x) ((((bui_word)x) >> 1U) | BUI_PTR_BIT)
-#define UNPACK(x) ((bui_word*)(x << 1U))
-
 /* =============================== */
 /* ========= CONSTRUCTORS ======== */
 /* =============================== */
@@ -40,36 +37,10 @@ biguint::biguint(bui_word *p) {
   ptr = PACK(p);
 }
     
-biguint::~biguint() { destroy(); }
-
 /* =============================== */
 /* ======== ASSIGNMENT OPS ======= */
 /* =============================== */
   
-biguint const &biguint::operator=(bui_word v) {
-  destroy();
-  clone(v);
-  return *this;
-}
-
-biguint const &biguint::operator=(bui_dword v) {
-  destroy();
-  clone(v);
-  return *this;
-}
-
-biguint const &biguint::operator=(biguint const &src) {
-  if(this != &src) {
-    destroy();
-    clone(src);
-  }
-  return *this;
-}
-
-void biguint::swap(biguint &src) {
-  std::swap(ptr,src.ptr);
-}
-
 /* =============================== */
 /* ======== COMPARISON OPS ======= */
 /* =============================== */
@@ -539,44 +510,6 @@ mpz_class biguint::get_mpz_t() const {
 /* =============================== */
 /* ======== HELPER METHODS ======= */
 /* =============================== */
-
-void biguint::destroy() {
-  if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); }
-}  
-
-void biguint::clone(bui_word v) {
-  if(v & BUI_PTR_BIT) {
-    bui_word *p = aligned_alloc(2);
-    ptr = PACK(p);
-    p[0] = 1;
-    p[1] = v;
-  } else {
-    ptr = v;
-  }
-}
-
-void biguint::clone(bui_dword v) {
-  bui_word *p = aligned_alloc(3);
-  p[0] = 2;
-  
-  for(unsigned int i=1;i<=2;i++) {
-    p[i] = (bui_word) v;
-    v >>= BUI_WORD_WIDTH;
-  }    
-  ptr = PACK(p);
-}
-
-void biguint::clone(biguint const &src) {
-  if(src.ptr & BUI_PTR_BIT) {
-    bui_word *s = UNPACK(src.ptr);
-    bui_word depth = s[0];
-    bui_word *p = aligned_alloc(depth+1);
-    memcpy(p,s,(depth+1)*sizeof(bui_word));
-    ptr = PACK(p);
-  } else {
-    ptr = src.ptr;
-  }
-}
 
 // Expands the array to depth ndepth.  If ndepth < current depth,
 // nothing happens.  

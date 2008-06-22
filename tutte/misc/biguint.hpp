@@ -32,6 +32,9 @@ typedef unsigned long long bui_dword;
 #define BUI_ULONG_SIZE (sizeof(unsigned long) / sizeof(bui_word))
 #define BUI_ULONGLONG_SIZE (sizeof(unsigned long long) / sizeof(bui_word))
 
+#define PACK(x) ((((bui_word)x) >> 1U) | BUI_PTR_BIT)
+#define UNPACK(x) ((bui_word*)(x << 1U))
+
 class biguint {
 public:
   bui_word ptr; // either an int or a pointer ...
@@ -53,17 +56,35 @@ public:
   biguint(biguint const &src);
   biguint(bui_word v, bui_word d);
   biguint(bui_word *p);
-  ~biguint();  
+  inline ~biguint() { if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); } }
 
   /* =============================== */
   /* ======== ASSIGNMENT OPS ======= */
   /* =============================== */
   
-  biguint const &operator=(bui_word v);
-  biguint const &operator=(bui_dword v);
-  biguint const &operator=(biguint const &src);
+  inline biguint const &operator=(bui_word v) {
+    if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); }
+    clone(v);
+    return *this;
+  }
+  
+  inline biguint const &operator=(bui_dword v) {
+    if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); };
+    clone(v);
+    return *this;
+  }
+  
+  inline biguint const &operator=(biguint const &src) {
+    if(this != &src) {
+      if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); };
+      clone(src);
+    }
+    return *this;
+  }
 
-  void swap(biguint &v);
+  inline void swap(biguint &src) {
+    std::swap(ptr,src.ptr);
+  }
 
   /* =============================== */
   /* ======== COMPARISON OPS ======= */
@@ -119,10 +140,40 @@ public:
   /* =============================== */
   
 private:
-  void destroy();
-  void clone(bui_word w);
-  void clone(bui_dword w);
-  void clone(biguint const &w);
+  inline void clone(bui_word v) {
+    if(v & BUI_PTR_BIT) {
+      bui_word *p = aligned_alloc(2);
+      ptr = PACK(p);
+      p[0] = 1;
+      p[1] = v;
+    } else {
+      ptr = v;
+    }
+  }
+
+  inline void clone(bui_dword v) {
+    bui_word *p = aligned_alloc(3);
+    p[0] = 2;
+    
+    for(unsigned int i=1;i<=2;i++) {
+      p[i] = (bui_word) v;
+      v >>= BUI_WORD_WIDTH;
+    }    
+    ptr = PACK(p);
+  }
+
+  inline void clone(biguint const &src) {
+    if(src.ptr & BUI_PTR_BIT) {
+      bui_word *s = UNPACK(src.ptr);
+      bui_word depth = s[0];
+      bui_word *p = aligned_alloc(depth+1);
+      memcpy(p,s,(depth+1)*sizeof(bui_word));
+      ptr = PACK(p);
+    } else {
+      ptr = src.ptr;
+    }
+  }
+
   void resize(bui_word ndepth);
   void expand(bui_word ndepth);
   bui_word *aligned_alloc(unsigned int c);

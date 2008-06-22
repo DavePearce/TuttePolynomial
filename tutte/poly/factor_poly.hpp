@@ -62,14 +62,12 @@ public:
     return *this;
   }
 
-  void swap(yterms<T> &src) {
-    if(&src != this) {
-      std::swap(ymin,src.ymin);
-      std::swap(ymax,src.ymax);
-      std::swap(fpadding,src.fpadding);
-      std::swap(bpadding,src.bpadding);
-      std::swap(coefficients,src.coefficients);
-    }
+  inline void swap(yterms<T> &src) {
+    std::swap(ymin,src.ymin);
+    std::swap(ymax,src.ymax);
+    std::swap(fpadding,src.fpadding);
+    std::swap(bpadding,src.bpadding);
+    std::swap(coefficients,src.coefficients);
   }
 
   /* =============================== */
@@ -188,12 +186,12 @@ public:
   /* ======== OTHER FNS ======= */
   /* ========================== */  
 
-  unsigned int size() const {
+  inline unsigned int size() const {
     if(coefficients == NULL) { return 0; }
     return (ymax - ymin) + 1;
   }
 
-  bool is_empty() const { return coefficients == NULL; }
+  inline bool is_empty() const { return coefficients == NULL; }
 
   T const &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
   T &operator[](int i) { return coefficients[(i + fpadding) - ymin]; }
