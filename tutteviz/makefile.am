@@ -1,5 +1,5 @@
-bin_PROGRAMS = tuttean
+bin_PROGRAMS = tutteviz
 
 AM_CPPFLAGS = -I$(top_srcdir)/tutte
 
-tuttean_SOURCES = tuttean.cpp 
+tutteviz_SOURCES = tuttean.cpp 

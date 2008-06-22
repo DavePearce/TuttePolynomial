@@ -1,1 +1,1 @@
-SUBDIRS = nauty tutte tuttean
+SUBDIRS = nauty tutte tutteviz
