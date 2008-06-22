@@ -46,14 +46,14 @@ public:
   /* ========= CONSTRUCTORS ======== */
   /* =============================== */
 
-  biguint();
-  biguint(bui_word v);
-  biguint(bui_dword v);
-
+  inline biguint() { ptr = 0U; }  
+  inline biguint(bui_word v) { clone(v); }
+  inline biguint(bui_dword v) { clone(v); }
+  inline biguint(biguint const &src) { clone(src); }
+  
   template<class T>
   biguint(safe<T> v) { clone(v); }
 
-  biguint(biguint const &src);
   biguint(bui_word v, bui_word d);
   biguint(bui_word *p);
   inline ~biguint() { if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); } }
@@ -74,10 +74,31 @@ public:
     return *this;
   }
   
-  inline biguint const &operator=(biguint const &src) {
+  inline biguint const &operator=(biguint const &src) {    
     if(this != &src) {
-      if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); };
-      clone(src);
+      if(src.ptr & BUI_PTR_BIT) {
+	if(ptr & BUI_PTR_BIT) {
+	  bui_word *s = UNPACK(src.ptr);
+	  bui_word *p = UNPACK(ptr);
+	  // attempt to reuse memory where possible.
+	  unsigned int src_depth = s[0];
+	  unsigned int depth = p[0];
+	  unsigned int padding = p[1];	
+	  
+	  if(src_depth <= (depth + padding)) {
+	    memcpy(p,s,(src_depth+2)*sizeof(bui_word));
+	    memset(p+src_depth+2,0,((depth+padding)-src_depth)*sizeof(bui_word));
+	  } else {
+	    free(UNPACK(ptr));
+	    clone(src);
+	  }
+	} else {
+	  clone(src);
+	}	
+      } else {
+	if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); };
+	ptr = src.ptr;
+      }
     }
     return *this;
   }

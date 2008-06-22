@@ -17,14 +17,6 @@ using namespace std;
 /* ========= CONSTRUCTORS ======== */
 /* =============================== */
 
-biguint::biguint() {
-  ptr = 0U;
-}
-
-biguint::biguint(bui_word v) { clone(v); }
-biguint::biguint(bui_dword v) { clone(v); }
-biguint::biguint(biguint const &src) { clone(src); }
-
 biguint::biguint(bui_word v, bui_word depth) { 
   bui_word padding = depth*2;
   bui_word *p = aligned_alloc(depth+padding+2);
