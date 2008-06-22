@@ -142,20 +142,22 @@ public:
 private:
   inline void clone(bui_word v) {
     if(v & BUI_PTR_BIT) {
-      bui_word *p = aligned_alloc(2);
+      bui_word *p = aligned_alloc(3);
       ptr = PACK(p);
       p[0] = 1;
-      p[1] = v;
+      p[1] = 0;
+      p[2] = v;
     } else {
       ptr = v;
     }
   }
 
   inline void clone(bui_dword v) {
-    bui_word *p = aligned_alloc(3);
+    bui_word *p = aligned_alloc(4);
     p[0] = 2;
+    p[1] = 0;
     
-    for(unsigned int i=1;i<=2;i++) {
+    for(unsigned int i=2;i<=3;i++) {
       p[i] = (bui_word) v;
       v >>= BUI_WORD_WIDTH;
     }    
@@ -166,15 +168,15 @@ private:
     if(src.ptr & BUI_PTR_BIT) {
       bui_word *s = UNPACK(src.ptr);
       bui_word depth = s[0];
-      bui_word *p = aligned_alloc(depth+1);
-      memcpy(p,s,(depth+1)*sizeof(bui_word));
+      bui_word padding = s[1];
+      bui_word *p = aligned_alloc(depth+padding+2);
+      memcpy(p,s,(padding+depth+2)*sizeof(bui_word));
       ptr = PACK(p);
     } else {
       ptr = src.ptr;
     }
   }
 
-  void resize(bui_word ndepth);
   void expand(bui_word ndepth);
   bui_word *aligned_alloc(unsigned int c);
 
