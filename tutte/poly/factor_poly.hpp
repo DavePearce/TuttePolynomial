@@ -148,7 +148,6 @@ public:
 	acc += o_coefficients[i+ypadding];
 	coefficients[i+fpadding] = acc - sub;
       }    
-
       // going down the triangle
       for(unsigned int i=std::max(depth,width);i < (nyend-nystart)+1;++i) {
 	sub += o_coefficients[i+ypadding - depth];
