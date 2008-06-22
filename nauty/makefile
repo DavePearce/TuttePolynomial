@@ -61,20 +61,30 @@ DIST_SOURCES = $(libnauty_a_SOURCES)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = aclocal-1.10
-AMTAR = tar
-AUTOCONF = autoconf
-AUTOHEADER = autoheader
-AUTOMAKE = automake-1.10
+ACLOCAL = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run aclocal-1.10
+AMTAR = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run tar
+AUTOCONF = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run autoconf
+AUTOHEADER = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run autoheader
+AUTOMAKE = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run automake-1.10
 AWK = gawk
 CC = gcc
+<<<<<<< .mine
+CCDEPMODE = depmode=gcc3
+CFLAGS = -O3 -pg
+=======
 CCDEPMODE = depmode=gcc3
 CFLAGS = -g -O2
+>>>>>>> .r1227
 CPP = gcc -E
 CPPFLAGS = 
 CXX = g++
+<<<<<<< .mine
+CXXDEPMODE = depmode=gcc3
+CXXFLAGS = -O3 -pg
+=======
 CXXDEPMODE = depmode=gcc3
 CXXFLAGS = -g -O2
+>>>>>>> .r1227
 CYGPATH_W = cygpath -w
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
@@ -89,11 +99,11 @@ INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
-LDFLAGS = 
+LDFLAGS = -L/u/staff/djp/pkg/lib
 LIBOBJS = 
 LIBS = 
 LTLIBOBJS = 
-MAKEINFO = makeinfo
+MAKEINFO = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run makeinfo
 MKDIR_P = /usr/bin/mkdir -p
 OBJEXT = o
 PACKAGE = tuttepoly
