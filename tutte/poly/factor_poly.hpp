@@ -56,8 +56,22 @@ public:
 
   yterms const &operator=(yterms<T> const &src) {
     if(&src != this) {
-      delete [] coefficients;
-      clone(src);
+      // now, we try to reuse memory where possible.
+      unsigned int src_ncoeffs = src.size();
+      unsigned int space = size() + fpadding + bpadding;
+      if(space < src_ncoeffs) {
+	delete [] coefficients;
+	clone(src);
+      } else {
+	ymin = src.ymin;
+	ymax = src.ymax;
+	fpadding = 0;
+	bpadding = space - src_ncoeffs;	
+	// copy old stuff over
+	for(unsigned int i=0;i<src_ncoeffs;++i) { 
+	  coefficients[i] = src.coefficients[i];
+	}	
+      }
     }
     return *this;
   }
