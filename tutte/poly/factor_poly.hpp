@@ -104,8 +104,7 @@ public:
     unsigned int start = src.ymin;
     unsigned int end = src.ymax;
     for(unsigned int i=start;i<=end;++i) { 
-      T c(src[i]);
-      (*this)[i] += c;
+      (*this)[i] += src[i];
     }
   }
 
@@ -181,15 +180,10 @@ public:
       yterms<T> r(p.ymin + ymin,p.ymax + ymax);
       
       for(unsigned int i=p.ymin;i<=p.ymax;++i) {
-	yterms<T> tmp(*this);
-	tmp.ymin += i;
-	tmp.ymax += i;
 	T const &v(p[i]);
-
-	for(unsigned int j=tmp.ymin;j<=tmp.ymax;++j) {
-	  tmp[j] *= v;
+	for(unsigned int j=ymin;j<=ymax;++j) {
+	  r[j+i] += (*this)[j] * v;
 	}
-	r += tmp;
       }
       
       swap(r); // normal swap trick optimisation
@@ -207,8 +201,8 @@ public:
 
   inline bool is_empty() const { return coefficients == NULL; }
 
-  T const &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
-  T &operator[](int i) { return coefficients[(i + fpadding) - ymin]; }
+  inline T const &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
+  inline T &operator[](int i) { return coefficients[(i + fpadding) - ymin]; }
 
   mpz_class substitute(int y) const {
     if(coefficients != NULL) {

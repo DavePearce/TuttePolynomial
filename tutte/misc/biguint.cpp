@@ -193,7 +193,7 @@ void biguint::operator-=(bui_word w) {
   } else {
     bui_word v(ptr);
     ptr = v - w;
-    if(v < w) {   throw std::runtime_error("biguint cannot go negative"); }
+    if(v < w) { throw std::runtime_error("biguint cannot go negative"); }
   }
 }
 
