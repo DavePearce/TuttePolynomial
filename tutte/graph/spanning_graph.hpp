@@ -138,6 +138,20 @@ public:
     check_biconnectivity();
   }
 
+  void simple_contract_line(std::vector<edge_t> line) {
+    if(line.size() == 1) { 
+      graph.remove_edge(line[0].first,line[0].second,line[0].third); 
+    } else {
+      // now, remove all internal vertices
+      for(unsigned int i=0;i!=line.size()-1;++i) {
+	graph.remove(line[i].second);
+      }
+    }
+    graph.simple_contract_edge(line[0].first,line[line.size()-1].second); 
+    // don't need to check biconnectivity here!
+    check_biconnectivity();
+  }
+
   void extract_biconnected_components(std::vector<spanning_graph<G> > &bcs) { // was retree
     // Now, we traverse the entire graph and extract any and all biconnected components
     static bc_dat data;

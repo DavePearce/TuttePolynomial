@@ -209,6 +209,21 @@ public:
     remove(to);
   }  
 
+  // Ok, this implementation is seriously inefficient! 
+  // could use an indirection trick here as one solution?  
+  //
+  // POST: vertex 'from' remains, whilst vertex 'to' is removed
+  void simple_contract_edge(unsigned int from, unsigned int to) { 
+    if(from == to) { throw std::runtime_error("cannot contract a loop!"); } 
+    for(edge_iterator i(begin_edges(to));i!=end_edges(to);++i) {
+      if(from != i->first && num_edges(from,i->first) == 0) {
+	add_edge(from,i->first,i->second); 
+      }
+    }
+    remove(to);
+  }  
+  
+
   vertex_iterator begin_verts() const { return vertices.begin(); }
   vertex_iterator end_verts() const { return vertices.end(); }
 

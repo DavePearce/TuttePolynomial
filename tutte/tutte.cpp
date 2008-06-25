@@ -106,6 +106,7 @@ static bool xml_flag=false;
 static unsigned int tree_id = 2;
 static bool write_tree=false;
 static bool write_full_tree=false;
+static bool chromatic_mode = false;
 
 void print_status();
 
@@ -349,7 +350,6 @@ P LP(unsigned int p, std::vector<typename G::edge_t> const &line) {
  * hand-coded decision procedures; storing previously seen graphs
  * in a cache; and, dynamically monitoring the "treeness" of the graph.
  */
-
 template<class G, class P>
 P T(G &graph, unsigned int mid) { 
   if(current_timeout <= 0) { return P(X(0)); }
@@ -437,6 +437,89 @@ P T(G &graph, unsigned int mid) {
   }    
 
   return poly * RF;
+}
+
+/* This is the core algorithm for the chromatic computation it reduces
+ * a graph to two smaller graphs using a delete operation for one, and
+ * a contract operation for the other.
+ *
+ * The algorithm also uses a number of tricks to prune the computation
+ * space.  These include: eliminating small graphs using optimised, 
+ * hand-coded decision procedures; storing previously seen graphs
+ * in a cache; and, dynamically monitoring the "treeness" of the graph.
+ */
+template<class G, class P>
+P chromatic(G &graph, unsigned int mid) { 
+  if(current_timeout <= 0) { return P(X(0)); }
+  if(status_flag) { print_status(); }
+  num_steps++;
+
+  // === 1. CHECK IN CACHE ===
+
+  unsigned char *key = NULL;
+  if(graph.num_vertices() >= small_graph_threshold) {      
+    key = graph_key(graph); 
+    unsigned int match_id;
+    P r;
+    if(cache.lookup(key,r,match_id)) { 
+      if(write_tree) { write_tree_match(mid,match_id,graph,cout); }
+      delete [] key; // free space used by key
+      return r;
+    }
+  }
+
+  P poly;
+
+  if(!graph.is_biconnected()) {
+    vector<G> biconnects;
+    G copyg(graph);
+    graph.extract_biconnected_components(biconnects);
+    poly = X(graph.num_edges());
+    if(graph.is_multitree()) { num_trees++; }
+    if(biconnects.size() > 1) { num_disbicomps++; }
+    // figure out how many tree ids I need
+    unsigned int tid(tree_id);
+    tree_id += biconnects.size();
+    if(biconnects.size() > 0 && write_tree) { write_tree_nonleaf(mid,tid,tree_id-tid,copyg,cout); }
+    else if(write_tree) { write_tree_leaf(mid,graph,cout); }
+    // now, actually do the computation
+    for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
+      num_bicomps++;
+      poly *= chromatic<G,P>(*i,tid++);      
+    } 
+  } else {
+ 
+    // === 3. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
+    
+    // TREE OUTPUT STUFF
+    unsigned int lid = tree_id;
+    unsigned int rid = tree_id+1;
+    tree_id = tree_id + 2; // allocate id's now so I know them!
+    if(write_tree) { write_tree_nonleaf(mid,lid,2,graph,cout); }
+    
+    // === 4. PERFORM DELETE / CONTRACT ===
+    
+    G g2(graph); 
+    line_t line = select_line(graph);
+    
+    // now, delete/contract on the line's endpoints
+    graph.remove_line(line);
+    g2.simple_contract_line(line);  
+    
+    // recursively compute the polynomial   
+    poly = chromatic<G,P>(graph, lid) + chromatic<G,P>(g2, rid);
+					 
+    // Finally, save computed polynomial
+    if(key != NULL) {
+      // there is, strictly speaking, a bug with using mid
+      // here, since the graph being stored is not the same as that
+      // at the beginning.
+      cache.store(key,poly,mid);
+      delete [] key;  // free space used by key
+    }    
+  }
+
+  return poly;
 }
 
 // ---------------------------------------------------------------
@@ -767,7 +850,13 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     my_timer timer(false);
     if(write_tree) { write_tree_start(ngraphs_completed); }    
 
-    P tuttePoly = T<G,P>(start_graph,1);        
+    P tuttePoly;
+
+    if(chromatic_mode) {
+      tuttePoly = chromatic<G,P>(start_graph,1);        
+    } else {
+      tuttePoly = T<G,P>(start_graph,1);        
+    } 
 
     if(write_tree) { write_tree_end(ngraphs_completed); }
 
@@ -848,6 +937,7 @@ int main(int argc, char *argv[]) {
   #define OPT_NOCACHE 15
   #define OPT_NOCACHERESET 16
   #define OPT_GMP 20
+  #define OPT_CHROMATIC 21
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
   #define OPT_XML_OUT 32
@@ -868,7 +958,6 @@ int main(int argc, char *argv[]) {
   #define OPT_MAXDEG_ORDERING 62
   #define OPT_MINUDEG_ORDERING 63
   #define OPT_MAXUDEG_ORDERING 64
-
   
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
@@ -878,6 +967,7 @@ int main(int argc, char *argv[]) {
     {"timeout",required_argument,NULL,OPT_TIMEOUT},
     {"eval",required_argument,NULL,OPT_EVALPOINT},
     {"gmp",no_argument,NULL,OPT_GMP},
+    {"chromatic",no_argument,NULL,OPT_CHROMATIC},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
@@ -919,6 +1009,7 @@ int main(int argc, char *argv[]) {
     "        --small-graphs=size       set threshold for small graphs.  Default is 5.",
     " -n<x>  --ngraphs=<number>        number of graphs to process from input file",
     "        --gmp                     use GMP library to represent coefficients",
+    "        --chromatic               generate chromatic polynomial",
     "        --tree                    output computation tree",
     "        --full-tree               output full computation tree",
     "        --xml-tree                output computation tree as XML",
@@ -1006,6 +1097,9 @@ int main(int argc, char *argv[]) {
       break;
     case OPT_GMP:
       gmp_mode=true;
+      break;
+    case OPT_CHROMATIC:
+      chromatic_mode=true;
       break;
     // --- CACHE OPTIONS ---
     case 'c':

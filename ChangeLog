@@ -1,5 +1,20 @@
 ====================================================================
-V0.9.8
+v0.9.9
+====================================================================
+
+1) Modified the compilation procedure to use automake and autoconf.  
+Thus, the distribution now comes with a configure script.
+
+2) Changed Biguint to employ padding for unbounded, heap allocated
+integers.  The advantage of this is that when adding/multiplying two
+large integers together, the operation may still be able to be
+performed in place.  
+
+3) Optimise the factor_poly slightly as well to eliminate situations
+where it reallocates memory unnecessarily.
+
+====================================================================
+v0.9.8
 ====================================================================
 
 1) Support for evaluating polynomials using gmp.  By default,
@@ -18,17 +33,17 @@ will do them all.
 whether or not the vertex space is contiguous or starts from 0.
 
 ====================================================================
-V0.9.7
+v0.9.7
 ====================================================================
 
 ====================================================================
-V0.9.6
+v0.9.6
 ====================================================================
 
 ====================================================================
-V0.9.5
+v0.9.5
 ====================================================================
 
 ====================================================================
-V0.9.4
+v0.9.4
 ====================================================================
