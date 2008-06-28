@@ -106,7 +106,11 @@ static bool xml_flag=false;
 static unsigned int tree_id = 2;
 static bool write_tree=false;
 static bool write_full_tree=false;
-static bool chromatic_mode = false;
+
+#define MODE_TUTTE 0
+#define MODE_CHROMATIC 1
+#define MODE_FLOW 2
+static int mode = MODE_TUTTE;
 
 void print_status();
 
@@ -315,10 +319,28 @@ P FP(std::vector<typename G::edge_t> const &line) {
   P acc(X(0));
   
   for(unsigned int k=0;k<line.size()-1;++k) {
-    P tmp(X(1));
+    P tmp = X(1);
     if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
     if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
     acc *= tmp;
+    xs += acc;
+  }     
+
+  return xs;
+}
+
+/* Given a line x_1--y_1(k_1), ..., x_n--y_n(k_n), this method
+ * computes a very strange product for the line ...
+ */
+template<class G, class P>
+P flow_FP(std::vector<typename G::edge_t> const &line) {
+  // this one is just a bit on the wierd side
+  P xs(Y(0));
+  P acc(Y(0));
+  
+  for(unsigned int k=0;k<line.size()-1;++k) {
+    if(line[k].third > 1) { acc *= Y(1,line[k].third-1); }
+    if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }    
     xs += acc;
   }     
 
@@ -331,15 +353,32 @@ P FP(std::vector<typename G::edge_t> const &line) {
  *  (X^p + Y^1 + ... Y^{k_1-1}) * (X^2 + Y^1 + ... Y^{k_2-1}) ...
  */
 template<class G, class P>
-P LP(unsigned int p, std::vector<typename G::edge_t> const &line) {
+P LP(std::vector<typename G::edge_t> const &line) {
   P r(Y(0));
   for(unsigned int k=0;k<line.size();++k) {
-    P tmp = X(p);
+    P tmp = X(0);
     if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
     r *= tmp;
   }
   return r;
 }
+
+/* Given a line x_1--y_1(k_1), ..., x_n--y_n(k_n), this method
+ * computes the Line Product:
+ *
+ *  (X^p + Y^1 + ... Y^{k_1-1}) * (X^2 + Y^1 + ... Y^{k_2-1}) ...
+ */
+template<class G, class P>
+P flow_LP(std::vector<typename G::edge_t> const &line) {
+  P r(Y(0));
+  for(unsigned int k=0;k<line.size();++k) {
+    P tmp = Y(0);
+    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
+    r *= tmp;
+  }
+  return r;
+}
+
 
 /* This is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
@@ -351,7 +390,7 @@ P LP(unsigned int p, std::vector<typename G::edge_t> const &line) {
  * in a cache; and, dynamically monitoring the "treeness" of the graph.
  */
 template<class G, class P>
-P T(G &graph, unsigned int mid) { 
+P tutte(G &graph, unsigned int mid) { 
   if(current_timeout <= 0) { return P(X(0)); }
   if(status_flag) { print_status(); }
   num_steps++;
@@ -381,13 +420,13 @@ P T(G &graph, unsigned int mid) {
 
   if(reduce_multicycles && graph.is_multicycle()) {
     num_cycles++;
-    poly = reduce_cycle<G,P>(graph);
+    poly = reduce_cycle<G,P>(X(1),graph);
     if(write_tree) { write_tree_leaf(mid,graph,cout); }
   } else if(!graph.is_biconnected()) {
     vector<G> biconnects;
     G copyg(graph);
     graph.extract_biconnected_components(biconnects);
-    poly = reduce_tree<G,P>(graph);
+    poly = reduce_tree<G,P>(X(1),graph);
     if(graph.is_multitree()) { num_trees++; }
     if(biconnects.size() > 1) { num_disbicomps++; }
     // figure out how many tree ids I need
@@ -401,10 +440,10 @@ P T(G &graph, unsigned int mid) {
       if(i->is_multicycle()) {
 	// this is actually a cycle!
 	num_cycles++;
-	poly *= reduce_cycle<G,P>(*i);
+	poly *= reduce_cycle<G,P>(X(1),*i);
 	if(write_tree) { write_tree_leaf(tid++,*i,cout); }
       } else {
-	poly *= T<G,P>(*i,tid++);      
+	poly *= tutte<G,P>(*i,tid++);      
       }
     }
   } else {
@@ -424,7 +463,119 @@ P T(G &graph, unsigned int mid) {
     graph.remove_line(line);
     g2.contract_line(line);
     // recursively compute the polynomial   
-    poly = (T<G,P>(graph, lid) * FP<G,P>(line)) + (T<G,P>(g2, rid) * LP<G,P>(0,line));
+    poly = (tutte<G,P>(graph, lid) * FP<G,P>(line)) + (tutte<G,P>(g2, rid) * LP<G,P>(line));
+  }
+
+  // Finally, save computed polynomial
+  if(key != NULL) {
+    // there is, strictly speaking, a bug with using mid
+    // here, since the graph being stored is not the same as that
+    // at the beginning.
+    cache.store(key,poly,mid);
+    delete [] key;  // free space used by key
+  }    
+
+  return poly * RF;
+}
+
+/* This is the core algorithm for the tutte computation
+ * it reduces a graph to two smaller graphs using a delete operation
+ * for one, and a contract operation for the other.
+ *
+ * The algorithm also uses a number of tricks to prune the computation
+ * space.  These include: eliminating small graphs using optimised, 
+ * hand-coded decision procedures; storing previously seen graphs
+ * in a cache; and, dynamically monitoring the "treeness" of the graph.
+ */
+template<class G, class P>
+P flow(G &graph, unsigned int mid) { 
+  if(current_timeout <= 0) { return P(X(0)); }
+  if(status_flag) { print_status(); }
+  num_steps++;
+
+  // === 1. APPLY SIMPLIFICATIONS ===
+
+  // P RF = reduce<G,P>(graph);
+  P RF = Y(reduce_loops(graph));
+
+  // === 2. CHECK IN CACHE ===
+
+  unsigned char *key = NULL;
+  if(graph.num_vertices() >= small_graph_threshold && !graph.is_multitree()) {      
+    key = graph_key(graph); 
+    unsigned int match_id;
+    P r;
+    if(cache.lookup(key,r,match_id)) { 
+      if(write_tree) { write_tree_match(mid,match_id,graph,cout); }
+      delete [] key; // free space used by key
+      return r * RF;
+    }
+  }
+
+  P poly;
+
+  // === 3. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
+
+  if(reduce_multicycles && graph.is_multicycle()) {
+    num_cycles++;
+    poly = reduce_cycle<G,P>(P(),graph);
+    if(write_tree) { write_tree_leaf(mid,graph,cout); }
+  } else if(!graph.is_biconnected()) {
+    vector<G> biconnects;
+    G copyg(graph);
+    graph.extract_biconnected_components(biconnects);
+
+    // this is a little ugly
+    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+      for(typename G::edge_iterator j(graph.begin_edges(*i));j!=graph.end_edges(*i);++j) {
+	if(j->second == 1) {
+	  // in the flow polynomial, if there's a single
+	  // non-multi-edge then you throw away the whole graph.
+	  num_trees++; 
+	  if(write_tree) { write_tree_leaf(mid,graph,cout); }
+	  return P(); 
+	}
+      }
+    } 
+
+    poly = reduce_tree<G,P>(P(),graph);
+
+    if(biconnects.size() > 1) { num_disbicomps++; }
+    // figure out how many tree ids I need
+    unsigned int tid(tree_id);
+    tree_id += biconnects.size();
+    if(biconnects.size() > 0 && write_tree) { write_tree_nonleaf(mid,tid,tree_id-tid,copyg,cout); }
+    else if(write_tree) { write_tree_leaf(mid,graph,cout); }
+    // now, actually do the computation
+    for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
+      num_bicomps++;
+      if(i->is_multicycle()) {
+	// this is actually a cycle!
+	num_cycles++;
+	poly *= reduce_cycle<G,P>(P(),*i);
+	if(write_tree) { write_tree_leaf(tid++,*i,cout); }
+      } else {
+	poly *= flow<G,P>(*i,tid++);      
+      }
+    }
+  } else {
+
+    // TREE OUTPUT STUFF
+    unsigned int lid = tree_id;
+    unsigned int rid = tree_id+1;
+    tree_id = tree_id + 2; // allocate id's now so I know them!
+    if(write_tree) { write_tree_nonleaf(mid,lid,2,graph,cout); }
+    
+    // === 4. PERFORM DELETE / CONTRACT ===
+    
+    G g2(graph); 
+    line_t line = select_line(graph);
+
+    // now, delete/contract on the line's endpoints
+    graph.remove_line(line);
+    g2.contract_line(line);
+    // recursively compute the polynomial   
+    poly = (flow<G,P>(graph, lid) * flow_FP<G,P>(line)) + (flow<G,P>(g2, rid) * flow_LP<G,P>(line));
   }
 
   // Finally, save computed polynomial
@@ -852,10 +1003,12 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 
     P tuttePoly;
 
-    if(chromatic_mode) {
+    if(mode == MODE_CHROMATIC) {
       tuttePoly = chromatic<G,P>(start_graph,1);        
+    } else if(mode == MODE_FLOW) {
+      tuttePoly = flow<G,P>(start_graph,1);        
     } else {
-      tuttePoly = T<G,P>(start_graph,1);        
+      tuttePoly = tutte<G,P>(start_graph,1);        
     } 
 
     if(write_tree) { write_tree_end(ngraphs_completed); }
@@ -938,6 +1091,7 @@ int main(int argc, char *argv[]) {
   #define OPT_NOCACHERESET 16
   #define OPT_GMP 20
   #define OPT_CHROMATIC 21
+  #define OPT_FLOW 22
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
   #define OPT_XML_OUT 32
@@ -968,6 +1122,7 @@ int main(int argc, char *argv[]) {
     {"eval",required_argument,NULL,OPT_EVALPOINT},
     {"gmp",no_argument,NULL,OPT_GMP},
     {"chromatic",no_argument,NULL,OPT_CHROMATIC},
+    {"flow",no_argument,NULL,OPT_FLOW},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
@@ -1010,6 +1165,7 @@ int main(int argc, char *argv[]) {
     " -n<x>  --ngraphs=<number>        number of graphs to process from input file",
     "        --gmp                     use GMP library to represent coefficients",
     "        --chromatic               generate chromatic polynomial",
+    "        --flow                    generate flow polynomial",
     "        --tree                    output computation tree",
     "        --full-tree               output full computation tree",
     "        --xml-tree                output computation tree as XML",
@@ -1099,7 +1255,10 @@ int main(int argc, char *argv[]) {
       gmp_mode=true;
       break;
     case OPT_CHROMATIC:
-      chromatic_mode=true;
+      mode=MODE_CHROMATIC;
+      break;
+    case OPT_FLOW:
+      mode=MODE_FLOW;
       break;
     // --- CACHE OPTIONS ---
     case 'c':

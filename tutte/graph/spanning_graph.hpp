@@ -61,6 +61,7 @@ public:
 
   bool is_connected() const { return ncomponents == 1; }
   bool is_biconnected() const { return ncomponents == 1 && nartics == 1; }
+  bool is_tree() const { return graph.num_edges() < graph.num_vertices(); }
   bool is_multitree() const { return graph.num_underlying_edges() < graph.num_vertices(); }
   bool is_multicycle() const { return nartics == 1 && graph.num_underlying_edges() == graph.num_vertices(); }
   

@@ -27,13 +27,13 @@ P reduce_pendant(unsigned int p, G &graph) {
 }
 
 template<class G, class P>
-P reduce_tree(G &graph) {
+P reduce_tree(P const &X_p, G &graph) {
   P r(Y(0));
 
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     for(typename G::edge_iterator j(graph.begin_edges(*i));j!=graph.end_edges(*i);++j) {
       if(*i >= j->first) {
-	P xy = X(1);
+	P xy = X_p;
 	if(j->second > 1) { xy += Y(1,j->second-1); }
 	r *= xy;
       }
@@ -44,7 +44,7 @@ P reduce_tree(G &graph) {
 }
 
 template<class G, class P>
-P reduce_cycle(G const &graph) {
+P reduce_cycle(P const &X_p, G const &graph) {
   // This is a somewhat icky piece of code for reducing 
   // a cycle.  it's really a hack at the moment.
 
@@ -62,14 +62,15 @@ P reduce_cycle(G const &graph) {
     v = j->first;
   } while(v != s);
 
-  P xs(X(1)), acc(X(1));
+  P xs = X_p;
+  P acc = X_p;
   if(line[0].third > 1) { 
     acc += Y(1,line[0].third-1); 
     xs += Y(1,line[0].third-1); 
   }
       
   for(unsigned int k=1;k<line.size()-1;++k) {
-    P tmp(X(1));
+    P tmp = X_p;
     if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
     if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
     acc *= tmp;
