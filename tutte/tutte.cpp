@@ -78,7 +78,7 @@ public:
 // Global Variables
 // ---------------------------------------------------------------
 
-typedef enum { RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER } edgesel_t;
+typedef enum { RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MAXIMISE_SDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER } edgesel_t;
 typedef enum { V_RANDOM, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DEGREE, V_MINIMISE_DEGREE,  V_MAXIMISE_DEGREE, V_NONE } vorder_t;
 
 unsigned int resize_stats = 0;
@@ -87,11 +87,13 @@ unsigned long num_bicomps = 0;
 unsigned long num_cycles = 0;
 unsigned long num_disbicomps = 0;
 unsigned long num_trees = 0;
+unsigned long num_completed = 0;
 unsigned long old_num_steps = 0;
 static int current_timeout = 15768000; // one years worth of timeout
 static int timeout = 15768000; // one years worth of timeout
 static unsigned int small_graph_threshold = 5;
 static edgesel_t edge_selection_heuristic = VERTEX_ORDER;
+static edgesel_t edge_addition_heuristic = VERTEX_ORDER;
 static simple_cache cache(1024*1024,100);
 static vector<pair<int,int> > evalpoints;
 static vector<unsigned int> cache_hit_sizes;
@@ -99,7 +101,7 @@ static bool status_flag=false;
 static bool verbose=true;
 static bool reduce_multicycles=true;
 static bool reduce_multiedges=true;
-static bool reduce_lines=false;
+static bool use_add_contract=false;
 static bool xml_flag=false;
 static unsigned int tree_id = 2;
 static bool write_tree=false;
@@ -252,63 +254,127 @@ typename G::edge_t select_edge(G const &graph) {
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     unsigned int head = *i;
     unsigned int headc(graph.num_underlying_edges(head));
-    if(!reduce_lines || headc != 2) {      
-      // if we're in lines mode, then we ignore "parts" of lines
-      for(typename G::edge_iterator j(graph.begin_edges(*i));
-	  j!=graph.end_edges(*i);++j) {	
-	unsigned int tail = j->first;
-	unsigned int tailc(graph.num_underlying_edges(tail));
-	unsigned int count = j->second;
-	
-	if(head < tail || (reduce_lines && tailc == 2)) { // to avoid duplicates
-	  unsigned int cost;
-	  switch(edge_selection_heuristic) {
-	  case MAXIMISE_DEGREE:
-	    cost = headc + tailc;
-	    break;
-	  case MAXIMISE_MDEGREE:
-	    cost = headc * tailc;
-	    break;
-	  case MINIMISE_DEGREE:
-	    cost = 2*V - (headc + tailc);
-	    break;
-	  case MINIMISE_SDEGREE:
-	    cost = V - std::min(headc,tailc);
-	    break;
-	  case MINIMISE_MDEGREE:
-	    cost = V*V - (headc * tailc);
-	    break;
-	  case VERTEX_ORDER:	    
+    
+    for(typename G::edge_iterator j(graph.begin_edges(*i));
+	j!=graph.end_edges(*i);++j) {	
+      unsigned int tail = j->first;
+      unsigned int tailc(graph.num_underlying_edges(tail));
+      unsigned int count = j->second;
+      
+      if(head < tail) { // to avoid duplicates
+	unsigned int cost;
+	switch(edge_selection_heuristic) {
+	case MAXIMISE_SDEGREE:
+	  cost = std::max(headc,tailc);
+	  break;
+	case MAXIMISE_DEGREE:
+	  cost = headc + tailc;
+	  break;
+	case MAXIMISE_MDEGREE:
+	  cost = headc * tailc;
+	  break;
+	case MINIMISE_DEGREE:
+	  cost = 2*V - (headc + tailc);
+	  break;
+	case MINIMISE_SDEGREE:
+	  cost = V - std::min(headc,tailc);
+	  break;
+	case MINIMISE_MDEGREE:
+	  cost = V*V - (headc * tailc);
+	  break;
+	case VERTEX_ORDER:	    
+	  return typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
+	  break;
+	case RANDOM:
+	  if(rcount == rtarget) {
 	    return typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
-	    break;
-	  case RANDOM:
-	    if(rcount == rtarget) {
-	      return typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
-	    }
-	    rcount += count;	    
 	  }
-	  if(cost > best) {	    
-	    r = typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
-	    best = cost;
-	  }     
+	  rcount += count;	    
 	}
+	if(cost > best) {	    
+	  r = typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
+	  best = cost;
+	}     
       }
     }
   }
   
-  if(best == 0) { throw std::runtime_error("internal failure"); }
+  if(best == 0) { throw std::runtime_error("internal failure (select_edge)"); }
 
   return r;
 } 
 
 template<class G>
-line_t select_line(G const &graph) {
-  typename G::edge_t e = select_edge(graph);
-  if(reduce_lines) { 
-    return trace_line<G>(e.first,e.second,graph); 
-  } else {
-    return line_t(1,e);
+typename G::edge_t select_missing_edge(G const &graph) {
+  unsigned int best(0);
+  unsigned int V(graph.num_vertices());
+  unsigned int rcount(0);
+  unsigned int rtarget(0);
+  typename G::edge_t r(-1,-1,-1);
+  
+  if(edge_addition_heuristic == RANDOM) {
+    unsigned int V_Vm1_d2 = (V * (V-1)) / 2;
+    unsigned int nedges = V_Vm1_d2 - graph.num_edges();
+    rtarget = (unsigned int) (((double) nedges*rand()) / (1.0+RAND_MAX));
   }
+  
+  // interesting: what heuristics could we do here?
+  unsigned int Vm1 = graph.num_vertices()-1;
+  
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    unsigned int head = *i;
+    unsigned int headc(graph.num_underlying_edges(head));
+
+    if(graph.num_edges(head) != Vm1) {
+      // now, find the edge
+      for(typename G::vertex_iterator j(graph.begin_verts());j!=graph.end_verts();++j) {
+	unsigned int tail = *j;
+	if(*i!=*j && head < tail && graph.num_edges(head,*j) == 0) {
+	  unsigned int tailc(graph.num_underlying_edges(tail));
+	  
+	  if(head < tail) { // to avoid duplicates
+	    unsigned int cost;
+	    switch(edge_addition_heuristic) {
+	    case MAXIMISE_SDEGREE:
+	      cost = std::max(headc,tailc);
+	      break;
+	    case MAXIMISE_DEGREE:
+	      cost = headc + tailc;
+	      break;
+	    case MAXIMISE_MDEGREE:
+	      cost = headc * tailc;
+	      break;
+	    case MINIMISE_DEGREE:
+	      cost = 2*V - (headc + tailc);
+	      break;
+	    case MINIMISE_SDEGREE:
+	      cost = V - std::min(headc,tailc);
+	      break;
+	    case MINIMISE_MDEGREE:
+	      cost = V*V - (headc * tailc);
+	      break;
+	    case VERTEX_ORDER:	    
+	      return typename G::edge_t(head,tail,1);
+	      break;
+	    case RANDOM:
+	      if(rcount == rtarget) {
+		return typename G::edge_t(head,tail,1);
+	      }
+	      rcount ++;	    
+	    }
+	    if(cost > best) {	    
+	      r = typename G::edge_t(head,tail,1);
+	      best = cost;
+	    }     	    
+	  }	
+	}
+      }
+    }
+  }
+
+  if(best == 0) { throw std::runtime_error("internal failure (select_missing_edge)"); }
+
+  return r;
 }
 
 // ------------------------------------------------------------------
@@ -578,6 +644,7 @@ P chromatic(G &graph, unsigned int mid) {
   }
 
   P poly;
+  unsigned int V_Vm1 = graph.num_vertices()*(graph.num_vertices()-1);
 
   if(!graph.is_biconnected()) {
     vector<G> biconnects;
@@ -598,28 +665,51 @@ P chromatic(G &graph, unsigned int mid) {
       num_bicomps++;
       poly *= chromatic<G,P>(*i,tid++);      
     } 
+  } else if((2*graph.num_edges()) == V_Vm1) {
+    // in this case we compute the complete graph directly
+    poly = X(1);
+    P tmp(X(1));
+    for(int i=0;i!=graph.num_vertices()-2;++i) {
+      tmp += X(0);
+      poly *= tmp;
+    }
+    num_completed++;
+    return poly;
   } else {
- 
-    // === 3. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
-    
+
     // TREE OUTPUT STUFF
     unsigned int lid = tree_id;
     unsigned int rid = tree_id+1;
     tree_id = tree_id + 2; // allocate id's now so I know them!
     if(write_tree) { write_tree_nonleaf(mid,lid,2,graph,cout); }
     
-    // === 4. PERFORM DELETE / CONTRACT ===
-    
     G g2(graph); 
-    edge_t edge = select_edge(graph);
-    
-    // now, delete/contract on the line's endpoints
-    graph.remove_edge(edge);
-    g2.simple_contract_edge(edge);  
-    
-    // recursively compute the polynomial   
-    poly = chromatic<G,P>(graph, lid) + chromatic<G,P>(g2, rid);
-					 
+    if(use_add_contract && (4*graph.num_edges()) > V_Vm1) {
+      // === 3. PERFORM ADD / CONTRACT ===
+      
+      // Edge density is closer to complete graph than empty graph.
+      // So, go upwards instead of downwards!
+      
+      edge_t edge = select_missing_edge(graph);
+
+      // now, add/contract on the edges endpoints
+      graph.add_edge(edge.first,edge.second);
+      g2.simple_contract_edge(edge);  
+      
+      // recursively compute the polynomial   
+      poly = chromatic<G,P>(graph, lid) - chromatic<G,P>(g2, rid);
+    } else {
+      // === 4. PERFORM DELETE / CONTRACT ===
+      edge_t edge = select_edge(graph);
+      
+      // now, delete/contract on the line's endpoints
+      graph.remove_edge(edge);
+      g2.simple_contract_edge(edge);  
+      
+      // recursively compute the polynomial   
+      poly = chromatic<G,P>(graph, lid) + chromatic<G,P>(g2, rid);
+    } 
+
     // Finally, save computed polynomial
     if(key != NULL) {
       // there is, strictly speaking, a bug with using mid
@@ -627,7 +717,7 @@ P chromatic(G &graph, unsigned int mid) {
       // at the beginning.
       cache.store(key,poly,mid);
       delete [] key;  // free space used by key
-    }    
+    }
   }
 
   return poly;
@@ -910,7 +1000,7 @@ void print_status() {
   double rate = (num_steps - old_num_steps);
   double cf = (100*((double)cache.size())) / cache.capacity();
   rate /= status_interval;
-  cout << "Completed " << num_steps << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full." << endl;
+  cerr << "Completed " << num_steps << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full." << endl;
   old_num_steps = num_steps;  
 }
 
@@ -1015,6 +1105,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << "Number of Biconnected Components Separated: " << num_disbicomps << "." << endl;	
 	cout << "Number of Cycles Terminated: " << num_cycles << "." << endl;	
 	cout << "Number of Trees Terminated: " << num_trees << "." << endl;	
+	cout << "Number of Completed Graphs Terminated: " << num_completed << "." << endl;	
 	cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
 
 	if(mode == MODE_TUTTE) {
@@ -1080,6 +1171,7 @@ int main(int argc, char *argv[]) {
   #define OPT_WITHLINES 43
   #define OPT_NOMULTICYCLES 44
   #define OPT_NOMULTIEDGES 45
+  #define OPT_MAXSDEGREE 49
   #define OPT_MAXDEGREE 50
   #define OPT_MAXMDEGREE 51
   #define OPT_MINDEGREE 52
@@ -1092,6 +1184,7 @@ int main(int argc, char *argv[]) {
   #define OPT_MAXDEG_ORDERING 62
   #define OPT_MINUDEG_ORDERING 63
   #define OPT_MAXUDEG_ORDERING 64
+  #define OPT_USEADDCONTRACT 70
   
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
@@ -1115,6 +1208,7 @@ int main(int argc, char *argv[]) {
     {"minimise-sdegree", no_argument,NULL,OPT_MINSDEGREE},
     {"maximise-degree", no_argument,NULL,OPT_MAXDEGREE},
     {"maximise-mdegree", no_argument,NULL,OPT_MAXMDEGREE},
+    {"maximise-sdegree", no_argument,NULL,OPT_MAXSDEGREE},
     {"vertex-order", no_argument,NULL,OPT_VERTEXORDER},
     {"random-ordering",no_argument,NULL,OPT_RANDOM_ORDERING},
     {"mindeg-ordering",no_argument,NULL,OPT_MINDEG_ORDERING},
@@ -1128,9 +1222,9 @@ int main(int argc, char *argv[]) {
     {"full-tree",no_argument,NULL,OPT_FULLTREE_OUT},
     {"xml-tree",no_argument,NULL,OPT_XML_OUT},
     {"ngraphs",required_argument,NULL,OPT_NGRAPHS},
-    {"with-lines",no_argument,NULL,OPT_WITHLINES},
     {"no-multicycles",no_argument,NULL,OPT_NOMULTICYCLES},
     {"no-multiedges",no_argument,NULL,OPT_NOMULTIEDGES},
+    {"add-contract",no_argument,NULL,OPT_USEADDCONTRACT},
     NULL
   };
   
@@ -1149,7 +1243,6 @@ int main(int argc, char *argv[]) {
     "        --tree                    output computation tree",
     "        --full-tree               output full computation tree",
     "        --xml-tree                output computation tree as XML",
-    "        --with-lines              delete-contract on lines, not just edges",
     " \ncache options:",
     " -c<x>  --cache-size=<amount>     set sizeof cache to allocate, e.g. 700M",
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
@@ -1171,6 +1264,10 @@ int main(int argc, char *argv[]) {
     "        --random-ordering         use random ordering of vertices",
     "        --mindeg-ordering         sort vertices by degree, with smallest first",
     "        --maxdeg-ordering         sort vertices by degree, with largest first",
+    " \nother options:",
+    "        --no-multiedges           do not reduce multiedges in one go",
+    "        --no-multicycles          do not reduce multicycles in one go",
+    "        --add-contract            perform add/contract (currently only for chromatic)",
     NULL
   };
 
@@ -1274,24 +1371,35 @@ int main(int argc, char *argv[]) {
     // --- HEURISTICS ---
     case OPT_MINDEGREE:
       edge_selection_heuristic = MINIMISE_DEGREE;
+      edge_addition_heuristic = MINIMISE_DEGREE;
       break;
     case OPT_MAXDEGREE:
       edge_selection_heuristic = MAXIMISE_DEGREE;
+      edge_addition_heuristic = MAXIMISE_DEGREE;
       break;
     case OPT_MAXMDEGREE:
       edge_selection_heuristic = MAXIMISE_MDEGREE;
+      edge_addition_heuristic = MAXIMISE_MDEGREE;
       break;
     case OPT_MINMDEGREE:
       edge_selection_heuristic = MINIMISE_MDEGREE;
+      edge_addition_heuristic = MINIMISE_MDEGREE;
       break;
     case OPT_MINSDEGREE:
       edge_selection_heuristic = MINIMISE_SDEGREE;
+      edge_addition_heuristic = MINIMISE_SDEGREE;
+      break;
+    case OPT_MAXSDEGREE:
+      edge_selection_heuristic = MAXIMISE_SDEGREE;
+      edge_addition_heuristic = MAXIMISE_SDEGREE;
       break;
     case OPT_VERTEXORDER:
       edge_selection_heuristic = VERTEX_ORDER;
+      edge_addition_heuristic = VERTEX_ORDER;
       break;
     case OPT_RANDOM:
       edge_selection_heuristic = RANDOM;
+      edge_addition_heuristic = RANDOM;
       break;
     case OPT_RANDOM_ORDERING:
       vertex_ordering = V_RANDOM;
@@ -1312,14 +1420,14 @@ int main(int argc, char *argv[]) {
     case OPT_SMALLGRAPHS:
       small_graph_threshold = parse_amount(optarg);      
       break;      
-    case OPT_WITHLINES:
-      reduce_lines=true;
-      break;
     case OPT_NOMULTICYCLES:
       reduce_multicycles=false;
       break;
     case OPT_NOMULTIEDGES:
       reduce_multiedges=false;
+      break;
+    case OPT_USEADDCONTRACT:
+      use_add_contract=true;
       break;
     default:
       cout << "Unrecognised parameter!" << endl;

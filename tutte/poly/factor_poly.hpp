@@ -18,7 +18,6 @@
 #include "../misc/bistream.hpp"
 #include "../misc/bstreambuf.hpp"
 
-
 #define FPOLY_PADDING_FACTOR 1
 
 template<class T>
@@ -97,15 +96,39 @@ public:
     }    
   }
 
-  void operator+=(yterms<T> const &src) {
+  void operator+=(yterms<T> const &ys) {
     // make sure enough y terms
-    resize(src.ymin,src.ymax);
+    resize(ys.ymin,ys.ymax);
     // now, do the addition
-    unsigned int start = src.ymin;
-    unsigned int end = src.ymax;
+    unsigned int start = ys.ymin;
+    unsigned int end = ys.ymax;
     for(unsigned int i=start;i<=end;++i) { 
-      (*this)[i] += src[i];
+      (*this)[i] += ys[i];
     }
+  }
+
+  void operator-=(xy_term const &ys) {
+    // make sure enough y terms
+    resize(ys.ypower,ys.ypowerend);
+    // now, do the subtraction
+    for(unsigned int i=ys.ypower;i<=ys.ypowerend;++i) { 
+      (*this)[i] -= 1;
+    }    
+    // At this stage, we might have reduce the ytems to all zeros and
+    // we could eliminate them ...  
+  }
+
+  void operator-=(yterms<T> const &ys) {
+    // make sure enough y terms
+    resize(ys.ymin,ys.ymax);
+    // now, do the subtraction
+    unsigned int start = ys.ymin;
+    unsigned int end = ys.ymax;
+    for(unsigned int i=start;i<=end;++i) { 
+      (*this)[i] -= ys[i];
+    }
+    // At this stage, we might have reduce the ytems to all zeros and
+    // we could eliminate them ...    
   }
 
   void operator*=(xy_term const &p) {
@@ -404,6 +427,13 @@ public:
   /* ======== ARITHMETIC OPS ======= */
   /* =============================== */
 
+  void operator+=(xy_term const &p) {
+    // make sure enough x terms
+    resize_xterms(p.xpower+1); 
+    // now, do the addition
+    xterms[p.xpower] += p;
+  }
+
   void operator+=(factor_poly const &p) {
     // make sure enough x terms
     resize_xterms(p.nxterms); 
@@ -414,11 +444,22 @@ public:
     }
   }
 
-  void operator+=(xy_term const &p) {
+  void operator-=(xy_term const &p) {
     // make sure enough x terms
     resize_xterms(p.xpower+1); 
-    // now, do the addition
-    xterms[p.xpower] += p;
+    // now, do the subtraction
+    xterms[p.xpower] -= p;
+  }
+
+  void operator-=(factor_poly const &p) {
+    // make sure enough x terms
+    resize_xterms(p.nxterms); 
+    // now do the subtraction
+    for(unsigned int i=0;i<p.nxterms;++i) {
+      if(!p.xterms[i].is_empty()) {
+	xterms[i] -= p.xterms[i];
+      }
+    }
   }
 
   void operator*=(xy_term const &p) {
@@ -462,6 +503,12 @@ public:
   factor_poly<T> operator+(factor_poly<T> const &p) const {
     factor_poly<T> r(*this);
     r += p;
+    return r;
+  }
+
+  factor_poly<T> operator-(factor_poly<T> const &p) const {
+    factor_poly<T> r(*this);
+    r -= p;
     return r;
   }
 
