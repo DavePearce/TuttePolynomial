@@ -94,6 +94,7 @@ static unsigned int small_graph_threshold = 5;
 static edgesel_t edge_selection_heuristic = VERTEX_ORDER;
 static simple_cache cache(1024*1024,100);
 static vector<pair<int,int> > evalpoints;
+static vector<unsigned int> cache_hit_sizes;
 static bool status_flag=false;
 static bool verbose=true;
 static bool reduce_multicycles=true;
@@ -343,6 +344,7 @@ P tutte(G &graph, unsigned int mid) {
     if(cache.lookup(key,r,match_id)) { 
       if(write_tree) { write_tree_match(mid,match_id,graph,cout); }
       delete [] key; // free space used by key
+      cache_hit_sizes[graph.num_vertices()+1]++;
       return r * RF;
     }
   }
@@ -452,6 +454,7 @@ P flow(G &graph, unsigned int mid) {
     if(cache.lookup(key,r,match_id)) { 
       if(write_tree) { write_tree_match(mid,match_id,graph,cout); }
       delete [] key; // free space used by key
+      cache_hit_sizes[graph.num_vertices()]++;
       return r * RF;
     }
   }
@@ -569,6 +572,7 @@ P chromatic(G &graph, unsigned int mid) {
     if(cache.lookup(key,r,match_id)) { 
       if(write_tree) { write_tree_match(mid,match_id,graph,cout); }
       delete [] key; // free space used by key
+      cache_hit_sizes[graph.num_vertices()]++;
       return r;
     }
   }
@@ -816,7 +820,7 @@ unsigned int parse_amount(char *str) {
 // Statistics Printing Methods
 // ---------------------------------------------------------------
 
-void write_bucket_lengths(fstream &out) {
+void write_bucket_lengths(ostream &out) {
   out << "############################" << endl;
   out << "# CACHE BUCKET LENGTH DATA #" << endl;
   out << "############################" << endl;
@@ -839,7 +843,7 @@ void write_bucket_lengths(fstream &out) {
   }
 }
 
-void write_graph_sizes(fstream &out) {
+void write_graph_sizes(ostream &out) {
   out << endl << endl;
   out << "#########################" << endl;
   out << "# CACHE GRAPH SIZE DATA #" << endl;
@@ -877,27 +881,16 @@ void write_graph_sizes(fstream &out) {
   }
 }
 
-void write_hit_counts(fstream &out) {
-  std::vector<unsigned int> vcount;
+void write_hit_counts(ostream &out) {
   out << endl << endl;
   out << "##############################" << endl;
   out << "# CACHE GRAPH HIT COUNT DATA #" << endl;
   out << "##############################" << endl;
   out << "# V\tHit Count" << endl;
-  int nmgraphs=0;
-  int ngraphs=0;
 
-  for(simple_cache::iterator i(cache.begin());i!=cache.end();++i) {
-    adjacency_list<> g(graph_from_key<adjacency_list<> >(i.key()));
-    if(vcount.size() < g.num_vertices()) {
-      vcount.resize(g.num_vertices()+1,0);
-    }
-    vcount[g.num_vertices()] += i.hit_count();
-  }
-  
-  for(unsigned int i=0;i!=vcount.size();++i) {
-    out << i << "\t" << vcount[i] << endl;
-  }
+  for(int i=0;i!=cache_hit_sizes.size();++i) {
+    out << i << "\t" << cache_hit_sizes[i] << endl;
+  }  
 }
 
 // ---------------------------------------------------------------
@@ -952,6 +945,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     // now reset all stats information
     if(reset_mode) { cache.clear(); }
     cache.reset_stats();
+    cache_hit_sizes.clear();
     num_steps = 0;
     num_bicomps = 0;
     num_disbicomps = 0;
@@ -962,7 +956,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     unsigned int V(start_graph.num_vertices());
     unsigned int E(start_graph.num_edges());
     unsigned int C(start_graph.num_components());    
-    if(start_graph.num_vertices() == 0) { break; }
+    cache_hit_sizes.resize(V,0);
 
     my_timer timer(false);
     if(write_tree) { write_tree_start(ngraphs_completed); }    
@@ -1379,7 +1373,7 @@ int main(int argc, char *argv[]) {
     }    
 
     if(cache_stats) {
-      cout << endl << "Cache stats:" << endl << "------------" << endl;
+      cout << endl << "###############" << "# CACHE STATS #" << endl << "###############" << endl;
       cout << "Size: " << (cache_size/(1024*1024)) << "MB" << endl;
       cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
       cout << "# Entries: " << cache.num_entries() << endl;
@@ -1388,6 +1382,7 @@ int main(int argc, char *argv[]) {
       cout << "# Cache Collisions: " << cache.num_collisions() << endl;
       cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
       cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
+      write_hit_counts(cout);
     }
 
     if(cache_stats_file != "") {
