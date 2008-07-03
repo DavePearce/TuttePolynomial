@@ -217,7 +217,7 @@ public:
     if(from == to) { throw std::runtime_error("cannot contract a loop!"); } 
     for(edge_iterator i(begin_edges(to));i!=end_edges(to);++i) {
       if(from != i->first && num_edges(from,i->first) == 0) {
-	add_edge(from,i->first,i->second); 
+	add_edge(from,i->first,1); 
       }
     }
     remove(to);

@@ -32,7 +32,6 @@
 #include "misc/safe_arithmetic.hpp"
 
 #include "reductions.hpp"
-#include "tutte.hpp"
 #include "../config.h"
 
 #include <set>
@@ -227,7 +226,6 @@ void write_tree_end(unsigned int tid) {
   }
 }
 
-
 // ---------------------------------------------------------------
 // SELECT EDGE
 // ---------------------------------------------------------------
@@ -316,42 +314,6 @@ line_t select_line(G const &graph) {
 // Tutte Polynomial
 // ------------------------------------------------------------------
 
-/* Given a line x_1--y_1(k_1), ..., x_n--y_n(k_n), this method
- * computes a very strange product for the line ...
- */
-template<class G, class P>
-P FP(std::vector<typename G::edge_t> const &line) {
-  // this one is just a bit on the wierd side
-  P xs(X(0));
-  P acc(X(0));
-  
-  for(unsigned int k=0;k<line.size()-1;++k) {
-    P tmp = X(1);
-    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
-    if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }
-    acc *= tmp;
-    xs += acc;
-  }     
-
-  return xs;
-}
-
-/* Given a line x_1--y_1(k_1), ..., x_n--y_n(k_n), this method
- * computes the Line Product:
- *
- *  (X^p + Y^1 + ... Y^{k_1-1}) * (X^2 + Y^1 + ... Y^{k_2-1}) ...
- */
-template<class G, class P>
-P LP(std::vector<typename G::edge_t> const &line) {
-  P r(Y(0));
-  for(unsigned int k=0;k<line.size();++k) {
-    P tmp = X(0);
-    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
-    r *= tmp;
-  }
-  return r;
-}
-
 /* This is the core algorithm for the tutte computation
  * it reduces a graph to two smaller graphs using a delete operation
  * for one, and a contract operation for the other.
@@ -369,7 +331,6 @@ P tutte(G &graph, unsigned int mid) {
 
   // === 1. APPLY SIMPLIFICATIONS ===
 
-  // P RF = reduce<G,P>(graph);
   P RF = Y(reduce_loops(graph));
 
   // === 2. CHECK IN CACHE ===
@@ -396,16 +357,19 @@ P tutte(G &graph, unsigned int mid) {
     if(write_tree) { write_tree_leaf(mid,graph,cout); }
   } else if(!graph.is_biconnected()) {
     vector<G> biconnects;
-    G copyg(graph);
     graph.extract_biconnected_components(biconnects);
-    poly = reduce_tree<G,P>(X(1),graph);
-    if(graph.is_multitree()) { num_trees++; }
-    if(biconnects.size() > 1) { num_disbicomps++; }
+
     // figure out how many tree ids I need
     unsigned int tid(tree_id);
     tree_id += biconnects.size();
-    if(biconnects.size() > 0 && write_tree) { write_tree_nonleaf(mid,tid,tree_id-tid,copyg,cout); }
+    if(biconnects.size() > 0 && write_tree) { write_tree_nonleaf(mid,tid,tree_id-tid,graph,cout); }
     else if(write_tree) { write_tree_leaf(mid,graph,cout); }
+
+    graph.remove_graphs(biconnects);
+    if(graph.is_multitree()) { num_trees++; }
+    if(biconnects.size() > 1) { num_disbicomps++; }
+    poly = reduce_tree<G,P>(X(1),graph);
+
     // now, actually do the computation
     for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
       num_bicomps++;
@@ -429,13 +393,18 @@ P tutte(G &graph, unsigned int mid) {
     // === 4. PERFORM DELETE / CONTRACT ===
     
     G g2(graph); 
-    line_t line = select_line(graph);
+    edge_t edge = select_edge(graph);
+    
+    // now, delete/contract on the edge's endpoints
+    graph.remove_edge(edge);
+    g2.contract_edge(edge);
 
-    // now, delete/contract on the line's endpoints
-    graph.remove_line(line);
-    g2.contract_line(line);
-    // recursively compute the polynomial   
-    poly = (tutte<G,P>(graph, lid) * FP<G,P>(line)) + (tutte<G,P>(g2, rid) * LP<G,P>(line));
+    // recursively compute the polynomial, starting with delete       
+    if(edge.third > 1) { 
+      poly = tutte<G,P>(graph, lid) + (tutte<G,P>(g2, rid) * Y(0,edge.third-1));
+    } else {
+      poly = tutte<G,P>(graph, lid) + tutte<G,P>(g2, rid);
+    }
   }
 
   // Finally, save computed polynomial
@@ -454,40 +423,6 @@ P tutte(G &graph, unsigned int mid) {
 // Flow Polynomial
 // ------------------------------------------------------------------
 
-/* Given a line x_1--y_1(k_1), ..., x_n--y_n(k_n), this method
- * computes a very strange product for the line ...
- */
-template<class G, class P>
-P flow_FP(std::vector<typename G::edge_t> const &line) {
-  // this one is just a bit on the wierd side
-  P xs(Y(0));
-  P acc(Y(0));
-  
-  for(unsigned int k=0;k<line.size()-1;++k) {
-    if(line[k].third > 1) { acc *= Y(1,line[k].third-1); }
-    if(line[k+1].third > 1) { xs *= Y(0,line[k+1].third-1); }    
-    xs += acc;
-  }     
-
-  return xs;
-}
-
-/* Given a line x_1--y_1(k_1), ..., x_n--y_n(k_n), this method
- * computes the Line Product:
- *
- *  (X^p + Y^1 + ... Y^{k_1-1}) * (X^2 + Y^1 + ... Y^{k_2-1}) ...
- */
-template<class G, class P>
-P flow_LP(std::vector<typename G::edge_t> const &line) {
-  P r(Y(0));
-  for(unsigned int k=0;k<line.size();++k) {
-    P tmp = Y(0);
-    if(line[k].third > 1) { tmp += Y(1,line[k].third-1); }
-    r *= tmp;
-  }
-  return r;
-}
-
 /* This is the core algorithm for the flow polynomial computation it
  * reduces a graph to two smaller graphs using a delete operation for
  * one, and a contract operation for the other.
@@ -505,7 +440,6 @@ P flow(G &graph, unsigned int mid) {
 
   // === 1. APPLY SIMPLIFICATIONS ===
 
-  // P RF = reduce<G,P>(graph);
   P RF = Y(reduce_loops(graph));
 
   // === 2. CHECK IN CACHE ===
@@ -532,8 +466,15 @@ P flow(G &graph, unsigned int mid) {
     if(write_tree) { write_tree_leaf(mid,graph,cout); }
   } else if(!graph.is_biconnected()) {
     vector<G> biconnects;
-    G copyg(graph);
     graph.extract_biconnected_components(biconnects);
+
+    // figure out how many tree ids I need
+    unsigned int tid(tree_id);
+    tree_id += biconnects.size();
+    if(biconnects.size() > 0 && write_tree) { write_tree_nonleaf(mid,tid,tree_id-tid,graph,cout); }
+    else if(write_tree) { write_tree_leaf(mid,graph,cout); }
+
+    graph.remove_graphs(biconnects);
 
     // this is a little ugly
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
@@ -548,15 +489,10 @@ P flow(G &graph, unsigned int mid) {
       }
     } 
 
+    if(graph.is_multitree()) { num_trees++; }
+    if(biconnects.size() > 1) { num_disbicomps++; }
     poly = reduce_tree<G,P>(P(),graph);
 
-    if(biconnects.size() > 1) { num_disbicomps++; }
-    // figure out how many tree ids I need
-    unsigned int tid(tree_id);
-    tree_id += biconnects.size();
-    if(biconnects.size() > 0 && write_tree) { write_tree_nonleaf(mid,tid,tree_id-tid,copyg,cout); }
-    else if(write_tree) { write_tree_leaf(mid,graph,cout); }
-    // now, actually do the computation
     for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
       num_bicomps++;
       if(i->is_multicycle()) {
@@ -579,13 +515,17 @@ P flow(G &graph, unsigned int mid) {
     // === 4. PERFORM DELETE / CONTRACT ===
     
     G g2(graph); 
-    line_t line = select_line(graph);
+    edge_t edge = select_edge(graph);
 
     // now, delete/contract on the line's endpoints
-    graph.remove_line(line);
-    g2.contract_line(line);
+    graph.remove_edge(edge);
+    g2.contract_edge(edge);
     // recursively compute the polynomial   
-    poly = (flow<G,P>(graph, lid) * flow_FP<G,P>(line)) + (flow<G,P>(g2, rid) * flow_LP<G,P>(line));
+    if(edge.third > 1) { 
+      poly = flow<G,P>(graph, lid) + (flow<G,P>(g2, rid) * Y(0,edge.third-1));
+    } else {
+      poly = flow<G,P>(graph, lid) + flow<G,P>(g2, rid);
+    }    
   }
 
   // Finally, save computed polynomial
@@ -637,16 +577,18 @@ P chromatic(G &graph, unsigned int mid) {
 
   if(!graph.is_biconnected()) {
     vector<G> biconnects;
-    G copyg(graph);
     graph.extract_biconnected_components(biconnects);
-    poly = X(graph.num_edges());
-    if(graph.is_multitree()) { num_trees++; }
-    if(biconnects.size() > 1) { num_disbicomps++; }
+
     // figure out how many tree ids I need
     unsigned int tid(tree_id);
     tree_id += biconnects.size();
-    if(biconnects.size() > 0 && write_tree) { write_tree_nonleaf(mid,tid,tree_id-tid,copyg,cout); }
+    if(biconnects.size() > 0 && write_tree) { write_tree_nonleaf(mid,tid,tree_id-tid,graph,cout); }
     else if(write_tree) { write_tree_leaf(mid,graph,cout); }
+
+    graph.remove_graphs(biconnects);
+    if(graph.is_multitree()) { num_trees++; }
+    if(biconnects.size() > 1) { num_disbicomps++; }
+    poly = X(graph.num_edges());
     // now, actually do the computation
     for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
       num_bicomps++;
@@ -665,11 +607,11 @@ P chromatic(G &graph, unsigned int mid) {
     // === 4. PERFORM DELETE / CONTRACT ===
     
     G g2(graph); 
-    line_t line = select_line(graph);
+    edge_t edge = select_edge(graph);
     
     // now, delete/contract on the line's endpoints
-    graph.remove_line(line);
-    g2.simple_contract_line(line);  
+    graph.remove_edge(edge);
+    g2.simple_contract_edge(edge);  
     
     // recursively compute the polynomial   
     poly = chromatic<G,P>(graph, lid) + chromatic<G,P>(g2, rid);
@@ -1036,13 +978,23 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       if(info_mode) {
 	cout << V << "\t" << E;    
 	cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << num_bicomps << "\t" << num_disbicomps << "\t" << num_cycles << "\t" << num_trees;
-	cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2);
+	if(mode == MODE_TUTTE) {
+	  cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2);
+	}
       } 
     } else {
-      cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
+      string TP = "TP";
+      if(mode == MODE_TUTTE) {	
+	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
+      } else if(mode == MODE_FLOW) {
+  	cout << "FP[" << (ngraphs_completed+1) << "] := " << search_replace("x","1-x",tuttePoly.str()) << " :" << endl;
+      } else if(mode == MODE_CHROMATIC) {
+	cout << "CP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
+      }
+
       
       for(vector<pair<int,int> >::iterator i(evalpoints.begin());i!=evalpoints.end();++i) {
-	cout << "TP[" << (ngraphs_completed+1) << "](" << i->first << "," << i->second << ") = " << tuttePoly.substitute(i->first,i->second) << endl;
+	cout << TP << "[" << (ngraphs_completed+1) << "](" << i->first << "," << i->second << ") = " << tuttePoly.substitute(i->first,i->second) << endl;
       }
 
       if(info_mode) {
@@ -1054,23 +1006,27 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << "Number of Cycles Terminated: " << num_cycles << "." << endl;	
 	cout << "Number of Trees Terminated: " << num_trees << "." << endl;	
 	cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
-	cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
-	cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),E) << ")" << endl;	
-	// The tutte at T(-1,-1) should always give a (positive or
-	// negative) power of 2. 
-	mpz_class Tm1m1 = tuttePoly.substitute(-1,-1);
-	mpz_class Tm1m1pow = 0;
-	while((Tm1m1 % 2) == 0) {
-	  Tm1m1 = Tm1m1 / 2;
-	  Tm1m1pow++;
-	}
-	if(Tm1m1 == -1) {
-	  cout << "T(-1,-1) = -2^" << Tm1m1pow << endl;
-	} else if(Tm1m1 == 1) {
-	  cout << "T(-1,-1) = 2^" << Tm1m1pow << endl;
-	} else {
-	  // getting here indicates an error in the computation
-	  cout << "T(-1,-1) = 2^" << Tm1m1pow << " * " << Tm1m1 << endl;
+
+	if(mode == MODE_TUTTE) {
+	  // only print these evaluation points when in tutte mode
+	  cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
+	  cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),E) << ")" << endl;	
+	  // The tutte at T(-1,-1) should always give a (positive or
+	  // negative) power of 2. 
+	  mpz_class Tm1m1 = tuttePoly.substitute(-1,-1);
+	  mpz_class Tm1m1pow = 0;
+	  while((Tm1m1 % 2) == 0) {
+	    Tm1m1 = Tm1m1 / 2;
+	    Tm1m1pow++;
+	  }
+	  if(Tm1m1 == -1) {
+	    cout << "T(-1,-1) = -2^" << Tm1m1pow << endl;
+	  } else if(Tm1m1 == 1) {
+	    cout << "T(-1,-1) = 2^" << Tm1m1pow << endl;
+	  } else {
+	    // getting here indicates an error in the computation
+	    cout << "T(-1,-1) = 2^" << Tm1m1pow << " * " << Tm1m1 << endl;
+	  }
 	}
       }
     }

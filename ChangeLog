@@ -13,6 +13,14 @@ performed in place.
 3) Optimise the factor_poly slightly as well to eliminate situations
 where it reallocates memory unnecessarily.
 
+4) Optimised tutte.cpp by removing select_line option, since it's
+rather slow.
+
+5) Other optimisations to tutte.cpp
+
+6) Added support for computing Flow and Chromatic polynomials.
+
+	
 ====================================================================
 v0.9.8
 ====================================================================

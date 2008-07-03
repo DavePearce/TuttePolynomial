@@ -125,6 +125,18 @@ public:
     return false;
   }
 
+  void contract_edge(edge_t edge) {
+    graph.remove_edge(edge.first,edge.second,edge.third); 
+    graph.contract_edge(edge.first,edge.second); 
+    check_biconnectivity();    
+  }
+
+  void simple_contract_edge(edge_t edge) {
+    graph.remove_edge(edge.first,edge.second,edge.third); 
+    graph.simple_contract_edge(edge.first,edge.second); 
+    check_biconnectivity();    
+  }
+
   void contract_line(std::vector<edge_t> line) {
     if(line.size() == 1) { 
       graph.remove_edge(line[0].first,line[0].second,line[0].third); 
@@ -135,7 +147,6 @@ public:
       }
     }
     graph.contract_edge(line[0].first,line[line.size()-1].second); 
-    // don't need to check biconnectivity here!
     check_biconnectivity();
   }
 
@@ -165,15 +176,18 @@ public:
 	extract_biconnects(*i,*i,bcs,data);
       }
     }
+  }
+
+  void remove_graphs(std::vector<spanning_graph<G> > const &graphs) {
     // finally, remove all edges present in the biconnects
     // how could this be optimised a little?
-    for(unsigned int i=0;i!=bcs.size();++i) {
-      graph.remove(bcs[i].graph);
+    for(unsigned int i=0;i!=graphs.size();++i) {
+      graph.remove(graphs[i].graph);
     }
     // could remove any isolated vertices here,
     // but I don't think it's necessary for the tutte
     // algorithm!
-
+    
     nartics=0; // this is a tree by definition now!!!!!
     ncomponents = 99; // not sure how many there are ...
   }

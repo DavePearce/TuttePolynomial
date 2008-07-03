@@ -30,6 +30,13 @@ AC_TYPE_UINT16_T
 AC_TYPE_UINT32_T
 AC_TYPE_UINT8_T
 
+AC_CHECK_SIZEOF(int,4)
+AC_SUBST(ac_cv_sizeof_int)
+AC_CHECK_SIZEOF(long,4)
+AC_SUBST(ac_cv_sizeof_long)
+AC_CHECK_SIZEOF(long long,0)
+AC_SUBST(ac_cv_sizeof_long_long)
+
 # Checks for library functions.
 AC_FUNC_MALLOC
 AC_HEADER_STDC
