@@ -961,6 +961,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 
     unsigned int V(start_graph.num_vertices());
     unsigned int E(start_graph.num_edges());
+    unsigned int C(start_graph.num_components());    
     if(start_graph.num_vertices() == 0) { break; }
 
     my_timer timer(false);
@@ -997,13 +998,13 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
       } else if(mode == MODE_FLOW) {
 	mpz_class m1(-1),tmp;
-	mpz_pow_ui(tmp.get_mpz_t(),m1.get_mpz_t(),V);
-	cout << "FP[" << (ngraphs_completed+1) << "] := " << tmp << " * x * ( ";
+	mpz_pow_ui(tmp.get_mpz_t(),m1.get_mpz_t(),(E-V)+C);
+	cout << "FP[" << (ngraphs_completed+1) << "] := " << tmp << " * ( ";
 	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
       } else if(mode == MODE_CHROMATIC) {
 	mpz_class m1(-1),tmp;
-	mpz_pow_ui(tmp.get_mpz_t(),m1.get_mpz_t(),V);
-  	cout << "CP[" << (ngraphs_completed+1) << "] := " << tmp << " * ( ";
+	mpz_pow_ui(tmp.get_mpz_t(),m1.get_mpz_t(),V-C);
+  	cout << "CP[" << (ngraphs_completed+1) << "] := " << tmp << " * x * ( ";
 	cout << search_replace("x","(1-x)",tuttePoly.str()) << " ) :" << endl;
       }
 

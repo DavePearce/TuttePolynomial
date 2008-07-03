@@ -58,6 +58,7 @@ public:
   unsigned int num_underlying_edges() const { return graph.num_underlying_edges(); }
   unsigned int num_underlying_edges(unsigned int vertex) const { return graph.num_underlying_edges(vertex); }
   unsigned int num_multiedges() const { return graph.num_multiedges(); }
+  unsigned int num_components() const { return ncomponents; }
 
   bool is_connected() const { return ncomponents == 1; }
   bool is_biconnected() const { return ncomponents == 1 && nartics == 1; }
@@ -211,8 +212,8 @@ private:
     // now, check for connectedness
     for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
       if(!data.visited[*i]) { 
+	biconnect(*i,*i,data);
 	ncomponents ++;
-	return; // short circuit remainder of computation
       }
     }
   }
