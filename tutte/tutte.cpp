@@ -844,7 +844,7 @@ void write_graph_sizes(fstream &out) {
   out << "#########################" << endl;
   out << "# CACHE GRAPH SIZE DATA #" << endl;
   out << "#########################" << endl;
-  out << "# Size\t#Graphs (%)\t#MultiGraphs (%)" << endl;
+  out << "# V\t#Graphs (%)\t#MultiGraphs (%)" << endl;
   vector<int> counts;
   vector<int> mcounts;
   int nmgraphs=0;
@@ -883,14 +883,14 @@ void write_hit_counts(fstream &out) {
   out << "##############################" << endl;
   out << "# CACHE GRAPH HIT COUNT DATA #" << endl;
   out << "##############################" << endl;
-  out << "# Hit Count\tV" << endl;
+  out << "# V\tHit Count" << endl;
   int nmgraphs=0;
   int ngraphs=0;
 
   for(simple_cache::iterator i(cache.begin());i!=cache.end();++i) {
     adjacency_list<> g(graph_from_key<adjacency_list<> >(i.key()));
     if(vcount.size() < g.num_vertices()) {
-      vcount.resize(g.num_vertices(),0);
+      vcount.resize(g.num_vertices()+1,0);
     }
     vcount[g.num_vertices()] += i.hit_count();
   }
@@ -939,16 +939,6 @@ template<class G, class P>
 void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode) {
   unsigned int ngraphs_completed=0;  
   while(!input.eof() && ngraphs_completed < ngraphs) {
-    // first, reset all stats information
-    if(reset_mode) { cache.clear(); }
-    cache.reset_stats();
-    num_steps = 0;
-    num_bicomps = 0;
-    num_disbicomps = 0;
-    num_trees = 0;
-    num_cycles = 0;
-    current_timeout = timeout;
-
     // Create graph and then permute it according to 
     // vertex ordering strategy
     G start_graph = compact_graph<G>(read_graph<G>(input));
@@ -959,6 +949,15 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       break;
     }
     start_graph = permute_graph<G>(start_graph,vertex_ordering);
+    // now reset all stats information
+    if(reset_mode) { cache.clear(); }
+    cache.reset_stats();
+    num_steps = 0;
+    num_bicomps = 0;
+    num_disbicomps = 0;
+    num_trees = 0;
+    num_cycles = 0;
+    current_timeout = timeout;
 
     unsigned int V(start_graph.num_vertices());
     unsigned int E(start_graph.num_edges());
