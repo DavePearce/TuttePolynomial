@@ -925,6 +925,16 @@ void print_status() {
 // Run Method
 // ---------------------------------------------------------------
 
+string search_replace(string from, string to, string text) {
+  int pos = 0;
+  while((pos = text.find(from,pos)) != string::npos) {
+    text.replace(pos,from.length(),to.c_str(),to.length());
+    pos -= from.length();
+    pos += to.length();
+  }
+  return text;
+}
+
 template<class G, class P>
 void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode) {
   unsigned int ngraphs_completed=0;  
@@ -987,9 +997,15 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       if(mode == MODE_TUTTE) {	
 	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
       } else if(mode == MODE_FLOW) {
-  	cout << "FP[" << (ngraphs_completed+1) << "] := " << search_replace("x","1-x",tuttePoly.str()) << " :" << endl;
+	mpz_class m1(-1),tmp;
+	mpz_pow_ui(tmp.get_mpz_t(),m1.get_mpz_t(),V);
+	cout << "FP[" << (ngraphs_completed+1) << "] := " << tmp << " * x * ( ";
+	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
       } else if(mode == MODE_CHROMATIC) {
-	cout << "CP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
+	mpz_class m1(-1),tmp;
+	mpz_pow_ui(tmp.get_mpz_t(),m1.get_mpz_t(),V);
+  	cout << "CP[" << (ngraphs_completed+1) << "] := " << tmp << " * ( ";
+	cout << search_replace("x","(1-x)",tuttePoly.str()) << " ) :" << endl;
       }
 
       
