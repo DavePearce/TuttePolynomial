@@ -20,7 +20,9 @@
 #include <sys/resource.h>
 #include <ext/hash_map>
 
+#if HAVE_LIBGMPXX
 #include <gmpxx.h> // GNU Multi-precision Library
+#endif
 
 #include "graph/adjacency_list.hpp"
 #include "graph/spanning_graph.hpp"
@@ -1472,7 +1474,15 @@ int main(int argc, char *argv[]) {
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
       if(gmp_mode) {
+#if HAVE_LIBGMPXX
 	run<spanning_graph<adjacency_list<> >,factor_poly<mpz_class> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
+#else 
+	// In this case, the configure script has not been able to
+	// find -lgmpxx ... meaning either gmp is not installed, or
+	// C++ library component of gmp is not installed.
+	cout << "Sorry, you don't seem to have the gmpxx library installed!\n\n(this library is part of the GNU Multiple Precision Library and\n is needed for linking with C++ programs)" << endl;
+	exit(1);
+#endif
       } else {
 	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
       }

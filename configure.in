@@ -13,8 +13,9 @@ AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_RANLIB
 
-# Checks for GNU MultiPrecision (GMP) library.
-AC_CHECK_LIB([gmp], [mpz_pow_ui])
+# Checks for GNU Multiple Precision (GMP) library.
+AC_CHECK_LIB([gmp], [__gmpz_add])
+AC_CHECK_LIB([gmpxx], [main]) # use special symbol "main" as I don't know about to resolve name mangling.
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h sys/param.h sys/time.h])
