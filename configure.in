@@ -13,9 +13,8 @@ AC_PROG_CXX
 AC_PROG_CC
 AC_PROG_RANLIB
 
-# Checks for libraries.
-# FIXME: Replace `main' with a function in `-lnauty':
-AC_CHECK_LIB([nauty], [main])
+# Checks for GNU MultiPrecision (GMP) library.
+AC_CHECK_LIB([gmp], [mpz_pow_ui])
 
 # Checks for header files.
 AC_CHECK_HEADERS([stdint.h sys/param.h sys/time.h])
