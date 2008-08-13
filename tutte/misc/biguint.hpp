@@ -14,6 +14,8 @@
 #include "bstreambuf.hpp"
 #include "bistream.hpp"
 
+#include "../../config.h"
+
 template<class T>
 class safe; // forward declaration
 
@@ -21,7 +23,7 @@ class safe; // forward declaration
 typedef unsigned int bui_word;
 typedef unsigned long long bui_dword;
 
-#define BUI_WORD_WIDTH 32U
+#define BUI_WORD_WIDTH (SIZEOF_INT*8U)
 // 2147483648U
 #define BUI_PTR_BIT (1U << (BUI_WORD_WIDTH-1))
 #define BUI_WORD_MAX UINT_MAX
@@ -46,14 +48,13 @@ public:
   /* =============================== */
 
   inline biguint() { ptr = 0U; }  
-  inline biguint(bui_word v) { clone(v); }
-  inline biguint(bui_dword v) { clone(v); }
+  inline biguint(int v) { clone(v); }  
   inline biguint(biguint const &src) { clone(src); }
   
   template<class T>
   biguint(safe<T> v) { clone(v); }
 
-  biguint(bui_word v, bui_word d);
+  biguint(int v, bui_word depth);
   biguint(bui_word *p);
   inline ~biguint() { if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); } }
 
@@ -61,14 +62,8 @@ public:
   /* ======== ASSIGNMENT OPS ======= */
   /* =============================== */
   
-  inline biguint const &operator=(bui_word v) {
+  inline biguint const &operator=(int v) {
     if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); }
-    clone(v);
-    return *this;
-  }
-  
-  inline biguint const &operator=(bui_dword v) {
-    if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); };
     clone(v);
     return *this;
   }
@@ -110,56 +105,52 @@ public:
   /* ======== COMPARISON OPS ======= */
   /* =============================== */
 
-  bool operator==(bui_word v) const;
-  bool operator==(bui_dword v) const;
+  bool operator==(int v) const;
   bool operator==(biguint const &v) const;
 
-  bool operator!=(bui_word v) const;
-  bool operator!=(bui_dword v) const;
+  bool operator!=(int v) const;
   bool operator!=(biguint const &v) const;
 
   /* =============================== */
   /* ======== ARITHMETIC OPS ======= */
   /* =============================== */
 
-  void operator+=(bui_word w);
+  void operator+=(int w);
   void operator+=(biguint const &src);
-  void operator-=(bui_word w);
+  void operator-=(int w);
   void operator-=(biguint const &src);
 
-  void operator*=(bui_word v);
-  void operator*=(bui_dword v);
+  void operator*=(int v);
   void operator*=(biguint const &v);
-  void operator/=(bui_word v);
-  void operator%=(bui_word v);
-  void operator^=(bui_word v);   
+  void operator/=(int v);
+  void operator%=(int v);
+  void operator^=(int v);   
 
-  biguint operator+(bui_word w) const;
+  biguint operator+(int w) const;
   biguint operator+(biguint const &w) const;
-  biguint operator-(bui_word w) const;
+  biguint operator-(int w) const;
   biguint operator-(biguint const &w) const;
 
-  biguint operator*(bui_word w) const;
-  biguint operator*(bui_dword w) const;
+  biguint operator*(int w) const;
   biguint operator*(biguint const &w) const;
-  biguint operator/(bui_word w) const;
-  bui_word operator%(bui_word w) const;
-  biguint operator^(bui_word v) const;
+  biguint operator/(int w) const;
+  int operator%(int w) const;
+  biguint operator^(int v) const;
 
   /* =============================== */
   /* ======== CONVERSION OPS ======= */
   /* =============================== */
 
-  unsigned int c_uint() const;
-  unsigned long c_ulong() const;
-  bui_dword c_ulonglong() const;
+  int c_int() const;
+  long c_long() const;
+  long long c_longlong() const;
 
   /* =============================== */
   /* ======== HELPER METHODS ======= */
   /* =============================== */
   
 private:
-  inline void clone(bui_word v) {
+  inline void clone(int v) {
     if(v & BUI_PTR_BIT) {
       bui_word *p = aligned_alloc(3);
       ptr = PACK(p);
@@ -169,18 +160,6 @@ private:
     } else {
       ptr = v;
     }
-  }
-
-  inline void clone(bui_dword v) {
-    bui_word *p = aligned_alloc(4);
-    p[0] = 2;
-    p[1] = 0;
-    
-    for(unsigned int i=2;i<=3;i++) {
-      p[i] = (bui_word) v;
-      v >>= BUI_WORD_WIDTH;
-    }    
-    ptr = PACK(p);
   }
 
   inline void clone(biguint const &src) {

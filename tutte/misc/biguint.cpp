@@ -17,17 +17,17 @@ using namespace std;
 /* ========= CONSTRUCTORS ======== */
 /* =============================== */
 
-biguint::biguint(bui_word v, bui_word depth) { 
+biguint::biguint(bui_word *p) {
+  ptr = PACK(p);
+}
+
+biguint::biguint(int v, bui_word depth) { 
   bui_word padding = depth*2;
   bui_word *p = aligned_alloc(depth+padding+2);
   p[0]=depth;
   p[1]=padding;
   memset(p+2,0,(depth+padding)*sizeof(bui_word));
-  ptr = PACK(p);
-}
-
-
-biguint::biguint(bui_word *p) {
+  p[2] = v;
   ptr = PACK(p);
 }
     
@@ -39,7 +39,7 @@ biguint::biguint(bui_word *p) {
 /* ======== COMPARISON OPS ======= */
 /* =============================== */
 
-bool biguint::operator==(bui_word v) const {
+bool biguint::operator==(int v) const {
   if(ptr & BUI_PTR_BIT) {    
     bui_word *p = UNPACK(ptr);
     if(p[2] != v) { return false; }
@@ -50,21 +50,6 @@ bool biguint::operator==(bui_word v) const {
     return true;
   } else {
     return ptr == v;
-  } 
-}
-
-bool biguint::operator==(bui_dword v) const {
-  if(ptr & BUI_PTR_BIT) {
-    bui_word *p = UNPACK(ptr);
-    bui_word depth(p[0]);
-    for(bui_word i=2;i<(depth+2);i++) {
-      if(p[i] != (bui_word) v) { return false; }
-      v >>= BUI_WORD_WIDTH;
-    }    
-    if(v != 0) { return false; }
-    return true;
-  } else {
-    return (v <= BUI_WORD_MAX) && ptr == v;
   } 
 }
 
@@ -93,15 +78,14 @@ bool biguint::operator==(biguint const &v) const {
   return true;
 }
 
-bool biguint::operator!=(bui_word v) const { return !((*this) == v); }
-bool biguint::operator!=(bui_dword v) const { return !((*this) == v); }
+bool biguint::operator!=(int v) const { return !((*this) == v); }
 bool biguint::operator!=(biguint const &v) const { return !((*this) == v); }
 
 /* =============================== */
 /* ======== ARITHMETIC OPS ======= */
 /* =============================== */
 
-void biguint::operator+=(bui_word w) {
+void biguint::operator+=(int w) {
   if(ptr & BUI_PTR_BIT) {    
     bui_word *p(UNPACK(ptr));
     bui_word v = p[2];
@@ -170,13 +154,13 @@ biguint biguint::operator+(biguint const &w) const {
   return r;
 }
 
-biguint biguint::operator+(bui_word w) const {
+biguint biguint::operator+(int w) const {
   biguint r(*this);
   r += w;
   return r;
 }
 
-void biguint::operator-=(bui_word w) {
+void biguint::operator-=(int w) {
   if(ptr & BUI_PTR_BIT) {    
     bui_word *p(UNPACK(ptr));
     bui_word v = p[2];
@@ -235,13 +219,13 @@ biguint biguint::operator-(biguint const &w) const {
   return r;
 }
 
-biguint biguint::operator-(bui_word w) const {
+biguint biguint::operator-(int w) const {
   biguint r(*this);
   r -= w;
   return r;
 }
 
-void biguint::operator*=(bui_word v) {
+void biguint::operator*=(int v) {
   if(ptr & BUI_PTR_BIT) {    
     // complicated case!
     bui_word *p(UNPACK(ptr));
@@ -278,11 +262,6 @@ void biguint::operator*=(bui_word v) {
   }
 }
 
-void biguint::operator*=(bui_dword v) {
-  biguint tmp(v);
-  (*this) *= tmp;
-}
-
 void biguint::operator*=(biguint const &src) {
   // this could probably be optimised ...
   if((src.ptr & BUI_PTR_BIT) == 0) { 
@@ -295,7 +274,7 @@ void biguint::operator*=(biguint const &src) {
   } else {
     bui_word *s(UNPACK(src.ptr));
     bui_word depth = s[0];
-    biguint ans(0U,depth);
+    biguint ans(0,depth);
 
     for(unsigned int j=0;j<depth;++j) {
       biguint tmp(*this);
@@ -328,13 +307,7 @@ void biguint::operator*=(biguint const &src) {
   }
 }
 
-biguint biguint::operator*(bui_word w) const {
-  biguint r(*this);
-  r *= w;
-  return r;
-}
-
-biguint biguint::operator*(bui_dword w) const {
+biguint biguint::operator*(int w) const {
   biguint r(*this);
   r *= w;
   return r;
@@ -378,7 +351,7 @@ biguint biguint::operator*(biguint const &src) const {
   }
 }
 
-void biguint::operator/=(bui_word v) {
+void biguint::operator/=(int v) {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
   if(ptr & BUI_PTR_BIT) {
     bui_word *p(UNPACK(ptr));
@@ -396,13 +369,13 @@ void biguint::operator/=(bui_word v) {
   }
 }
 
-biguint biguint::operator/(bui_word w) const {
+biguint biguint::operator/(int w) const {
   biguint r(*this);
   r /= w;
   return r;
 }
 
-void biguint::operator%=(bui_word v) {
+void biguint::operator%=(int v) {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
   if(ptr & BUI_PTR_BIT) {
     bui_word *p(UNPACK(ptr));
@@ -419,7 +392,7 @@ void biguint::operator%=(bui_word v) {
   }
 }
 
-bui_word biguint::operator%(bui_word v) const {
+int biguint::operator%(int v) const {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
   if(ptr & BUI_PTR_BIT) {
     bui_word *p(UNPACK(ptr));
@@ -436,7 +409,7 @@ bui_word biguint::operator%(bui_word v) const {
   }
 }
 
-void biguint::operator^=(bui_word v) {
+void biguint::operator^=(int v) {
   if(v == 0) { (*this) = 1U; }
   else {
     biguint p(*this);
@@ -447,7 +420,7 @@ void biguint::operator^=(bui_word v) {
   }
 }
 
-biguint biguint::operator^(bui_word v) const {
+biguint biguint::operator^(int v) const {
   biguint r(*this);
   r ^= v;
   return r;
@@ -457,7 +430,7 @@ biguint biguint::operator^(bui_word v) const {
 /* ======== CONVERSION OPS ======= */
 /* =============================== */
 
-unsigned int biguint::c_uint() const {
+int biguint::c_int() const {
   if(ptr & BUI_PTR_BIT) {
     bui_word *p(UNPACK(ptr));
     if(p[0] > BUI_UINT_SIZE) { throw runtime_error("biguint too large for unsigned int"); }
@@ -467,7 +440,7 @@ unsigned int biguint::c_uint() const {
   }
 }  
 
-unsigned long biguint::c_ulong() const {
+long biguint::c_long() const {
   if(ptr & BUI_PTR_BIT) {
     bui_word *p(UNPACK(ptr));
     if(p[0] > BUI_ULONG_SIZE) { throw runtime_error("biguint too large for unsigned int"); }
@@ -477,7 +450,7 @@ unsigned long biguint::c_ulong() const {
   }
 }  
 
-unsigned long long biguint::c_ulonglong() const {
+long long biguint::c_longlong() const {
   if(ptr & BUI_PTR_BIT) {
     bui_word *p(UNPACK(ptr));
     bui_word depth = p[0];
