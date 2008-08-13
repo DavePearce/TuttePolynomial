@@ -13,7 +13,6 @@
 #include <cstring>
 #include <algorithm>
 #include <stdexcept>
-#include <gmpxx.h>
 
 class bstreambuf {
 private:
@@ -151,24 +150,6 @@ public:
     write_ptr += sizeof(long long);
   }
 
-  void write(mpz_class const &v) {    
-    // first, calculate space required
-    unsigned int count =  ((mpz_sizeinbase (v.get_mpz_t(), 2) + 7) / 8);
-    // second, write the length of data
-    write(count);
-
-    // third, check there is enough space!
-    if((size()+count) > max()) {
-      resize(size() + count);      
-    } 
-
-    // second, write the integer data
-    mpz_export(write_ptr,NULL,1,1,0,0,v.get_mpz_t());
-
-    // finally, update the write_ptr
-    write_ptr += count;
-  }
-
   unsigned int size() const { return write_ptr-start; }
   unsigned int max() const { return end-start; }
   unsigned char const * const c_ptr() const { return start; }
@@ -197,6 +178,5 @@ bstreambuf& operator<<(bstreambuf &out, long val);
 bstreambuf& operator<<(bstreambuf &out, unsigned long val);
 bstreambuf& operator<<(bstreambuf &out, long long val);
 bstreambuf& operator<<(bstreambuf &out, unsigned long long val);
-bstreambuf& operator<<(bstreambuf &out, mpz_class const &val);
 
 #endif

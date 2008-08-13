@@ -11,7 +11,6 @@
 
 #include <iostream>
 #include <climits>
-#include <gmpxx.h>
 #include "bstreambuf.hpp"
 #include "bistream.hpp"
 
@@ -154,8 +153,7 @@ public:
   unsigned int c_uint() const;
   unsigned long c_ulong() const;
   bui_dword c_ulonglong() const;
-  mpz_class get_mpz_t() const; // for the GMP library
-  
+
   /* =============================== */
   /* ======== HELPER METHODS ======= */
   /* =============================== */
@@ -213,9 +211,6 @@ std::ostream& operator<<(std::ostream &out, biguint val);
 bstreambuf &operator<<(bstreambuf &, biguint const &);
 bistream &operator>>(bistream &, biguint &);
 biguint pow(biguint const &r, unsigned int power);
-
-// needed for interoperability with GMP
-mpz_class operator*(mpz_class const &x, biguint const &y);
 
 #include "safe_arithmetic.hpp"
 

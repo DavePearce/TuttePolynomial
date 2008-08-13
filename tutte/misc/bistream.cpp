@@ -18,4 +18,3 @@ bistream& operator>>(bistream &out, long &c) { out.read(c); return out; }
 bistream& operator>>(bistream &out, unsigned long &c) { out.read(c); return out; }
 bistream& operator>>(bistream &out, long long &c) { out.read(c); return out; }
 bistream& operator>>(bistream &out, unsigned long long &c) { out.read(c); return out; }
-bistream& operator>>(bistream &out, mpz_class &c) { out.read(c); return out; }

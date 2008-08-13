@@ -116,19 +116,6 @@ public:
     v = *((unsigned long long*) read_ptr);    
     read_ptr += sizeof(unsigned long long);     
   }  
-
-  void read(mpz_class& c) {
-    unsigned int count;
-    count = *((unsigned int*) read_ptr);    
-    read_ptr += sizeof(unsigned int);   
-
-    if((read_ptr+count) > end) {
-      throw std::runtime_error("attempt to read past end of stream!");
-    }
-
-    mpz_import(c.get_mpz_t(),count,1,1,0,0,read_ptr);   
-    read_ptr += count;     
-  }
 };
 
 bistream &operator>>(bistream &out, char&);
@@ -141,6 +128,5 @@ bistream &operator>>(bistream &out, long&);
 bistream &operator>>(bistream &out, unsigned long&);
 bistream &operator>>(bistream &out, long long&);
 bistream &operator>>(bistream &out, unsigned long long&);
-bistream &operator>>(bistream &out, mpz_class&);
 
 #endif

@@ -12,11 +12,11 @@
 #include <iostream>
 #include <string>
 #include <utility>
-#include <gmpxx.h>
 
 #include "xy_term.hpp"
 #include "../misc/bistream.hpp"
 #include "../misc/bstreambuf.hpp"
+#include "../misc/biguint.hpp"
 
 #define FPOLY_PADDING_FACTOR 1
 
@@ -226,19 +226,16 @@ public:
   inline T const &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
   inline T &operator[](int i) { return coefficients[(i + fpadding) - ymin]; }
 
-  mpz_class substitute(int y) const {
+  biguint substitute(int y) const {
     if(coefficients != NULL) {
-      mpz_class r(0);
-      mpz_class p(y);	
+      biguint r(0U);
+      biguint p((unsigned int) y); // FIXME
       for(unsigned int i=ymin;i<=ymax;++i) {	
-	// ugly, gmp doesn't have pow(mpz_class,...)
-	mpz_class tmp;  
-	mpz_pow_ui(tmp.get_mpz_t(),p.get_mpz_t(),i);	
-	r += tmp * (*this)[i];
+	r += (*this)[i] * pow(p,i);
       }
       return r;
     } else {
-      return mpz_class(0U);
+      return biguint(0U);
     }
   }
 
@@ -585,13 +582,11 @@ public:
   }
 
 
-  mpz_class substitute(int x, int y) const {
-    mpz_class r(0U);
+  biguint substitute(int x, int y) const {
+    biguint r(0U);
+    biguint p((unsigned int) x); // FIXME
     for(unsigned int i=0;i<nxterms;++i) {
-
-      mpz_class tmp;  
-      mpz_pow_ui(tmp.get_mpz_t(),mpz_class(x).get_mpz_t(),i);	
-      r += tmp * xterms[i].substitute(y);
+      r += pow(p,i) * xterms[i].substitute(y);
     }
     return r;
   }

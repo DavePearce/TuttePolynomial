@@ -20,10 +20,6 @@
 #include <sys/resource.h>
 #include <ext/hash_map>
 
-#if HAVE_LIBGMPXX
-#include <gmpxx.h> // GNU Multi-precision Library
-#endif
-
 #include "graph/adjacency_list.hpp"
 #include "graph/spanning_graph.hpp"
 #include "poly/simple_poly.hpp"
@@ -1083,14 +1079,12 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       if(mode == MODE_TUTTE) {	
 	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
       } else if(mode == MODE_FLOW) {
-	mpz_class m1(-1),tmp;
-	mpz_pow_ui(tmp.get_mpz_t(),m1.get_mpz_t(),(E-V)+C);
-	cout << "FP[" << (ngraphs_completed+1) << "] := " << tmp << " * ( ";
+	//	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(biguint(-1),(E-V)+C) << " * ( ";
+	cout << "ERROR" << endl;
 	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
       } else if(mode == MODE_CHROMATIC) {
-	mpz_class m1(-1),tmp;
-	mpz_pow_ui(tmp.get_mpz_t(),m1.get_mpz_t(),V-C);
-  	cout << "CP[" << (ngraphs_completed+1) << "] := " << tmp << " * x * ( ";
+	//  	cout << "CP[" << (ngraphs_completed+1) << "] := " << pow(biguint(-1),V-C) << " * x * ( ";
+	cout << "ERROR" << endl;
 	cout << search_replace("x","(1-x)",tuttePoly.str()) << " ) :" << endl;
       }
 
@@ -1116,20 +1110,20 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	  cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),E) << ")" << endl;	
 	  // The tutte at T(-1,-1) should always give a (positive or
 	  // negative) power of 2. 
-	  mpz_class Tm1m1 = tuttePoly.substitute(-1,-1);
-	  mpz_class Tm1m1pow = 0;
+	  biguint Tm1m1 = tuttePoly.substitute(-1,-1);
+	  biguint Tm1m1pow = 0U;
 	  while((Tm1m1 % 2) == 0) {
 	    Tm1m1 = Tm1m1 / 2;
-	    Tm1m1pow++;
+	    Tm1m1pow = Tm1m1pow + 1;
 	  }
-	  if(Tm1m1 == -1) {
-	    cout << "T(-1,-1) = -2^" << Tm1m1pow << endl;
-	  } else if(Tm1m1 == 1) {
-	    cout << "T(-1,-1) = 2^" << Tm1m1pow << endl;
-	  } else {
+	  //	  if(Tm1m1 == -1) {
+	  //	    cout << "T(-1,-1) = -2^" << Tm1m1pow << endl;
+	  // } else if(Tm1m1 == 1U) {
+	  //cout << "T(-1,-1) = 2^" << Tm1m1pow << endl;
+	  //	} else {
 	    // getting here indicates an error in the computation
 	    cout << "T(-1,-1) = 2^" << Tm1m1pow << " * " << Tm1m1 << endl;
-	  }
+	  //	  }
 	}
       }
     }
@@ -1195,7 +1189,6 @@ int main(int argc, char *argv[]) {
     {"quiet",no_argument,NULL,OPT_QUIET},
     {"timeout",required_argument,NULL,OPT_TIMEOUT},
     {"eval",required_argument,NULL,OPT_EVALPOINT},
-    {"gmp",no_argument,NULL,OPT_GMP},
     {"chromatic",no_argument,NULL,OPT_CHROMATIC},
     {"flow",no_argument,NULL,OPT_FLOW},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
@@ -1239,7 +1232,6 @@ int main(int argc, char *argv[]) {
     " -Tx,y  --eval=x,y                evaluate the computed polynomial at x,y",
     "        --small-graphs=size       set threshold for small graphs.  Default is 5.",
     " -n<x>  --ngraphs=<number>        number of graphs to process from input file",
-    "        --gmp                     use GMP library to represent coefficients",
     "        --chromatic               generate chromatic polynomial",
     "        --flow                    generate flow polynomial",
     "        --tree                    output computation tree",
@@ -1281,7 +1273,6 @@ int main(int argc, char *argv[]) {
   bool info_mode=false;
   bool reset_mode=true;
   bool cache_stats=false;
-  bool gmp_mode = false;
   vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
   string cache_stats_file("");
 
@@ -1329,9 +1320,6 @@ int main(int argc, char *argv[]) {
       break;
     case OPT_TREE_OUT:
       write_tree=true;
-      break;
-    case OPT_GMP:
-      gmp_mode=true;
       break;
     case OPT_CHROMATIC:
       mode=MODE_CHROMATIC;
@@ -1473,19 +1461,7 @@ int main(int argc, char *argv[]) {
         
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
-      if(gmp_mode) {
-#if HAVE_LIBGMPXX
-	run<spanning_graph<adjacency_list<> >,factor_poly<mpz_class> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
-#else 
-	// In this case, the configure script has not been able to
-	// find -lgmpxx ... meaning either gmp is not installed, or
-	// C++ library component of gmp is not installed.
-	cout << "Sorry, you don't seem to have the gmpxx library installed!\n\n(this library is part of the GNU Multiple Precision Library and\n is needed for linking with C++ programs)" << endl;
-	exit(1);
-#endif
-      } else {
 	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
-      }
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering);
     }    

@@ -493,18 +493,6 @@ unsigned long long biguint::c_ulonglong() const {
   }
 }  
 
-mpz_class biguint::get_mpz_t() const {
-   if(ptr & BUI_PTR_BIT) {
-     bui_word *p(UNPACK(ptr));
-     bui_word depth = p[0];
-     mpz_class c;
-     mpz_import(c.get_mpz_t(),depth,-1,sizeof(bui_word),0,0,p+2);   
-     return c;
-   } else {
-     return mpz_class(ptr);
-   }
-}
-
 /* =============================== */
 /* ======== HELPER METHODS ======= */
 /* =============================== */
@@ -634,8 +622,4 @@ bistream &operator>>(bistream &bin, biguint &src) {
   }
 
   return bin;
-}
-
-mpz_class operator*(mpz_class const &x, biguint const &y) {
-  return x * (y.get_mpz_t());
 }
