@@ -193,6 +193,7 @@ private:
   void internal_add(bui_word *p, bui_word *s);
   void internal_sub(bui_word *p, bui_word x);
   void internal_sub(bui_word *p, bui_word *s);
+  int internal_cmp(bui_word *p, bui_word *s);
 
   void expand(bui_word ndepth);
   bui_word *aligned_alloc(unsigned int c);

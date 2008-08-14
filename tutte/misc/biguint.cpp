@@ -87,6 +87,7 @@ bool biguint::operator!=(biguint const &v) const { return !((*this) == v); }
 /* =============================== */
 
 void biguint::operator+=(int w) {
+  cout << "ENTERED +=(int)" << endl;
   if(ptr & BUI_PTR_BIT) {    
     bui_word *p(UNPACK(ptr));
     if(SIGN(w) == SIGN(p[0])) {
@@ -115,9 +116,11 @@ void biguint::operator+=(int w) {
       clone(x);
     }
   }
+  cout << "DONE +=(int)" << endl;
 }
 
 void biguint::operator+=(biguint const &src) {
+  cout << "ENTERED +=(biguint)" << endl;
   if((src.ptr & BUI_PTR_BIT) == 0) { 
     (*this) += src.ptr; 
   } else {
@@ -133,6 +136,7 @@ void biguint::operator+=(biguint const &src) {
       p[0] = PACK_DEPTH(depth,SIGN(w));      
       p[1] = 0;
       p[2] = ABS_UINT(w);
+
       for(int i=3;i<(depth+2);++i) { p[i] = 0U; }
       ptr = PACK(p);
     } else {
@@ -140,13 +144,14 @@ void biguint::operator+=(biguint const &src) {
       expand(depth);
       p = UNPACK(ptr);
     }
-    
+
     if(SIGN(s[0]) != SIGN(p[0])) {
       internal_sub(p,s);
     } else {     
       internal_add(p,s);
     }   
   }
+  cout << "DONE +=(biguint)" << endl;
 }
 
 biguint biguint::operator+(biguint const &w) const {
@@ -202,10 +207,11 @@ void biguint::operator-=(biguint const &src) {
     
     if((ptr & BUI_PTR_BIT) == 0) { 
       // assume it needs to go big
+      int w = SIGN_EXTEND(ptr);
       p = aligned_alloc(depth+2);
-      p[0] = depth;      
-      p[1] = depth;      
-      p[2] = ptr;
+      p[0] = PACK_DEPTH(depth,SIGN(w));
+      p[1] = 0;      
+      p[2] = ABS_UINT(w);
       for(int i=3;i<(depth+2);++i) { p[i] = 0U; }
       ptr = PACK(p);
     } else {
@@ -213,10 +219,10 @@ void biguint::operator-=(biguint const &src) {
       p = UNPACK(ptr);
     }
 
-    if(SIGN(s[0]) != SIGN(p[0])) {
-      internal_add(p,s);
-    } else {     
+    if(SIGN(s[0]) == SIGN(p[0])) {
       internal_sub(p,s);
+    } else {     
+      internal_add(p,s);
     }   
   }
 }
@@ -525,22 +531,86 @@ void biguint::internal_add(bui_word *p, bui_word *s) {
 
 void biguint::internal_sub(bui_word *p, bui_word *s) {
   unsigned int borrow = 0;
-  unsigned int depth(DEPTH(s[0]));
-  
-  for(bui_word i=2;i<(depth+2);++i) {
-    bui_word v = p[i];
-    bui_word w = s[i];
-    bui_word r = v - w - borrow;    
-    p[i] = r;
-    
-    if(borrow == 0) {
-      borrow = v < w ? 1 : 0;
+  unsigned int p_depth(DEPTH(p[0]));
+  unsigned int s_depth(DEPTH(s[0]));
+  int cmp(internal_cmp(p,s));
+
+  if(cmp < 0) {
+    cout << "STAGE 1" << endl;
+    // here, p is the smaller.
+    // need to swap the sign of p here, since it's flipping around
+    p[0] = PACK_DEPTH(p_depth,!SIGN(p[0]));
+
+    // now, we can do the actual subtraction.
+    for(bui_word i=2;i<(p_depth+2);++i) {
+      bui_word v = s[i];
+      bui_word w = p[i];
+      bui_word r = v - w - borrow;    
+      p[i] = r;
+      
+      if(borrow == 0) {
+	borrow = v < w ? 1 : 0;
+      } else {
+	borrow = v <= w ? 1 : 0;
+      }
+    }    
+
+  FIXME: problem here in that drying to ripple, but need from s not p.
+
+    if(borrow == 1) { ripple_borrow(p_depth); }
+
+  } else if(cmp == 0) {
+    // they cancel each other out, so set zero.
+    p[1] += DEPTH(p[0])-1;
+    p[0] = PACK_DEPTH(1,false);
+    p[2] = 0;
+  } else {
+    // here, p is the larger
+    cout << "STAGE 2" << endl;
+    for(bui_word i=2;i<s_depth+2;++i) {
+      bui_word v = p[i];
+      bui_word w = s[i];
+      bui_word r = v - w - borrow;    
+      p[i] = r;
+      
+      if(borrow == 0) {
+	borrow = v < w ? 1 : 0;
+      } else {
+	borrow = v <= w ? 1 : 0;
+      }
+    }
+    if(borrow == 1) { ripple_borrow(s_depth); }
+  } 
+}
+
+// return -1,0,1 if p is less than, equal or greater to s
+int biguint::internal_cmp(bui_word *p, bui_word *s) {
+  unsigned int depth_s(DEPTH(s[0]));
+  unsigned int depth_p(DEPTH(p[0]));
+  unsigned int depth(min(depth_s,depth_p));
+
+  for(unsigned int i(depth+1);i>1;--i) {
+    if(i >= depth_p) {
+      if(s[i] != 0) {
+	return -1;
+      }
+    } else  if(i >= depth_s) {
+      if(p[i] != 0) {
+	return 1;
+      }
     } else {
-      borrow = v <= w ? 1 : 0;
+      int sw = s[i];
+      int pw = p[i];
+      
+      if(sw < pw) {
+	return 1;
+      } else if(pw < sw) {
+	return -1;
+      }
     }
   }
-  
-  if(borrow == 1) { ripple_borrow(depth); }
+
+  return 0;
 }
 
 // Expands the array to depth ndepth.  If ndepth < current depth,
@@ -590,17 +660,18 @@ void biguint::ripple_carry(bui_word level) {
 void biguint::ripple_borrow(bui_word level) {  
   bui_word *p(UNPACK(ptr));
   bui_word depth(DEPTH(p[0]));
-  for(bui_word i(level+2);i<(depth+2);++i) {
-    bui_word v = p[i];
+  bui_word l(level+2);
+  
+  for(;l<(depth+2);++l) {
+    bui_word v = p[l];
     if(v == 0) {
-      p[i] = BUI_WORD_MAX;
+      p[l] = BUI_WORD_MAX;
     } else {
-      p[i] = v - 1;
+      p[l] = v - 1;
       return;
     }	
   }    
-
-  FIX ME!!
+  
 }
 
 bui_word *biguint::aligned_alloc(unsigned int c) {
