@@ -163,14 +163,23 @@ int main(int argc, char *argv[]) {
   // seed random number generator
   srand(time(NULL));  
   // do the tests!
-  primitive_test(count,ADD);
-  cout << "PRIM ADD DONE" << endl;
+  //  primitive_test(count,ADD);
+  //  cout << "PRIM ADD DONE" << endl;
   //  primitive_test(count,SUB);
-  cout << "PRIM SUB DONE" << endl;
+  //  cout << "PRIM SUB DONE" << endl;
   //  commutative_add_test(count,10);
   //  primitive_test(count,MUL);
-  cout << "PRIM MUL DONE" << endl;
+  //  cout << "PRIM MUL DONE" << endl;
   //  primitive_test(count,DIV);
-  cout << "PRIM DIV DONE" << endl;
+  //  cout << "PRIM DIV DONE" << endl;
   //  commutative_mul_test(count,10);
+
+  biguint x(BUI_PTR_MIN);
+  biguint y(INT_MAX);
+
+  cout << "X = " << x.c_longlong() << endl;
+  cout << "Y = " << y.c_longlong() << endl;
+
+  cout << "X + Y = " << (x+y).c_longlong() << endl;  
+  cout << "X - Y = " << (x-y).c_longlong() << endl;  
 }

@@ -24,21 +24,35 @@ typedef unsigned int bui_word;
 typedef unsigned long long bui_dword;
 
 #define BUI_WORD_WIDTH (SIZEOF_INT*8U)
-// 2147483648U
 #define BUI_PTR_BIT (1U << (BUI_WORD_WIDTH-1))
-#define BUI_WORD_MAX UINT_MAX
+#define BUI_PTR_MAX ((int) (((unsigned int) -1) >> 2U))
+#define BUI_PTR_MIN ((int) ((((unsigned int) -1) >> 2U) | BUI_PTR_BIT)+1)
 
-// problem when wors size > unsigned int ?
-#define BUI_UINT_SIZE (sizeof(unsigned int) / sizeof(bui_word))
-#define BUI_ULONG_SIZE (sizeof(unsigned long) / sizeof(bui_word))
-#define BUI_ULONGLONG_SIZE (sizeof(unsigned long long) / sizeof(bui_word))
+#define BUI_WORD_MAX UINT_MAX
 
 #define PACK(x) ((((bui_word)x) >> 1U) | BUI_PTR_BIT)
 #define UNPACK(x) ((bui_word*)(x << 1U))
+#define SIGN(x) ((x&BUI_PTR_BIT) == BUI_PTR_BIT)
+#define SIGN_EXTEND(x) (((int)(x << 1U)) >> 1)
+#define DEPTH(x) (x&~BUI_PTR_BIT)
+#define PACK_DEPTH(x,y) (y ? (x|BUI_PTR_BIT) : x)
+#define PACK_VALUE(x) (x&~BUI_PTR_BIT)
+#define ABS_UINT(x) ((x == INT_MIN) ? ((unsigned int)INT_MAX)+1: abs(x))
 
 class biguint {
 public:
-  bui_word ptr; // either an int or a pointer ...
+  // ptr is either a 31-bit int, or a pointer to an array of bui_words
+  // :. to comparse ptr against another int, it must be first sign-
+  // extended.  Note, on a 64-bit machine, it's a 63-bit int etc.
+  //
+  // when in array mode, we are using sign magnitude representation,
+  // as follows:
+  //
+  // index :          0          |   1     | ...
+  // value : highest bit is sign | padding | number bits (as unsigned int)
+  //         remainder is length
+  //
+  bui_word ptr; 
 
   friend bstreambuf &operator<<(bstreambuf &, biguint const &);
   friend bistream &operator>>(bistream &, biguint &);
@@ -75,8 +89,8 @@ public:
 	  bui_word *s = UNPACK(src.ptr);
 	  bui_word *p = UNPACK(ptr);
 	  // attempt to reuse memory where possible.
-	  unsigned int src_depth = s[0];
-	  unsigned int depth = p[0];
+	  unsigned int src_depth = DEPTH(s[0]);
+	  unsigned int depth = DEPTH(p[0]);
 	  unsigned int padding = p[1];	
 	  
 	  if(src_depth <= (depth + padding)) {
@@ -151,21 +165,21 @@ public:
   
 private:
   inline void clone(int v) {
-    if(v & BUI_PTR_BIT) {
+    if((v < BUI_PTR_MIN) || (v > BUI_PTR_MAX)) {
       bui_word *p = aligned_alloc(3);
       ptr = PACK(p);
-      p[0] = 1;
+      p[0] = PACK_DEPTH(1,SIGN(v)); // convert to sign magnitude
       p[1] = 0;
-      p[2] = v;
+      p[2] = ABS_UINT(v);
     } else {
-      ptr = v;
+      ptr = PACK_VALUE(v);
     }
   }
 
   inline void clone(biguint const &src) {
     if(src.ptr & BUI_PTR_BIT) {
       bui_word *s = UNPACK(src.ptr);
-      bui_word depth = s[0];
+      bui_word depth = DEPTH(s[0]);
       bui_word padding = s[1];
       bui_word *p = aligned_alloc(depth+padding+2);
       memcpy(p,s,(padding+depth+2)*sizeof(bui_word));
@@ -174,6 +188,11 @@ private:
       ptr = src.ptr;
     }
   }
+
+  void internal_add(bui_word *p, bui_word x);
+  void internal_add(bui_word *p, bui_word *s);
+  void internal_sub(bui_word *p, bui_word x);
+  void internal_sub(bui_word *p, bui_word *s);
 
   void expand(bui_word ndepth);
   bui_word *aligned_alloc(unsigned int c);
