@@ -11,12 +11,9 @@
 
 #include <iostream>
 #include <climits>
-#include <gmpxx.h>
+
 #include "bstreambuf.hpp"
 #include "bistream.hpp"
-
-template<class T>
-class safe; // forward declaration
 
 // this class provides arbitrary sized integers
 typedef unsigned int bui_word;
@@ -51,9 +48,6 @@ public:
   inline biguint(bui_dword v) { clone(v); }
   inline biguint(biguint const &src) { clone(src); }
   
-  template<class T>
-  biguint(safe<T> v) { clone(v); }
-
   biguint(bui_word v, bui_word d);
   biguint(bui_word *p);
   inline ~biguint() { if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); } }
@@ -154,7 +148,6 @@ public:
   unsigned int c_uint() const;
   unsigned long c_ulong() const;
   bui_dword c_ulonglong() const;
-  mpz_class get_mpz_t() const; // for the GMP library
   
   /* =============================== */
   /* ======== HELPER METHODS ======= */
@@ -213,10 +206,5 @@ std::ostream& operator<<(std::ostream &out, biguint val);
 bstreambuf &operator<<(bstreambuf &, biguint const &);
 bistream &operator>>(bistream &, biguint &);
 biguint pow(biguint const &r, unsigned int power);
-
-// needed for interoperability with GMP
-mpz_class operator*(mpz_class const &x, biguint const &y);
-
-#include "safe_arithmetic.hpp"
 
 #endif
