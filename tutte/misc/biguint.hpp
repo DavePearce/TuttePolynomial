@@ -15,26 +15,23 @@
 #include "bstreambuf.hpp"
 #include "bistream.hpp"
 
-// this class provides arbitrary sized integers
-typedef unsigned int bui_word;
-typedef unsigned long long bui_dword;
+// a type which is double the size of an unsigned int.
+typedef unsigned long long d_unsigned_int;
 
-#define BUI_WORD_WIDTH 32U
-// 2147483648U
-#define BUI_PTR_BIT (1U << (BUI_WORD_WIDTH-1))
-#define BUI_WORD_MAX UINT_MAX
+// Width of unsigned int (in bits)
+#define UINT_WIDTH (sizeof(unsigned int)*8U)
+#define BUI_LEFTMOST_BIT (1U << (UINT_WIDTH-1))
 
-// problem when wors size > unsigned int ?
-#define BUI_UINT_SIZE (sizeof(unsigned int) / sizeof(bui_word))
-#define BUI_ULONG_SIZE (sizeof(unsigned long) / sizeof(bui_word))
-#define BUI_ULONGLONG_SIZE (sizeof(unsigned long long) / sizeof(bui_word))
+#define BUI_UINT_SIZE 1
+#define BUI_ULONG_SIZE (sizeof(unsigned long) / sizeof(unsigned int))
+#define BUI_ULONGLONG_SIZE (sizeof(unsigned long long) / sizeof(unsigned int))
 
-#define PACK(x) ((((bui_word)x) >> 1U) | BUI_PTR_BIT)
-#define UNPACK(x) ((bui_word*)(x << 1U))
+#define BUI_PACK(x) ((((unsigned int)x) >> 1U) | BUI_LEFTMOST_BIT)
+#define BUI_UNPACK(x) ((unsigned int*)(x << 1U))
 
 class biguint {
 public:
-  bui_word ptr; // either an int or a pointer ...
+  unsigned int ptr; // either an int or a pointer ...
 
   friend bstreambuf &operator<<(bstreambuf &, biguint const &);
   friend bistream &operator>>(bistream &, biguint &);
@@ -44,53 +41,60 @@ public:
   /* =============================== */
 
   inline biguint() { ptr = 0U; }  
-  inline biguint(bui_word v) { clone(v); }
-  inline biguint(bui_dword v) { clone(v); }
+  inline biguint(unsigned int v) { clone(v); }
+  inline biguint(unsigned long v) { clone(v); }
+  inline biguint(unsigned long long v) { clone(v); }
   inline biguint(biguint const &src) { clone(src); }
   
-  biguint(bui_word v, bui_word d);
-  biguint(bui_word *p);
-  inline ~biguint() { if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); } }
+  biguint(unsigned int v, unsigned int d);
+  biguint(unsigned int *p);
+  inline ~biguint() { if(ptr & BUI_LEFTMOST_BIT) { free(BUI_UNPACK(ptr)); } }
 
   /* =============================== */
   /* ======== ASSIGNMENT OPS ======= */
   /* =============================== */
   
-  inline biguint const &operator=(bui_word v) {
-    if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); }
+  inline biguint const &operator=(unsigned int v) {
+    if(ptr & BUI_LEFTMOST_BIT) { free(BUI_UNPACK(ptr)); }
     clone(v);
     return *this;
   }
   
-  inline biguint const &operator=(bui_dword v) {
-    if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); };
+  inline biguint const &operator=(unsigned long v) {
+    if(ptr & BUI_LEFTMOST_BIT) { free(BUI_UNPACK(ptr)); };
+    clone(v);
+    return *this;
+  }
+
+  inline biguint const &operator=(unsigned long long v) {
+    if(ptr & BUI_LEFTMOST_BIT) { free(BUI_UNPACK(ptr)); };
     clone(v);
     return *this;
   }
   
   inline biguint const &operator=(biguint const &src) {    
     if(this != &src) {
-      if(src.ptr & BUI_PTR_BIT) {
-	if(ptr & BUI_PTR_BIT) {
-	  bui_word *s = UNPACK(src.ptr);
-	  bui_word *p = UNPACK(ptr);
+      if(src.ptr & BUI_LEFTMOST_BIT) {
+	if(ptr & BUI_LEFTMOST_BIT) {
+	  unsigned int *s = BUI_UNPACK(src.ptr);
+	  unsigned int *p = BUI_UNPACK(ptr);
 	  // attempt to reuse memory where possible.
 	  unsigned int src_depth = s[0];
 	  unsigned int depth = p[0];
 	  unsigned int padding = p[1];	
 	  
 	  if(src_depth <= (depth + padding)) {
-	    memcpy(p,s,(src_depth+2)*sizeof(bui_word));
-	    memset(p+src_depth+2,0,((depth+padding)-src_depth)*sizeof(bui_word));
+	    memcpy(p,s,(src_depth+2)*sizeof(unsigned int));
+	    memset(p+src_depth+2,0,((depth+padding)-src_depth)*sizeof(unsigned int));
 	  } else {
-	    free(UNPACK(ptr));
+	    free(BUI_UNPACK(ptr));
 	    clone(src);
 	  }
 	} else {
 	  clone(src);
 	}	
       } else {
-	if(ptr & BUI_PTR_BIT) { free(UNPACK(ptr)); };
+	if(ptr & BUI_LEFTMOST_BIT) { free(BUI_UNPACK(ptr)); };
 	ptr = src.ptr;
       }
     }
@@ -105,41 +109,47 @@ public:
   /* ======== COMPARISON OPS ======= */
   /* =============================== */
 
-  bool operator==(bui_word v) const;
-  bool operator==(bui_dword v) const;
+  bool operator==(unsigned int v) const;
+  bool operator==(unsigned long v) const;
+  bool operator==(unsigned long long v) const;
   bool operator==(biguint const &v) const;
 
-  bool operator!=(bui_word v) const;
-  bool operator!=(bui_dword v) const;
+  bool operator!=(unsigned int v) const;
+  bool operator!=(unsigned long v) const;
+  bool operator!=(unsigned long long v) const;
   bool operator!=(biguint const &v) const;
+
+  // need more here
 
   /* =============================== */
   /* ======== ARITHMETIC OPS ======= */
   /* =============================== */
 
-  void operator+=(bui_word w);
+  void operator+=(unsigned int w);
   void operator+=(biguint const &src);
-  void operator-=(bui_word w);
+
+  void operator-=(unsigned int w);
   void operator-=(biguint const &src);
 
-  void operator*=(bui_word v);
-  void operator*=(bui_dword v);
+  void operator*=(unsigned int v);
+  void operator*=(unsigned long long v);
   void operator*=(biguint const &v);
-  void operator/=(bui_word v);
-  void operator%=(bui_word v);
-  void operator^=(bui_word v);   
 
-  biguint operator+(bui_word w) const;
+  void operator/=(unsigned int v);
+  void operator%=(unsigned int v);
+  void operator^=(unsigned int v);   
+
+  biguint operator+(unsigned int w) const;
   biguint operator+(biguint const &w) const;
-  biguint operator-(bui_word w) const;
+  biguint operator-(unsigned int w) const;
   biguint operator-(biguint const &w) const;
 
-  biguint operator*(bui_word w) const;
-  biguint operator*(bui_dword w) const;
+  biguint operator*(unsigned int w) const;
+  biguint operator*(unsigned long long w) const;
   biguint operator*(biguint const &w) const;
-  biguint operator/(bui_word w) const;
-  bui_word operator%(bui_word w) const;
-  biguint operator^(bui_word v) const;
+  biguint operator/(unsigned int w) const;
+  unsigned int operator%(unsigned int w) const;
+  biguint operator^(unsigned int v) const;
 
   /* =============================== */
   /* ======== CONVERSION OPS ======= */
@@ -147,17 +157,17 @@ public:
 
   unsigned int c_uint() const;
   unsigned long c_ulong() const;
-  bui_dword c_ulonglong() const;
+  unsigned long long c_ulonglong() const;
   
   /* =============================== */
   /* ======== HELPER METHODS ======= */
   /* =============================== */
   
 private:
-  inline void clone(bui_word v) {
-    if(v & BUI_PTR_BIT) {
-      bui_word *p = aligned_alloc(3);
-      ptr = PACK(p);
+  inline void clone(unsigned int v) {
+    if(v & BUI_LEFTMOST_BIT) {
+      unsigned int *p = aligned_alloc(3);
+      ptr = BUI_PACK(p);
       p[0] = 1;
       p[1] = 0;
       p[2] = v;
@@ -166,36 +176,48 @@ private:
     }
   }
 
-  inline void clone(bui_dword v) {
-    bui_word *p = aligned_alloc(4);
+  inline void clone(unsigned long v) {
+    unsigned int *p = aligned_alloc(2 + sizeof(unsigned long));
     p[0] = 2;
     p[1] = 0;
     
-    for(unsigned int i=2;i<=3;i++) {
-      p[i] = (bui_word) v;
-      v >>= BUI_WORD_WIDTH;
+    for(unsigned int i=2;i<=sizeof(unsigned long)+2;i++) {
+      p[i] = (unsigned int) v;
+      v >>= UINT_WIDTH;
     }    
-    ptr = PACK(p);
+    ptr = BUI_PACK(p);
+  }
+
+  inline void clone(unsigned long long v) {
+    unsigned int *p = aligned_alloc(2 + sizeof(unsigned long long));
+    p[0] = 2;
+    p[1] = 0;
+    
+    for(unsigned int i=2;i<=sizeof(unsigned long long);i++) {
+      p[i] = (unsigned int) v;
+      v >>= UINT_WIDTH;
+    }    
+    ptr = BUI_PACK(p);
   }
 
   inline void clone(biguint const &src) {
-    if(src.ptr & BUI_PTR_BIT) {
-      bui_word *s = UNPACK(src.ptr);
-      bui_word depth = s[0];
-      bui_word padding = s[1];
-      bui_word *p = aligned_alloc(depth+padding+2);
-      memcpy(p,s,(padding+depth+2)*sizeof(bui_word));
-      ptr = PACK(p);
+    if(src.ptr & BUI_LEFTMOST_BIT) {
+      unsigned int *s = BUI_UNPACK(src.ptr);
+      unsigned int depth = s[0];
+      unsigned int padding = s[1];
+      unsigned int *p = aligned_alloc(depth+padding+2);
+      memcpy(p,s,(padding+depth+2)*sizeof(unsigned int));
+      ptr = BUI_PACK(p);
     } else {
       ptr = src.ptr;
     }
   }
 
-  void expand(bui_word ndepth);
-  bui_word *aligned_alloc(unsigned int c);
+  void expand(unsigned int ndepth);
+  unsigned int *aligned_alloc(unsigned int c);
 
-  void ripple_carry(bui_word level);
-  void ripple_borrow(bui_word level);
+  void ripple_carry(unsigned int level);
+  void ripple_borrow(unsigned int level);
 };
 
 /* ===================================== */

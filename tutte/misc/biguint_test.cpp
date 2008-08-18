@@ -9,9 +9,9 @@ using namespace std;
 
 typedef enum { ADD, SUB, DIV, MUL } aop;
 
-int random_word() {
-  int w1 = (65536.0*rand()/(RAND_MAX+1.0));
-  int w2 = (65536.0*rand()/(RAND_MAX+1.0));
+unsigned int random_word() {
+  unsigned int w1 = (unsigned int) (65536.0*rand()/(RAND_MAX+1.0));
+  unsigned int w2 = (unsigned int) (65536.0*rand()/(RAND_MAX+1.0));
   return (w1 << 16U) + w2;
 }
 
@@ -22,10 +22,10 @@ string op2str(aop op) {
   else { return "/"; }
 }
 
-
 void commutative_mul_test(unsigned int count, unsigned int length) {
   for(unsigned int i=0;i!=count;++i) {
-    int ws[length];
+    unsigned int ws[length];
+
     for(unsigned int j=0;j!=length;++j) {
       ws[j] = random_word();
     }
@@ -61,12 +61,12 @@ void commutative_mul_test(unsigned int count, unsigned int length) {
 
 void commutative_add_test(unsigned int count, unsigned int length) {
   for(unsigned int i=0;i!=count;++i) {
-    int ws[length];
+    unsigned int ws[length];
     for(unsigned int j=0;j!=length;++j) {
       ws[j] = random_word();
     }
 
-    biguint v(0);
+    biguint v(0U);
     for(unsigned int j=0;j!=length;++j) {
       v += ws[j];
     }
@@ -76,7 +76,7 @@ void commutative_add_test(unsigned int count, unsigned int length) {
       v -= ws[j];
     }
     
-    if(v != 0) {
+    if(v != 0U) {
       // error
       cout << "ERROR: commutative add test failed!" << endl;
     } 
@@ -85,12 +85,12 @@ void commutative_add_test(unsigned int count, unsigned int length) {
 
 void primitive_test(unsigned int count, aop op) {
   for(unsigned int i=0;i!=count;++i) {
-    int w1(random_word());
-    int w2(random_word());
+    unsigned int w1(random_word());
+    unsigned int w2(random_word());
     if((op == SUB || op == DIV) && w1 < w2) { swap(w1,w2); }
     biguint r1(w1);
     biguint r2(w1);
-    long long r3(w1);
+    unsigned long long r3(w1);
 
     if(op == ADD) {
       r1 += biguint(w2); // bigint bigint
@@ -112,10 +112,10 @@ void primitive_test(unsigned int count, aop op) {
 
     if(r1 != r3) {
       // error
-      cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r1.c_longlong() << ", not " << r3 << endl;
+      cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r1.c_ulonglong() << ", not " << r3 << endl;
     } else if(r2 != r3) {
       // error
-      cout << "ERROR(2): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r2.c_longlong() << ", not " << r3 << endl;
+      cout << "ERROR(2): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r2.c_ulonglong() << ", not " << r3 << endl;
     } 
   }
 }
@@ -165,21 +165,12 @@ int main(int argc, char *argv[]) {
   // do the tests!
   primitive_test(count,ADD);
   cout << "PRIM ADD DONE" << endl;
-  //  primitive_test(count,SUB);
-  //  cout << "PRIM SUB DONE" << endl;
-  //  commutative_add_test(count,10);
-  //  primitive_test(count,MUL);
-  //  cout << "PRIM MUL DONE" << endl;
-  //  primitive_test(count,DIV);
-  //  cout << "PRIM DIV DONE" << endl;
-  //  commutative_mul_test(count,10);
-
-  biguint x(1);
-  biguint y(INT_MAX);
-
-  cout << "X = " << x.c_longlong() << endl;
-  cout << "Y = " << y.c_longlong() << endl;
-
-  cout << "X + Y = " << (x+y).c_longlong() << endl;  
-  cout << "X - Y = " << (x-y).c_longlong() << endl;  
+  primitive_test(count,SUB);
+  cout << "PRIM SUB DONE" << endl;
+  commutative_add_test(count,10);
+  primitive_test(count,MUL);
+  cout << "PRIM MUL DONE" << endl;
+  primitive_test(count,DIV);
+  cout << "PRIM DIV DONE" << endl;
+  commutative_mul_test(count,10);
 }
