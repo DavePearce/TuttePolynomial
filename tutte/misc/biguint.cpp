@@ -555,7 +555,7 @@ void biguint::internal_sub(bui_word *p, bui_word *s) {
       }
     }    
 
-  FIXME: problem here in that drying to ripple, but need from s not p.
+    // BUG HERE.
 
     if(borrow == 1) { ripple_borrow(p_depth); }
 

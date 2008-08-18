@@ -16,43 +16,9 @@
 
 #include "../../config.h"
 
-template<class T>
-class safe; // forward declaration
-
-// this class provides arbitrary sized integers
-typedef unsigned int bui_word;
-typedef unsigned long long bui_dword;
-
-#define BUI_WORD_WIDTH (SIZEOF_INT*8U)
-#define BUI_PTR_BIT (1U << (BUI_WORD_WIDTH-1))
-#define BUI_PTR_MAX ((int) (((unsigned int) -1) >> 2U))
-#define BUI_PTR_MIN ((int) ((((unsigned int) -1) >> 2U) | BUI_PTR_BIT)+1)
-
-#define BUI_WORD_MAX UINT_MAX
-
-#define PACK(x) ((((bui_word)x) >> 1U) | BUI_PTR_BIT)
-#define UNPACK(x) ((bui_word*)(x << 1U))
-#define SIGN(x) ((x&BUI_PTR_BIT) == BUI_PTR_BIT)
-#define SIGN_EXTEND(x) (((int)(x << 1U)) >> 1)
-#define DEPTH(x) (x&~BUI_PTR_BIT)
-#define PACK_DEPTH(x,y) (y ? (x|BUI_PTR_BIT) : x)
-#define PACK_VALUE(x) (x&~BUI_PTR_BIT)
-#define ABS_UINT(x) ((x == INT_MIN) ? ((unsigned int)INT_MAX)+1: abs(x))
-
 class biguint {
 public:
-  // ptr is either a 31-bit int, or a pointer to an array of bui_words
-  // :. to comparse ptr against another int, it must be first sign-
-  // extended.  Note, on a 64-bit machine, it's a 63-bit int etc.
-  //
-  // when in array mode, we are using sign magnitude representation,
-  // as follows:
-  //
-  // index :          0          |   1     | ...
-  // value : highest bit is sign | padding | number bits (as unsigned int)
-  //         remainder is length
-  //
-  bui_word ptr; 
+  bigword word;
 
   friend bstreambuf &operator<<(bstreambuf &, biguint const &);
   friend bistream &operator>>(bistream &, biguint &);
@@ -210,7 +176,5 @@ std::ostream& operator<<(std::ostream &out, biguint val);
 bstreambuf &operator<<(bstreambuf &, biguint const &);
 bistream &operator>>(bistream &, biguint &);
 biguint pow(biguint const &r, unsigned int power);
-
-#include "safe_arithmetic.hpp"
 
 #endif
