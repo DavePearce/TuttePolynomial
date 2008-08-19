@@ -3,16 +3,16 @@
 #include <getopt.h>
 #include <time.h>
 
-#include "biguint.hpp"
+#include "bigint.hpp"
 
 using namespace std;
 
 typedef enum { ADD, SUB, DIV, MUL, LT, LTEQ, GT, GTEQ, EQ, NEQ } aop;
 
-unsigned int random_word() {
+int random_word() {
   unsigned int w1 = (unsigned int) (65536.0*rand()/(RAND_MAX+1.0));
   unsigned int w2 = (unsigned int) (65536.0*rand()/(RAND_MAX+1.0));
-  return (w1 << 16U) + w2;
+  return (int) ((w1 << 16U) + w2);
 }
 
 string op2str(aop op) {
@@ -30,11 +30,11 @@ string op2str(aop op) {
 
 void comparator_test(unsigned int count, aop op) {
   for(unsigned int i=0;i!=count;++i) {
-    unsigned int w1(random_word());
-    unsigned int w2(random_word());
+    int w1(random_word());
+    int w2(random_word());
 
-    biguint r1(w1);
-    biguint r2(w2);
+    bigint r1(w1);
+    bigint r2(w2);
 
     if(op == EQ) {
       if(w1 != w2 && (r1 == r2 || r2 == r1 || r1 == w2 || r2 == w1)) {
@@ -54,16 +54,17 @@ void comparator_test(unsigned int count, aop op) {
       } else if(w1 <= w2 && (r1 > r2 || r1 > w2)) {
 	cout << "ERROR(1): " << w1 << " " << op2str(GT) << " " << w2 << " gives: " << (r1 > r2) << ", " << (r1 > w2) << endl;
       }
-    } 
+    }
   }
+
   for(unsigned int i=0;i!=count;++i) {
-    unsigned long long w1(random_word());
-    unsigned long long w2(random_word());
+    long long w1(random_word());
+    long long w2(random_word());
     w1 = w1 * random_word();
     w2 = w2 * random_word();
 
-    biguint r1(w1);
-    biguint r2(w2);
+    bigint r1(w1+1);
+    bigint r2(w2);
 
     if(op == EQ) {
       if(w1 != w2 && (r1 == r2 || r2 == r1 || r1 == w2 || r2 == w1)) {
@@ -83,31 +84,31 @@ void comparator_test(unsigned int count, aop op) {
       } else if(w1 <= w2 && (r1 > r2 || r1 > w2)) {
 	cout << "ERROR(1): " << w1 << " " << op2str(GT) << " " << w2 << " gives: " << (r1 > r2) << ", " << (r1 > w2) << endl;
       }
-    } 
+    }
   }
 }
 
 void commutative_mul_test(unsigned int count, unsigned int length) {
   for(unsigned int i=0;i!=count;++i) {
-    unsigned int ws[length];
+    int ws[length];
 
     for(unsigned int j=0;j!=length;++j) {
       ws[j] = random_word();
     }
 
-    biguint v(1U);
+    bigint v(1);
     for(unsigned int j=0;j!=length;++j) {
       v *= ws[j];
     }
 
-    biguint w(v);
+    bigint w(v);
 
     // now for the commutative part
     for(unsigned int j=length;j>0;--j) {
       v /= ws[j-1];
     }
     
-    if(v != 1U) {
+    if(v != 1) {
       // error
       cout << "ERROR: commutative mul test failed! " << endl;
       for(unsigned int j=0;j!=length;++j) {
@@ -125,48 +126,70 @@ void commutative_mul_test(unsigned int count, unsigned int length) {
 }
 
 void commutative_add_test(unsigned int count, unsigned int length) {
+
   for(unsigned int i=0;i!=count;++i) {
-    unsigned int ws[length];
+    cout << "STAGE 1" << endl;
+    int ws[length];
     for(unsigned int j=0;j!=length;++j) {
       ws[j] = random_word();
     }
 
-    biguint v(0U);
+    cout << "STAGE 2" << endl;
+
+    bigint v(0);
     for(unsigned int j=0;j!=length;++j) {
       v += ws[j];
     }
-    
+
+    cout << "STAGE 3" << endl;
+
+    bigint w(v);
+
     // now for the commutative part
     for(unsigned int j=0;j!=length;++j) {      
       v -= ws[j];
     }
-    
-    if(v != 0U) {
+
+    cout << "STAGE 4" << endl;    
+
+    if(v != 0) {
       // error
       cout << "ERROR: commutative add test failed!" << endl;
+      for(unsigned int j=0;j!=length;++j) {
+	if(j != 0) { cout << "+"; }
+	cout << ws[j];
+      }
+      cout << " = " << w << endl;
+      cout << w;
+      for(unsigned int j=length;j!=0;--j) {
+	cout << " - " << ws[j-1];
+      }
+      cout << " = " << v << endl;
     } 
+
+    cout << "STAGE 5" << endl;
   }
 }
 
 void primitive_test(unsigned int count, aop op) {
   for(unsigned int i=0;i!=count;++i) {
-    unsigned int w1(random_word());
-    unsigned int w2(random_word());
+    int w1(random_word());
+    int w2(random_word());
     if((op == SUB || op == DIV) && w1 < w2) { swap(w1,w2); }
-    biguint r1(w1);
-    biguint r2(w1);
-    unsigned long long r3(w1);
+    bigint r1(w1);
+    bigint r2(w1);
+    long long r3(w1);
 
     if(op == ADD) {
-      r1 += biguint(w2); // bigint bigint
+      r1 += bigint(w2); // bigint bigint
       r2 += w2;          // bigint uint
       r3 += w2;    
     } else if(op == SUB) {
-      r1 -= biguint(w2); // bigint bigint
+      r1 -= bigint(w2); // bigint bigint
       r2 -= w2; // bigint uint
       r3 -= w2;    
     } else if(op == MUL) {
-      r1 *= biguint(w2);
+      r1 *= bigint(w2);
       r2 *= w2;
       r3 *= w2;
     } else if(op == DIV) {
@@ -177,10 +200,10 @@ void primitive_test(unsigned int count, aop op) {
 
     if(r1 != r3) {
       // error
-      cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r1.c_ulonglong() << ", not " << r3 << endl;
+      cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r1.c_longlong() << ", not " << r3 << endl;
     } else if(r2 != r3) {
       // error
-      cout << "ERROR(2): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r2.c_ulonglong() << ", not " << r3 << endl;
+      cout << "ERROR(2): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r2.c_longlong() << ", not " << r3 << endl;
     } 
   }
 }
@@ -233,13 +256,11 @@ int main(int argc, char *argv[]) {
   primitive_test(count,SUB);
   cout << "PRIM SUB DONE" << endl;
   commutative_add_test(count,10);
-  cout << "COMM ADD DONE" << endl;
   primitive_test(count,MUL);
   cout << "PRIM MUL DONE" << endl;
   primitive_test(count,DIV);
   cout << "PRIM DIV DONE" << endl;
   commutative_mul_test(count,10);
-  cout << "COMM MUL DONE" << endl;
   comparator_test(count,EQ);
   cout << "COMP ==, != DONE" << endl;
   comparator_test(count,LT);

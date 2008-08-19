@@ -12,6 +12,7 @@ private:
   biguint magnitude;
   bool sign; // true = negative  
 
+  friend std::ostream &operator<<(std::ostream &, bigint const &);
 public:
   bigint(int v);
   bigint(long v);

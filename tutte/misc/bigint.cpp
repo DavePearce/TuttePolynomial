@@ -32,8 +32,6 @@ unsigned long long my_abs(long long v) {
   }
 }
 
-#define SIGN(v) (v < 0)
-
 bigint::bigint(int v) : magnitude(my_abs(v)), sign(v < 0) { }
 bigint::bigint(long v) : magnitude(my_abs(v)), sign(v < 0) { }
 bigint::bigint(long long v) : magnitude(my_abs(v)), sign(v < 0) { }
@@ -91,7 +89,7 @@ bool bigint::operator<=(int v) const {
 bool bigint::operator<=(long v) const {
   if(v < 0 && !sign) { return false; }
   if(v >= 0 && sign) { return true; }
-  else if(v<0 && sign) { return magnitude >= my_abs(v); } 
+  else if(v < 0 && sign) { return magnitude >= my_abs(v); } 
   else { return magnitude <= my_abs(v); }
 }
 bool bigint::operator<=(long long v) const {
@@ -127,7 +125,7 @@ void bigint::operator+=(int w) {
       sign = !sign;
     } else {
       magnitude -= w_magnitude;
-      if(magnitude == 0U) { sign = true; }
+      if(magnitude == 0U) { sign = false; }
     }
   } else {
     // neg + neg, pos + pos.
@@ -144,12 +142,75 @@ void bigint::operator+=(bigint const &w) {
       sign = !sign;
     } else {
       magnitude -= w.magnitude;
-      if(magnitude == 0U) { sign = true; }
+      if(magnitude == 0U) { sign = false; }
     }
   } else {
     // neg + neg, pos + pos.
     magnitude += w.magnitude;
   }
+}
+
+void bigint::operator-=(int w) {
+  unsigned int w_magnitude = my_abs(w);
+  if((w<0) == sign) {
+    // neg - neg, pos - pos
+    if(magnitude < w_magnitude) {
+      // swap sign here
+      magnitude = biguint(w_magnitude) - magnitude;
+      sign = !sign;
+    } else {
+      magnitude -= w_magnitude;
+      if(magnitude == 0U) { sign = false; }
+    }
+  } else {
+    // neg - pos, pos - neg.
+    magnitude += w_magnitude;
+  }
+}
+
+void bigint::operator-=(bigint const &w) {
+  if(w.sign == sign) {
+    // neg + pos, pos + neg
+    if(magnitude < w.magnitude) {
+      // swap sign here
+      magnitude = w.magnitude - magnitude;
+      sign = !sign;
+    } else {
+      magnitude -= w.magnitude;
+      if(magnitude == 0U) { sign = false; }
+    }
+  } else {
+    // neg + neg, pos + pos.
+    magnitude += w.magnitude;
+  }
+}
+
+void bigint::operator*=(int w) {
+  magnitude *= my_abs(w);
+  if(w == 0U) { sign = false; }
+  else if(sign != (w < 0)) { sign = true; }
+  else if(sign) { sign=false; }
+}
+
+void bigint::operator*=(long long w) {
+  magnitude *= my_abs(w);
+  if(w == 0U) { sign = false; }
+  else if(sign != (w < 0)) { sign = true; }
+  else if(sign) { sign = false; }
+}
+
+void bigint::operator*=(bigint const &w) {
+  magnitude *= w.magnitude;
+  if(magnitude == 0U) { sign = false; }
+  else if(sign != w.sign) { sign = true; }
+  else if(sign) { sign = false; }
+}
+
+void bigint::operator/=(int w) {
+  magnitude /= my_abs(w);
+  if(magnitude == 0U) { sign = false; }
+  else if(sign != (w < 0)) { sign = true; }
+  else if(sign) { sign = false; }
 }
 
 bigint bigint::operator+(int w) const {
@@ -161,6 +222,38 @@ bigint bigint::operator+(int w) const {
 bigint bigint::operator+(bigint const &w) const {
   bigint r(*this);
   r += w;
+  return r;
+}
+bigint bigint::operator-(int w) const {
+  bigint r(*this);
+  r -= w;
+  return r;
+}
+bigint bigint::operator-(bigint const &w) const {
+  bigint r(*this);
+  r -= w;
+  return r;
+}
+
+bigint bigint::operator*(int w) const {
+  bigint r(*this);
+  r *= w;
+  return r;
+}
+bigint bigint::operator*(long long w) const {
+  bigint r(*this);
+  r *= w;
+  return r;
+}
+bigint bigint::operator*(bigint const &w) const {
+  bigint r(*this);
+  r *= w;
+  return r;
+}
+
+bigint bigint::operator/(int w) const {
+  bigint r(*this);
+  r /= w;
   return r;
 }
 
@@ -195,9 +288,16 @@ long long bigint::c_longlong() const {
   else { return w; }
 }  
 
-int main(int argc, char* argv[]) {
-  
-  bigint w(INT_MAX);
-  w = w + -1;
-  cout << INT_MAX << " " << w.c_int() << endl;
+/* =============================== */
+/* ======== FRIEND METHODS ======= */
+/* =============================== */
+
+std::ostream& operator<<(ostream &out, bigint const &val) {
+  std::string r;
+
+  if(val == 0) { return out << "0"; }
+  else if(val.sign) { return out << "-" << val.magnitude; }
+  else {
+    return out << val.magnitude;
+  }
 }

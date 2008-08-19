@@ -131,8 +131,8 @@ bool biguint::operator<(unsigned long v) const {
   if(ptr & BUI_LEFTMOST_BIT) {
     unsigned int *p = BUI_UNPACK(ptr);
     unsigned int depth_p(p[0]);
-    unsigned int depth_s(sizeof(unsigned long));
-    unsigned int depth(min(depth_s,depth_p));
+    unsigned int depth_s(BUI_ULONG_SIZE);
+    unsigned int depth(max(depth_s,depth_p));
 
     depth_p += 2;
 
@@ -153,11 +153,11 @@ bool biguint::operator<(unsigned long long v) const {
   if(ptr & BUI_LEFTMOST_BIT) {
     unsigned int *p = BUI_UNPACK(ptr);
     unsigned int depth_p(p[0]);
-    unsigned int depth_s(sizeof(unsigned long long));
-    unsigned int depth(min(depth_s,depth_p));
+    unsigned int depth_s(BUI_ULONGLONG_SIZE);
+    unsigned int depth(max(depth_s,depth_p));
 
     depth_p += 2;
-
+    
     for(unsigned int i=(depth+1);i>1;--i) {
       unsigned int w = v >> ((i-2)*UINT_WIDTH);
       if(i >= depth_p) {
@@ -187,7 +187,7 @@ bool biguint::operator<(biguint const &v) const {
 
   unsigned int depth_p(p[0]);
   unsigned int depth_s(s[0]);
-  unsigned int depth(min(depth_s,depth_p));
+  unsigned int depth(max(depth_s,depth_p));
 
   depth_p += 2;
   depth_s += 2;
@@ -197,7 +197,7 @@ bool biguint::operator<(biguint const &v) const {
       if(s[i] != 0) {
 	return true;
       }
-    } else  if(i >= depth_s) {
+    } else if(i >= depth_s) {
       if(p[i] != 0) {
 	return false;
       }
@@ -235,8 +235,8 @@ bool biguint::operator<=(unsigned long v) const {
   if(ptr & BUI_LEFTMOST_BIT) {
     unsigned int *p = BUI_UNPACK(ptr);
     unsigned int depth_p(p[0]);
-    unsigned int depth_s(sizeof(unsigned long));
-    unsigned int depth(min(depth_s,depth_p));
+    unsigned int depth_s(BUI_ULONG_SIZE);
+    unsigned int depth(max(depth_s,depth_p));
 
     depth_p += 2;
 
@@ -257,8 +257,8 @@ bool biguint::operator<=(unsigned long long v) const {
   if(ptr & BUI_LEFTMOST_BIT) {
     unsigned int *p = BUI_UNPACK(ptr);
     unsigned int depth_p(p[0]);
-    unsigned int depth_s(sizeof(unsigned long long));
-    unsigned int depth(min(depth_s,depth_p));
+    unsigned int depth_s(BUI_ULONGLONG_SIZE);
+    unsigned int depth(max(depth_s,depth_p));
 
     depth_p += 2;
 
@@ -291,7 +291,7 @@ bool biguint::operator<=(biguint const &v) const {
 
   unsigned int depth_p(p[0]);
   unsigned int depth_s(s[0]);
-  unsigned int depth(min(depth_s,depth_p));
+  unsigned int depth(max(depth_s,depth_p));
 
   depth_p += 2;
   depth_s += 2;
