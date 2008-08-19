@@ -45,20 +45,20 @@ void comparator_test(unsigned int count, aop op) {
 	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 != r2) << ", " << (r2 != r1) << ", " << (r1 != w2)  << ", " << (r2 != w1) << endl;
       }
     } else if(op == LT) {
-      if(w1 >= w2 && (r1 < r2 || r2 < r1 || r1 < w2)) {
-	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 < r2) << ", " << (r2 < r1) << ", " << (r1 < w2) << endl;
+      if(w1 >= w2 && (r1 < r2 || r1 < w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 < r2) << ", " << (r1 < w2) << endl;
       }
     } else if(op == LTEQ) {
-      if(w1 > w2 && (r1 <= r2 || r2 <= r1 || r1 <= w2)) {
-	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 <= r2) << ", " << (r2 <= r1) << ", " << (r1 <= w2) << endl;
+      if(w1 > w2 && (r1 <= r2 || r1 <= w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 <= r2) << ", " << (r1 <= w2) << endl;
       }
     } else if(op == GT) {
-      if(w1 <= w2 && (r1 > r2 || r2 > r1 || r1 > w2)) {
-	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 > r2) << ", " << (r2 > r1) << ", " << (r1 > w2)   << endl;
+      if(w1 <= w2 && (r1 > r2 || r1 > w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 > r2) << ", " << (r1 > w2)   << endl;
       }
     } else if(op == GTEQ) {
-      if(w1 < w2 && (r1 >= r2 || r2 >= r1 || r1 >= w2)) {
-	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 >= r2) << ", " << (r2 >= r1) << ", " << (r1 >= w2) << endl;
+      if(w1 < w2 && (r1 >= r2 || r1 >= w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 >= r2) << ", " << (r1 >= w2) << endl;
       }
     }
   }
@@ -80,20 +80,20 @@ void comparator_test(unsigned int count, aop op) {
 	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 != r2) << ", " << (r2 != r1) << ", " << (r1 != w2)  << ", " << (r2 != w1) << endl;
       }
     } else if(op == LT) {
-      if(w1 >= w2 && (r1 < r2 || r2 < r1 || r1 < w2)) {
-	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 < r2) << ", " << (r2 < r1) << ", " << (r1 < w2) << endl;
+      if(w1 >= w2 && (r1 < r2 || r1 < w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 < r2)  << ", " << (r1 < w2) << endl;
       }
     } else if(op == LTEQ) {
-      if(w1 > w2 && (r1 <= r2 || r2 <= r1 || r1 <= w2)) {
-	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 <= r2) << ", " << (r2 <= r1) << ", " << (r1 <= w2) << endl;
+      if(w1 > w2 && (r1 <= r2 || r1 <= w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 <= r2) << ", " << (r1 <= w2) << endl;
       }
     } else if(op == GT) {
-      if(w1 <= w2 && (r1 > r2 || r2 > r1 || r1 > w2)) {
-	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 > r2) << ", " << (r2 > r1) << ", " << (r1 > w2)   << endl;
+      if(w1 <= w2 && (r1 > r2 || r1 > w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 > r2)  << ", " << (r1 > w2)   << endl;
       }
     } else if(op == GTEQ) {
-      if(w1 < w2 && (r1 >= r2 || r2 >= r1 || r1 >= w2)) {
-	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 >= r2) << ", " << (r2 >= r1) << ", " << (r1 >= w2) << endl;
+      if(w1 < w2 && (r1 >= r2 || r1 >= w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 >= r2)  << ", " << (r1 >= w2) << endl;
       }
     }
   }
@@ -258,10 +258,11 @@ int main(int argc, char *argv[]) {
   cout << "COMP != DONE" << endl;
   comparator_test(count,LT);
   cout << "COMP < DONE" << endl;
-  comparator_test(count,LTEQ);
+   comparator_test(count,LTEQ);
   cout << "COMP <= DONE" << endl;
   comparator_test(count,GT);
   cout << "COMP > DONE" << endl;
   comparator_test(count,GTEQ);
   cout << "COMP >= DONE" << endl;
+  
 }

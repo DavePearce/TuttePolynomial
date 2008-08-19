@@ -134,13 +134,16 @@ bool biguint::operator<(unsigned long v) const {
     unsigned int depth_s(sizeof(unsigned long));
     unsigned int depth(min(depth_s,depth_p));
 
+    depth_p += 2;
+
     for(unsigned int i=(depth+1);i>1;--i) {
       unsigned int w = v >> ((i-2)*UINT_WIDTH);
       if(i >= depth_p) {
 	if(w != 0) { return true; }
-      } else if(p[i] >= w) { return false; }
+      } else if(p[i] > w) { return false; }
+      else if(p[i] < w) { return true; }
     }    
-    return true;
+    return false;
   } else {
     return (v > UINT_MAX) || ptr < v;
   } 
@@ -153,13 +156,16 @@ bool biguint::operator<(unsigned long long v) const {
     unsigned int depth_s(sizeof(unsigned long long));
     unsigned int depth(min(depth_s,depth_p));
 
+    depth_p += 2;
+
     for(unsigned int i=(depth+1);i>1;--i) {
       unsigned int w = v >> ((i-2)*UINT_WIDTH);
       if(i >= depth_p) {
 	if(w != 0) { return true; }
-      } else if(p[i] >= w) { return false; }
+      } else if(p[i] > w) { return false; }
+      else if(p[i] < w) { return true; }
     }    
-    return true;
+    return false;
   } else {
     return (v > UINT_MAX) || ptr < v;
   } 
@@ -167,7 +173,7 @@ bool biguint::operator<(unsigned long long v) const {
 
 bool biguint::operator<(biguint const &v) const {
   if((ptr & BUI_LEFTMOST_BIT) == 0) {
-    if((v.ptr & BUI_LEFTMOST_BIT) == 0) {
+    if((v.ptr & BUI_LEFTMOST_BIT) == 0) {      
       return ptr < v.ptr;
     } else {
       return !(v <= ptr);
@@ -183,6 +189,9 @@ bool biguint::operator<(biguint const &v) const {
   unsigned int depth_s(s[0]);
   unsigned int depth(min(depth_s,depth_p));
 
+  depth_p += 2;
+  depth_s += 2;
+
   for(unsigned int i(depth+1);i>1;--i) {
     if(i >= depth_p) {
       if(s[i] != 0) {
@@ -193,8 +202,8 @@ bool biguint::operator<(biguint const &v) const {
 	return false;
       }
     } else {
-      int sw = s[i];
-      int pw = p[i];
+      unsigned int sw = s[i];
+      unsigned int pw = p[i];
       
       if(sw < pw) {
 	return false;
@@ -229,11 +238,14 @@ bool biguint::operator<=(unsigned long v) const {
     unsigned int depth_s(sizeof(unsigned long));
     unsigned int depth(min(depth_s,depth_p));
 
+    depth_p += 2;
+
     for(unsigned int i=(depth+1);i>1;--i) {
       unsigned int w = v >> ((i-2)*UINT_WIDTH);
       if(i >= depth_p) {
 	if(w != 0) { return true; }
       } else if(p[i] > w) { return false; }
+      else if(p[i] < w) { return true; }
     }    
     return true;
   } else {
@@ -248,11 +260,14 @@ bool biguint::operator<=(unsigned long long v) const {
     unsigned int depth_s(sizeof(unsigned long long));
     unsigned int depth(min(depth_s,depth_p));
 
+    depth_p += 2;
+
     for(unsigned int i=(depth+1);i>1;--i) {
       unsigned int w = v >> ((i-2)*UINT_WIDTH);
       if(i >= depth_p) {
 	if(w != 0) { return true; }
       } else if(p[i] > w) { return false; }
+      else if(p[i] < w) { return true; }
     }    
     return true;
   } else {
@@ -278,6 +293,9 @@ bool biguint::operator<=(biguint const &v) const {
   unsigned int depth_s(s[0]);
   unsigned int depth(min(depth_s,depth_p));
 
+  depth_p += 2;
+  depth_s += 2;
+
   for(unsigned int i(depth+1);i>1;--i) {
     if(i >= depth_p) {
       if(s[i] != 0) {
@@ -288,8 +306,8 @@ bool biguint::operator<=(biguint const &v) const {
 	return false;
       }
     } else {
-      int sw = s[i];
-      int pw = p[i];
+      unsigned int sw = s[i];
+      unsigned int pw = p[i];
       
       if(sw < pw) {
 	return false;
