@@ -113,6 +113,206 @@ bool biguint::operator!=(unsigned long v) const { return !((*this) == v); }
 bool biguint::operator!=(unsigned long long v) const { return !((*this) == v); }
 bool biguint::operator!=(biguint const &v) const { return !((*this) == v); }
 
+bool biguint::operator<(unsigned int v) const {
+  if(ptr & BUI_LEFTMOST_BIT) {    
+    unsigned int *p = BUI_UNPACK(ptr);
+    if(p[2] >= v) { return false; }
+    unsigned int depth(p[0]);
+    for(unsigned int i=3;i<(depth+2);++i) {
+      if(p[i] != 0) { return false; }
+    }
+    return true;
+  } else {
+    return ptr < v;
+  } 
+}
+
+bool biguint::operator<(unsigned long v) const {
+  if(ptr & BUI_LEFTMOST_BIT) {
+    unsigned int *p = BUI_UNPACK(ptr);
+    unsigned int depth_p(p[0]);
+    unsigned int depth_s(sizeof(unsigned long));
+    unsigned int depth(min(depth_s,depth_p));
+
+    for(unsigned int i=(depth+1);i>1;--i) {
+      unsigned int w = v >> ((i-2)*UINT_WIDTH);
+      if(i >= depth_p) {
+	if(w != 0) { return true; }
+      } else if(p[i] >= w) { return false; }
+    }    
+    return true;
+  } else {
+    return (v > UINT_MAX) || ptr < v;
+  } 
+}
+
+bool biguint::operator<(unsigned long long v) const {
+  if(ptr & BUI_LEFTMOST_BIT) {
+    unsigned int *p = BUI_UNPACK(ptr);
+    unsigned int depth_p(p[0]);
+    unsigned int depth_s(sizeof(unsigned long long));
+    unsigned int depth(min(depth_s,depth_p));
+
+    for(unsigned int i=(depth+1);i>1;--i) {
+      unsigned int w = v >> ((i-2)*UINT_WIDTH);
+      if(i >= depth_p) {
+	if(w != 0) { return true; }
+      } else if(p[i] >= w) { return false; }
+    }    
+    return true;
+  } else {
+    return (v > UINT_MAX) || ptr < v;
+  } 
+}
+
+bool biguint::operator<(biguint const &v) const {
+  if((ptr & BUI_LEFTMOST_BIT) == 0) {
+    if((v.ptr & BUI_LEFTMOST_BIT) == 0) {
+      return ptr < v.ptr;
+    } else {
+      return !(v <= ptr);
+    }
+  } else if((v.ptr & BUI_LEFTMOST_BIT) == 0) {
+    return (*this < v.ptr);
+  }
+  
+  unsigned int *p = BUI_UNPACK(ptr);
+  unsigned int *s = BUI_UNPACK(v.ptr);
+
+  unsigned int depth_p(p[0]);
+  unsigned int depth_s(s[0]);
+  unsigned int depth(min(depth_s,depth_p));
+
+  for(unsigned int i(depth+1);i>1;--i) {
+    if(i >= depth_p) {
+      if(s[i] != 0) {
+	return true;
+      }
+    } else  if(i >= depth_s) {
+      if(p[i] != 0) {
+	return false;
+      }
+    } else {
+      int sw = s[i];
+      int pw = p[i];
+      
+      if(sw < pw) {
+	return false;
+      } else if(pw < sw) {
+	return true;
+      }
+    }
+  }
+
+  // here, they are equal
+  return false;
+}
+
+bool biguint::operator<=(unsigned int v) const {
+  if(ptr & BUI_LEFTMOST_BIT) {    
+    unsigned int *p = BUI_UNPACK(ptr);
+    if(p[2] > v) { return false; }
+    unsigned int depth(p[0]);
+    for(unsigned int i=3;i<(depth+2);++i) {
+      if(p[i] != 0) { return false; }
+    }
+    return true;
+  } else {
+    return ptr <= v;
+  } 
+}
+
+bool biguint::operator<=(unsigned long v) const {
+  if(ptr & BUI_LEFTMOST_BIT) {
+    unsigned int *p = BUI_UNPACK(ptr);
+    unsigned int depth_p(p[0]);
+    unsigned int depth_s(sizeof(unsigned long));
+    unsigned int depth(min(depth_s,depth_p));
+
+    for(unsigned int i=(depth+1);i>1;--i) {
+      unsigned int w = v >> ((i-2)*UINT_WIDTH);
+      if(i >= depth_p) {
+	if(w != 0) { return true; }
+      } else if(p[i] > w) { return false; }
+    }    
+    return true;
+  } else {
+    return (v > UINT_MAX) || ptr <= v;
+  } 
+}
+
+bool biguint::operator<=(unsigned long long v) const {
+  if(ptr & BUI_LEFTMOST_BIT) {
+    unsigned int *p = BUI_UNPACK(ptr);
+    unsigned int depth_p(p[0]);
+    unsigned int depth_s(sizeof(unsigned long long));
+    unsigned int depth(min(depth_s,depth_p));
+
+    for(unsigned int i=(depth+1);i>1;--i) {
+      unsigned int w = v >> ((i-2)*UINT_WIDTH);
+      if(i >= depth_p) {
+	if(w != 0) { return true; }
+      } else if(p[i] > w) { return false; }
+    }    
+    return true;
+  } else {
+    return (v > UINT_MAX) || ptr <= v;
+  } 
+}
+
+bool biguint::operator<=(biguint const &v) const {
+  if((ptr & BUI_LEFTMOST_BIT) == 0) {
+    if((v.ptr & BUI_LEFTMOST_BIT) == 0) {
+      return ptr <= v.ptr;
+    } else {
+      return !(v < ptr);
+    }
+  } else if((v.ptr & BUI_LEFTMOST_BIT) == 0) {
+    return (*this <= v.ptr);
+  }
+  
+  unsigned int *p = BUI_UNPACK(ptr);
+  unsigned int *s = BUI_UNPACK(v.ptr);
+
+  unsigned int depth_p(p[0]);
+  unsigned int depth_s(s[0]);
+  unsigned int depth(min(depth_s,depth_p));
+
+  for(unsigned int i(depth+1);i>1;--i) {
+    if(i >= depth_p) {
+      if(s[i] != 0) {
+	return true;
+      }
+    } else  if(i >= depth_s) {
+      if(p[i] != 0) {
+	return false;
+      }
+    } else {
+      int sw = s[i];
+      int pw = p[i];
+      
+      if(sw < pw) {
+	return false;
+      } else if(pw < sw) {
+	return true;
+      }
+    }
+  }
+
+  // here, they are equal
+  return true;
+}
+
+bool biguint::operator>(unsigned int v) const { return !(*this <= v); }
+bool biguint::operator>(unsigned long v) const { return !(*this <= v); }
+bool biguint::operator>(unsigned long long v) const { return !(*this <= v); }
+bool biguint::operator>(biguint const &v) const { return !(*this <= v); }
+
+bool biguint::operator>=(unsigned int v) const { return !(*this < v); }
+bool biguint::operator>=(unsigned long v) const { return !(*this < v); }
+bool biguint::operator>=(unsigned long long v) const { return !(*this < v); }
+bool biguint::operator>=(biguint const &v) const { return !(*this < v); }
+
 /* =============================== */
 /* ======== ARITHMETIC OPS ======= */
 /* =============================== */

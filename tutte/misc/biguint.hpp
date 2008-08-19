@@ -47,6 +47,7 @@ public:
   inline biguint(biguint const &src) { clone(src); }
   
   biguint(unsigned int v, unsigned int d);
+
   biguint(unsigned int *p);
   inline ~biguint() { if(ptr & BUI_LEFTMOST_BIT) { free(BUI_UNPACK(ptr)); } }
 
@@ -118,6 +119,26 @@ public:
   bool operator!=(unsigned long v) const;
   bool operator!=(unsigned long long v) const;
   bool operator!=(biguint const &v) const;
+
+  bool operator<(unsigned int v) const;
+  bool operator<(unsigned long v) const;
+  bool operator<(unsigned long long v) const;
+  bool operator<(biguint const &v) const;
+
+  bool operator<=(unsigned int v) const;
+  bool operator<=(unsigned long v) const;
+  bool operator<=(unsigned long long v) const;
+  bool operator<=(biguint const &v) const;
+
+  bool operator>(unsigned int v) const;
+  bool operator>(unsigned long v) const;
+  bool operator>(unsigned long long v) const;
+  bool operator>(biguint const &v) const;
+
+  bool operator>=(unsigned int v) const;
+  bool operator>=(unsigned long v) const;
+  bool operator>=(unsigned long long v) const;
+  bool operator>=(biguint const &v) const;
 
   // need more here
 

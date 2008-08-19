@@ -7,7 +7,7 @@
 
 using namespace std;
 
-typedef enum { ADD, SUB, DIV, MUL } aop;
+typedef enum { ADD, SUB, DIV, MUL, LT, LTEQ, GT, GTEQ, EQ, NEQ } aop;
 
 unsigned int random_word() {
   unsigned int w1 = (unsigned int) (65536.0*rand()/(RAND_MAX+1.0));
@@ -19,7 +19,84 @@ string op2str(aop op) {
   if(op == ADD) { return "+"; }
   else if(op == SUB) { return "-"; }
   else if(op == MUL) { return "*"; }
-  else { return "/"; }
+  else if(op == DIV) { return "/"; }
+  else if(op == EQ) { return "=="; }
+  else if(op == NEQ) { return "!="; }
+  else if(op == LT) { return "<"; }
+  else if(op == LTEQ) { return "<="; }
+  else if(op == GT) { return ">"; }
+  else if(op == GTEQ) { return ">="; }
+}
+
+void comparator_test(unsigned int count, aop op) {
+  for(unsigned int i=0;i!=count;++i) {
+    unsigned int w1(random_word());
+    unsigned int w2(random_word());
+
+    biguint r1(w1);
+    biguint r2(w2);
+
+    if(op == EQ) {
+      if(w1 != w2 && (r1 == r2 || r2 == r1 || r1 == w2 || r2 == w1)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 == r2) << ", " << (r2 == r1) << ", " << (r1 == w2)  << ", " << (r2 == w1) << endl;
+      }
+    } else if(op == NEQ) {
+      if(w1 == w2 && (r1 != r2 || r2 != r1 || r1 != w2 || r2 != w1)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 != r2) << ", " << (r2 != r1) << ", " << (r1 != w2)  << ", " << (r2 != w1) << endl;
+      }
+    } else if(op == LT) {
+      if(w1 >= w2 && (r1 < r2 || r2 < r1 || r1 < w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 < r2) << ", " << (r2 < r1) << ", " << (r1 < w2) << endl;
+      }
+    } else if(op == LTEQ) {
+      if(w1 > w2 && (r1 <= r2 || r2 <= r1 || r1 <= w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 <= r2) << ", " << (r2 <= r1) << ", " << (r1 <= w2) << endl;
+      }
+    } else if(op == GT) {
+      if(w1 <= w2 && (r1 > r2 || r2 > r1 || r1 > w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 > r2) << ", " << (r2 > r1) << ", " << (r1 > w2)   << endl;
+      }
+    } else if(op == GTEQ) {
+      if(w1 < w2 && (r1 >= r2 || r2 >= r1 || r1 >= w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 >= r2) << ", " << (r2 >= r1) << ", " << (r1 >= w2) << endl;
+      }
+    }
+  }
+  for(unsigned int i=0;i!=count;++i) {
+    unsigned long long w1(random_word());
+    unsigned long long w2(random_word());
+    w1 = w1 * random_word();
+    w2 = w2 * random_word();
+
+    biguint r1(w1);
+    biguint r2(w2);
+
+    if(op == EQ) {
+      if(w1 != w2 && (r1 == r2 || r2 == r1 || r1 == w2 || r2 == w1)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 == r2) << ", " << (r2 == r1) << ", " << (r1 == w2)  << ", " << (r2 == w1) << endl;
+      }
+    } else if(op == NEQ) {
+      if(w1 == w2 && (r1 != r2 || r2 != r1 || r1 != w2 || r2 != w1)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 != r2) << ", " << (r2 != r1) << ", " << (r1 != w2)  << ", " << (r2 != w1) << endl;
+      }
+    } else if(op == LT) {
+      if(w1 >= w2 && (r1 < r2 || r2 < r1 || r1 < w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 < r2) << ", " << (r2 < r1) << ", " << (r1 < w2) << endl;
+      }
+    } else if(op == LTEQ) {
+      if(w1 > w2 && (r1 <= r2 || r2 <= r1 || r1 <= w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 <= r2) << ", " << (r2 <= r1) << ", " << (r1 <= w2) << endl;
+      }
+    } else if(op == GT) {
+      if(w1 <= w2 && (r1 > r2 || r2 > r1 || r1 > w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 > r2) << ", " << (r2 > r1) << ", " << (r1 > w2)   << endl;
+      }
+    } else if(op == GTEQ) {
+      if(w1 < w2 && (r1 >= r2 || r2 >= r1 || r1 >= w2)) {
+	cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives: " << (r1 >= r2) << ", " << (r2 >= r1) << ", " << (r1 >= w2) << endl;
+      }
+    }
+  }
 }
 
 void commutative_mul_test(unsigned int count, unsigned int length) {
@@ -168,9 +245,23 @@ int main(int argc, char *argv[]) {
   primitive_test(count,SUB);
   cout << "PRIM SUB DONE" << endl;
   commutative_add_test(count,10);
+  cout << "COMM ADD DONE" << endl;
   primitive_test(count,MUL);
   cout << "PRIM MUL DONE" << endl;
   primitive_test(count,DIV);
   cout << "PRIM DIV DONE" << endl;
   commutative_mul_test(count,10);
+  cout << "COMM MUL DONE" << endl;
+  comparator_test(count,EQ);
+  cout << "COMP == DONE" << endl;
+  comparator_test(count,NEQ);
+  cout << "COMP != DONE" << endl;
+  comparator_test(count,LT);
+  cout << "COMP < DONE" << endl;
+  comparator_test(count,LTEQ);
+  cout << "COMP <= DONE" << endl;
+  comparator_test(count,GT);
+  cout << "COMP > DONE" << endl;
+  comparator_test(count,GTEQ);
+  cout << "COMP >= DONE" << endl;
 }
