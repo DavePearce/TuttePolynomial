@@ -140,8 +140,6 @@ public:
   bool operator>=(unsigned long long v) const;
   bool operator>=(biguint const &v) const;
 
-  // need more here
-
   /* =============================== */
   /* ======== ARITHMETIC OPS ======= */
   /* =============================== */
