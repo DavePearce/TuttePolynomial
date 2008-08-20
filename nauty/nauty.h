@@ -40,10 +40,6 @@ it is necessary to check they are correct.
 #define SYS_UNIX
 #endif
 
-#if !HAVE_CONST
-#define const
-#endif
-
 /*****************************************************************************
 *                                                                            *
 *    AUTHOR: Brendan D. McKay                                                *

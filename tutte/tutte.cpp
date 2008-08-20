@@ -1145,7 +1145,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	  }
 	  if(Tm1m1 == -1) {
 	    cout << "T(-1,-1) = -2^" << Tm1m1pow << endl;
-	  } else if(Tm1m1 == 1U) {
+	  } else if(Tm1m1 == 1) {
 	    cout << "T(-1,-1) = 2^" << Tm1m1pow << endl;
 	  } else {
 	    // getting here indicates an error in the computation

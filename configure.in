@@ -18,7 +18,7 @@ AC_PROG_RANLIB
 # AC_CHECK_LIB([gmpxx], [main]) # use special symbol "main" as I don't know about to resolve name mangling.
 
 # Checks for header files.
-AC_CHECK_HEADERS([stdint.h sys/param.h sys/time.h stddef.h unistd.h sys/types.h stdlib.h string.h errno.h])
+AC_CHECK_HEADERS([stdint.h stddef.h unistd.h sys/types.h stdlib.h string.h errno.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 
