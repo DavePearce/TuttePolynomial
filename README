@@ -118,14 +118,14 @@ can be useful.  In particular, it tells you the size of the
 computation tree and gives values for T(1,1) and T(2,2) which can be
 used to help verify correctness.
 
-"--vertex-ordering"
+ "--sparse" "--dense"
 
-This selects an alternative edge selection heuristic which is known to
-perform better than the default on some graphs.  It may be that this
-should be the default, and you may find using this will improve
+This selects an edge selection heuristic suited to either "sparse" or
+"dense" graphs.  The default is select the best based on a density
+threshold of 0.5.  You may find forcing the heuristic will improve
 performance dramatically for your problem.
 
 An example command-line we might us is:
 
-tutte -ic800M --vertex-ordering ../examples/edge20
+tutte -ic800M --sparse ../examples/edge20
 
