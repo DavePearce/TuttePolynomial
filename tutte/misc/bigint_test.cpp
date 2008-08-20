@@ -128,20 +128,15 @@ void commutative_mul_test(unsigned int count, unsigned int length) {
 void commutative_add_test(unsigned int count, unsigned int length) {
 
   for(unsigned int i=0;i!=count;++i) {
-    cout << "STAGE 1" << endl;
     int ws[length];
     for(unsigned int j=0;j!=length;++j) {
       ws[j] = random_word();
     }
 
-    cout << "STAGE 2" << endl;
-
     bigint v(0);
     for(unsigned int j=0;j!=length;++j) {
       v += ws[j];
     }
-
-    cout << "STAGE 3" << endl;
 
     bigint w(v);
 
@@ -149,8 +144,6 @@ void commutative_add_test(unsigned int count, unsigned int length) {
     for(unsigned int j=0;j!=length;++j) {      
       v -= ws[j];
     }
-
-    cout << "STAGE 4" << endl;    
 
     if(v != 0) {
       // error
@@ -166,8 +159,6 @@ void commutative_add_test(unsigned int count, unsigned int length) {
       }
       cout << " = " << v << endl;
     } 
-
-    cout << "STAGE 5" << endl;
   }
 }
 
@@ -256,11 +247,13 @@ int main(int argc, char *argv[]) {
   primitive_test(count,SUB);
   cout << "PRIM SUB DONE" << endl;
   commutative_add_test(count,10);
+  cout << "COMM ADD/SUB DONE" << endl;
   primitive_test(count,MUL);
   cout << "PRIM MUL DONE" << endl;
   primitive_test(count,DIV);
   cout << "PRIM DIV DONE" << endl;
   commutative_mul_test(count,10);
+  cout << "COMM MUL/DIV DONE" << endl;
   comparator_test(count,EQ);
   cout << "COMP ==, != DONE" << endl;
   comparator_test(count,LT);
