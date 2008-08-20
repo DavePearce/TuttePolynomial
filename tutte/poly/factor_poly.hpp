@@ -17,6 +17,7 @@
 #include "../misc/bistream.hpp"
 #include "../misc/bstreambuf.hpp"
 #include "../misc/biguint.hpp"
+#include "../misc/bigint.hpp"
 
 #define FPOLY_PADDING_FACTOR 1
 
@@ -226,16 +227,16 @@ public:
   inline T const &operator[](int i) const { return coefficients[(i + fpadding) - ymin]; }
   inline T &operator[](int i) { return coefficients[(i + fpadding) - ymin]; }
 
-  biguint substitute(int y) const {
+  bigint substitute(int y) const {
     if(coefficients != NULL) {
-      biguint r(0U);
-      biguint p((unsigned int) y); // FIXME
+      bigint r(0);
+      bigint p(y); 
       for(unsigned int i=ymin;i<=ymax;++i) {	
 	r += (*this)[i] * pow(p,i);
       }
       return r;
     } else {
-      return biguint(0U);
+      return bigint(0);
     }
   }
 
@@ -582,9 +583,9 @@ public:
   }
 
 
-  biguint substitute(int x, int y) const {
-    biguint r(0U);
-    biguint p((unsigned int) x); // FIXME
+  bigint substitute(int x, int y) const {
+    bigint r(0);
+    bigint p(x); 
     for(unsigned int i=0;i<nxterms;++i) {
       r += pow(p,i) * xterms[i].substitute(y);
     }

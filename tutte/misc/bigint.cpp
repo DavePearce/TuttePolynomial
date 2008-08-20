@@ -35,6 +35,10 @@ unsigned long long my_abs(long long v) {
 bigint::bigint(int v) : magnitude(my_abs(v)), sign(v < 0) { }
 bigint::bigint(long v) : magnitude(my_abs(v)), sign(v < 0) { }
 bigint::bigint(long long v) : magnitude(my_abs(v)), sign(v < 0) { }
+bigint::bigint(unsigned int v) : magnitude(v), sign(false) { }
+bigint::bigint(unsigned long v) : magnitude(v), sign(false) { }
+bigint::bigint(unsigned long long v) : magnitude(v), sign(false) { }
+bigint::bigint(bigint const &v) : magnitude(v.magnitude), sign(v.sign) { }
 bigint::bigint(biguint const &v) : magnitude(v), sign(false) { }
 
 bool bigint::operator==(int v) const {
@@ -115,6 +119,8 @@ bool bigint::operator>=(long v) const { return !(*this < v); }
 bool bigint::operator>=(long long v) const { return !(*this < v); }
 bool bigint::operator>=(bigint const &v) const { return !(*this < v); }
 
+/* ========= OPERATOR + ========== */
+
 void bigint::operator+=(int w) {
   unsigned int w_magnitude = my_abs(w);
   if((w<0) != sign) {
@@ -130,6 +136,20 @@ void bigint::operator+=(int w) {
   } else {
     // neg + neg, pos + pos.
     magnitude += w_magnitude;
+  }
+}
+
+void bigint::operator+=(unsigned int w) {
+  if(sign) {
+    if(magnitude <= w) {
+      // swap sign here
+      magnitude = biguint(w) - magnitude;
+      sign = false;
+    } else {
+      magnitude -= w;
+    }
+  } else {
+    magnitude += w;
   }
 }
 
@@ -150,6 +170,43 @@ void bigint::operator+=(bigint const &w) {
   }
 }
 
+void bigint::operator+=(biguint const &w) {
+  if(sign) {
+    if(magnitude <= w) {
+      // swap sign here
+      magnitude = w - magnitude;
+      sign = false;
+    } else {
+      magnitude -= w;
+    }
+  } else {
+    magnitude += w;
+  }
+}
+
+bigint bigint::operator+(int w) const {
+  bigint r(*this);
+  r += w;
+  return r;
+}
+bigint bigint::operator+(unsigned int w) const {
+  bigint r(*this);
+  r += w;
+  return r;
+}
+bigint bigint::operator+(bigint const &w) const {
+  bigint r(*this);
+  r += w;
+  return r;
+}
+bigint bigint::operator+(biguint const &w) const {
+  bigint r(*this);
+  r += w;
+  return r;
+}
+
+/* ========= OPERATOR - ========== */
+
 void bigint::operator-=(int w) {
   unsigned int w_magnitude = my_abs(w);
   if((w<0) == sign) {
@@ -165,6 +222,20 @@ void bigint::operator-=(int w) {
   } else {
     // neg - pos, pos - neg.
     magnitude += w_magnitude;
+  }
+}
+
+void bigint::operator-=(unsigned int w) {
+  if(!sign) {
+    if(magnitude < w) {
+      // swap sign here
+      magnitude = biguint(w) - magnitude;
+      sign = true;
+    } else {
+      magnitude -= w;
+    }
+  } else {
+    magnitude += w;
   }
 }
 
@@ -185,6 +256,46 @@ void bigint::operator-=(bigint const &w) {
   }
 }
 
+void bigint::operator-=(biguint const &w) {
+  if(!sign) {
+    if(magnitude < w) {
+      // swap sign here
+      magnitude = w - magnitude;
+      sign = true;
+    } else {
+      magnitude -= w;
+    }
+  } else {
+    magnitude += w;
+  }
+}
+
+bigint bigint::operator-(int w) const {
+  bigint r(*this);
+  r -= w;
+  return r;
+}
+
+bigint bigint::operator-(unsigned int w) const {
+  bigint r(*this);
+  r -= w;
+  return r;
+}
+
+bigint bigint::operator-(bigint const &w) const {
+  bigint r(*this);
+  r -= w;
+  return r;
+}
+
+bigint bigint::operator-(biguint const &w) const {
+  bigint r(*this);
+  r -= w;
+  return r;
+}
+
+/* ========= OPERATOR * ========== */
+
 void bigint::operator*=(int w) {
   magnitude *= my_abs(w);
   if(w == 0U) { sign = false; }
@@ -199,12 +310,65 @@ void bigint::operator*=(long long w) {
   else if(sign) { sign = false; }
 }
 
+void bigint::operator*=(unsigned int w) {
+  magnitude *= w;
+  if(w == 0U) { sign = false; }
+}
+
+void bigint::operator*=(unsigned long long w) {
+  magnitude *= w;
+  if(w == 0U) { sign = false; }
+}
+
 void bigint::operator*=(bigint const &w) {
   magnitude *= w.magnitude;
   if(magnitude == 0U) { sign = false; }
   else if(sign != w.sign) { sign = true; }
   else if(sign) { sign = false; }
 }
+
+void bigint::operator*=(biguint const &w) {
+  magnitude *= w;
+  if(w == 0U) { sign = false; }
+}
+
+bigint bigint::operator*(int w) const {
+  bigint r(*this);
+  r *= w;
+  return r;
+}
+
+bigint bigint::operator*(long long w) const {
+  bigint r(*this);
+  r *= w;
+  return r;
+}
+
+bigint bigint::operator*(unsigned int w) const {
+  bigint r(*this);
+  r *= w;
+  return r;
+}
+
+bigint bigint::operator*(unsigned long long w) const {
+  bigint r(*this);
+  r *= w;
+  return r;
+}
+
+bigint bigint::operator*(bigint const &w) const {
+  bigint r(*this);
+  r *= w;
+  return r;
+}
+
+bigint bigint::operator*(biguint const &w) const {
+  bigint r(*this);
+  r *= w;
+  return r;
+}
+
+/* ========= OPERATOR / ========== */
 
 void bigint::operator/=(int w) {
   magnitude /= my_abs(w);
@@ -213,47 +377,52 @@ void bigint::operator/=(int w) {
   else if(sign) { sign = false; }
 }
 
-bigint bigint::operator+(int w) const {
-  bigint r(*this);
-  r += w;
-  return r;
-}
-
-bigint bigint::operator+(bigint const &w) const {
-  bigint r(*this);
-  r += w;
-  return r;
-}
-bigint bigint::operator-(int w) const {
-  bigint r(*this);
-  r -= w;
-  return r;
-}
-bigint bigint::operator-(bigint const &w) const {
-  bigint r(*this);
-  r -= w;
-  return r;
-}
-
-bigint bigint::operator*(int w) const {
-  bigint r(*this);
-  r *= w;
-  return r;
-}
-bigint bigint::operator*(long long w) const {
-  bigint r(*this);
-  r *= w;
-  return r;
-}
-bigint bigint::operator*(bigint const &w) const {
-  bigint r(*this);
-  r *= w;
-  return r;
-}
-
 bigint bigint::operator/(int w) const {
   bigint r(*this);
   r /= w;
+  return r;
+}
+
+/* ========= OPERATOR % ========== */
+
+void bigint::operator%=(int v) {
+  magnitude %= my_abs(v);
+  if(magnitude == 0U) { sign = false; }
+}
+
+void bigint::operator%=(unsigned int v) {
+  magnitude %= v;
+  if(magnitude == 0U) { sign = false; }
+}
+
+bigint bigint::operator%(int v) const {
+  bigint r(*this);
+  r %= v;
+  return r;
+}
+
+bigint bigint::operator%(unsigned int v) const {
+  bigint r(*this);
+  r %= v;
+  return r;
+}
+
+/* ========= OPERATOR ^ ========== */
+
+void bigint::operator^=(unsigned int v) {
+  if(v == 0) { (*this) = 1; }
+  else {
+    bigint p(*this);
+    
+    for(unsigned int i=1;i<v;++i) {
+      (*this) *= p;
+    }
+  }
+}
+
+bigint bigint::operator^(unsigned int v) const {
+  bigint r(*this);
+  r ^= v;
   return r;
 }
 
@@ -300,4 +469,22 @@ std::ostream& operator<<(ostream &out, bigint const &val) {
   else {
     return out << val.magnitude;
   }
+}
+
+/* =============================== */
+/* ======== OTHER METHODS ======= */
+/* =============================== */
+
+bigint pow(bigint const &r, unsigned int power) {
+  return r ^ power;
+}
+
+bigint operator+(biguint const &a, bigint const &b) {
+  return b + a;
+}
+bigint operator-(biguint const &a, bigint const &b) {
+  return bigint(a) - b;
+}
+bigint operator*(biguint const &a, bigint const &b) {
+  return b * a;
 }

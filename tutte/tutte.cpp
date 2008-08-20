@@ -27,7 +27,7 @@
 #include "graph/algorithms.hpp"
 #include "cache/simple_cache.hpp"
 #include "misc/biguint.hpp"
-#include "misc/safe_arithmetic.hpp"
+#include "misc/bigint.hpp"
 
 #include "reductions.hpp"
 #include "../config.h"
@@ -1110,8 +1110,8 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	  cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),E) << ")" << endl;	
 	  // The tutte at T(-1,-1) should always give a (positive or
 	  // negative) power of 2. 
-	  biguint Tm1m1 = tuttePoly.substitute(-1,-1);
-	  biguint Tm1m1pow = 0U;
+	  bigint Tm1m1 = tuttePoly.substitute(-1,-1);
+	  bigint Tm1m1pow = 0;
 	  while((Tm1m1 % 2) == 0) {
 	    Tm1m1 = Tm1m1 / 2;
 	    Tm1m1pow = Tm1m1pow + 1;
