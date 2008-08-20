@@ -11,22 +11,8 @@ creating nauty.h out of nauty-h.in.  If configure is not being used,
 it is necessary to check they are correct.
 ====================================================================*/
 
-/* Check whether various headers are available */
-#define HAVE_UNISTD_H  1    /* <unistd.h> */
-#define HAVE_SYSTYPES_H  1    /* <sys/types.h> */
-#define HAVE_STDDEF_H  1     /* <stddef.h> */
-#define HAVE_STDLIB_H  1    /* <stdlib.h> */
-#define HAVE_STRING_H  1    /* <string.h> */
-#define MALLOC_DEC 1  /* 1 = malloc() is declared in stdlib.h,
-				 2 = in malloc.h, 0 = in neither place */
-#define HAS_MATH_INF 0 /* INFINITY is defined in math.h or
-				some system header likely to be used */
 
-#define SIZEOF_INT 4
-#define SIZEOF_LONG 4
-#define SIZEOF_LONG_LONG 8   /* 0 if nonexistent */
-
-#define HAVE_CONST 1    /* compiler properly supports const */
+#include "../config.h"
 
 /*==================================================================*/
 

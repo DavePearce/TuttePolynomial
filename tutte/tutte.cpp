@@ -76,7 +76,7 @@ public:
 // Global Variables
 // ---------------------------------------------------------------
 
-typedef enum { RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MAXIMISE_SDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER } edgesel_t;
+typedef enum { AUTO, RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MAXIMISE_SDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER } edgesel_t;
 typedef enum { V_RANDOM, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DEGREE, V_MINIMISE_DEGREE,  V_MAXIMISE_DEGREE, V_NONE } vorder_t;
 
 unsigned int resize_stats = 0;
@@ -87,11 +87,15 @@ unsigned long num_disbicomps = 0;
 unsigned long num_trees = 0;
 unsigned long num_completed = 0;
 unsigned long old_num_steps = 0;
-static int current_timeout = 15768000; // one years worth of timeout
-static int timeout = 15768000; // one years worth of timeout
+
+// Following is used to time computation, and provide timeout
+// facility.
+static long timeout = 15768000; // one years worth of timeout (in s)
+static my_timer global_timer(false);
+
 static unsigned int small_graph_threshold = 5;
-static edgesel_t edge_selection_heuristic = VERTEX_ORDER;
-static edgesel_t edge_addition_heuristic = VERTEX_ORDER;
+static edgesel_t edge_selection_heuristic = AUTO;
+static edgesel_t edge_addition_heuristic = AUTO;
 static simple_cache cache(1024*1024,100);
 static vector<pair<int,int> > evalpoints;
 static vector<unsigned int> cache_hit_sizes;
@@ -390,7 +394,7 @@ typename G::edge_t select_missing_edge(G const &graph) {
  */
 template<class G, class P>
 P tutte(G &graph, unsigned int mid) { 
-  if(current_timeout <= 0) { return P(X(0)); }
+  if(global_timer.elapsed() >= timeout) { return P(X(0)); }
   if(status_flag) { print_status(); }
   num_steps++;
 
@@ -500,7 +504,7 @@ P tutte(G &graph, unsigned int mid) {
  */
 template<class G, class P>
 P flow(G &graph, unsigned int mid) { 
-  if(current_timeout <= 0) { return P(X(0)); }
+  if(global_timer.elapsed() >= timeout) { return P(X(0)); }
   if(status_flag) { print_status(); }
   num_steps++;
 
@@ -622,7 +626,7 @@ P flow(G &graph, unsigned int mid) {
  */
 template<class G, class P>
 P chromatic(G &graph, unsigned int mid) { 
-  if(current_timeout <= 0) { return P(X(0)); }
+  if(global_timer.elapsed() >= timeout) { return P(X(0)); }
   if(status_flag) { print_status(); }
   num_steps++;
 
@@ -985,11 +989,15 @@ void write_hit_counts(ostream &out) {
 // Signal Handlers
 // ---------------------------------------------------------------
 
+/*
+ * Note, the signal handler causes problems when used in conjunction
+ * with Sun's Grid Engine.  Therefore, it's recommended to use "-q"
+ * for quiet mode to avoid this.
+ */
 static int status_interval = 5; // in seconds
 
 void timer_handler(int signum) {
   if(verbose) { status_flag=true; }
-  current_timeout -= status_interval;
   alarm(status_interval);
 }
 
@@ -1019,6 +1027,11 @@ string search_replace(string from, string to, string text) {
 template<class G, class P>
 void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode) {
   unsigned int ngraphs_completed=0;  
+
+  // if auto heuristic is enabled, then we calculate graph density and
+  // select best heuristc based on that.
+  bool auto_heuristic = edge_selection_heuristic == AUTO;
+
   while(!input.eof() && ngraphs_completed < ngraphs) {
     // Create graph and then permute it according to 
     // vertex ordering strategy
@@ -1039,14 +1052,25 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     num_disbicomps = 0;
     num_trees = 0;
     num_cycles = 0;
-    current_timeout = timeout;
 
     unsigned int V(start_graph.num_vertices());
     unsigned int E(start_graph.num_edges());
     unsigned int C(start_graph.num_components());    
     cache_hit_sizes.resize(V,0);
 
-    my_timer timer(false);
+    // now determine edge density for auto_heuristic_mode
+    if(auto_heuristic) {
+      double density = (2.0 * ((double) E)) / (((double) V) * ((double) V-1));
+      if(density < 0.5) {
+	edge_selection_heuristic = MINIMISE_SDEGREE;
+	edge_addition_heuristic = MINIMISE_SDEGREE;
+      } else {
+	edge_selection_heuristic = VERTEX_ORDER;
+	edge_addition_heuristic = VERTEX_ORDER;
+      }							      
+    }
+
+    global_timer = my_timer(false);
     if(write_tree) { write_tree_start(ngraphs_completed); }    
 
     P tuttePoly;
@@ -1069,23 +1093,26 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	
       if(info_mode) {
 	cout << V << "\t" << E;    
-	cout << "\t" << setprecision(3) << timer.elapsed() << "\t" << num_steps << "\t" << num_bicomps << "\t" << num_disbicomps << "\t" << num_cycles << "\t" << num_trees;
+	cout << "\t" << setprecision(3) << global_timer.elapsed() << "\t" << num_steps << "\t" << num_bicomps << "\t" << num_disbicomps << "\t" << num_cycles << "\t" << num_trees;
 	if(mode == MODE_TUTTE) {
 	  cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2);
 	}
       } 
     } else {
       string TP = "TP";
-      if(mode == MODE_TUTTE) {	
+      if(global_timer.elapsed() >= timeout) {
+	// catch timeout case to avoid confusion.
+	cerr << "Timeout!!" << endl;
+      } else if(mode == MODE_TUTTE) {	
 	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
       } else if(mode == MODE_FLOW) {
-	//	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(biguint(-1),(E-V)+C) << " * ( ";
-	cout << "ERROR" << endl;
+	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(bigint(-1),(E-V)+C) << " * ( ";
 	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
+	TP = "FP";
       } else if(mode == MODE_CHROMATIC) {
-	//  	cout << "CP[" << (ngraphs_completed+1) << "] := " << pow(biguint(-1),V-C) << " * x * ( ";
-	cout << "ERROR" << endl;
+  	cout << "CP[" << (ngraphs_completed+1) << "] := " << pow(bigint(-1),V-C) << " * x * ( ";
 	cout << search_replace("x","(1-x)",tuttePoly.str()) << " ) :" << endl;
+	TP = "CP";
       }
 
       
@@ -1102,7 +1129,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << "Number of Cycles Terminated: " << num_cycles << "." << endl;	
 	cout << "Number of Trees Terminated: " << num_trees << "." << endl;	
 	cout << "Number of Completed Graphs Terminated: " << num_completed << "." << endl;	
-	cout << "Time : " << setprecision(3) << timer.elapsed() << "s" << endl;
+	cout << "Time : " << setprecision(3) << global_timer.elapsed() << "s" << endl;
 
 	if(mode == MODE_TUTTE) {
 	  // only print these evaluation points when in tutte mode
@@ -1116,14 +1143,14 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	    Tm1m1 = Tm1m1 / 2;
 	    Tm1m1pow = Tm1m1pow + 1;
 	  }
-	  //	  if(Tm1m1 == -1) {
-	  //	    cout << "T(-1,-1) = -2^" << Tm1m1pow << endl;
-	  // } else if(Tm1m1 == 1U) {
-	  //cout << "T(-1,-1) = 2^" << Tm1m1pow << endl;
-	  //	} else {
+	  if(Tm1m1 == -1) {
+	    cout << "T(-1,-1) = -2^" << Tm1m1pow << endl;
+	  } else if(Tm1m1 == 1U) {
+	    cout << "T(-1,-1) = 2^" << Tm1m1pow << endl;
+	  } else {
 	    // getting here indicates an error in the computation
 	    cout << "T(-1,-1) = 2^" << Tm1m1pow << " * " << Tm1m1 << endl;
-	  //	  }
+	  }
 	}
       }
     }
@@ -1200,11 +1227,11 @@ int main(int argc, char *argv[]) {
     {"no-reset",no_argument,NULL,OPT_NOCACHERESET},
     {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
     {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
-    {"minimise-sdegree", no_argument,NULL,OPT_MINSDEGREE},
+    {"sparse", no_argument,NULL,OPT_MINSDEGREE},
+    {"dense", no_argument,NULL,OPT_VERTEXORDER},
     {"maximise-degree", no_argument,NULL,OPT_MAXDEGREE},
     {"maximise-mdegree", no_argument,NULL,OPT_MAXMDEGREE},
     {"maximise-sdegree", no_argument,NULL,OPT_MAXSDEGREE},
-    {"vertex-order", no_argument,NULL,OPT_VERTEXORDER},
     {"random-ordering",no_argument,NULL,OPT_RANDOM_ORDERING},
     {"mindeg-ordering",no_argument,NULL,OPT_MINDEG_ORDERING},
     {"maxdeg-ordering",no_argument,NULL,OPT_MAXDEG_ORDERING},
@@ -1246,18 +1273,9 @@ int main(int argc, char *argv[]) {
     "        --no-caching              disable caching",
     "        --no-reset                prevent the cache from being reset between graphs in a batch",
     " \nedge selection heuristics:",
-    "        --minimise-degree         minimise endpoint (underlying) degree sum",
-    "        --minimise-sdegree        minimise single endpoint (underlying) degree",
-    "        --minimise-mdegree        minimise endpoint degree",
-    "        --maximise-degree         maximise endpoint (underlying) degree",
-    "        --maximise-sdegree        maximise single endpoint (underlying) degree",
-    "        --maximise-mdegree        maximise endpoint degree",
-    "        --vertex-order            select first available non-tree edge, starting from vertex 0",
-    "        --random                  random selection",
-    " \nvertex ordering heuristics:",
-    "        --random-ordering         use random ordering of vertices",
-    "        --mindeg-ordering         sort vertices by degree, with smallest first",
-    "        --maxdeg-ordering         sort vertices by degree, with largest first",
+    "        --sparse                  use best heuristic for \"sparse\" graphs.",
+    "        --dense                   use best heuristic for \"dense\" graphs.",
+    "        --random                  use random heuristic",
     " \nother options:",
     "        --no-multiedges           do not reduce multiedges in one go",
     "        --no-multicycles          do not reduce multicycles in one go",
@@ -1446,12 +1464,15 @@ int main(int argc, char *argv[]) {
   // -------------------------------------------------
   // Register alarm signal for printing status updates
   // -------------------------------------------------
-
-    struct sigaction sa;
-    memset(&sa,0,sizeof(sa));
-    sa.sa_handler = &timer_handler;
-    if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
-    alarm(status_interval); // trigger alarm in status_interval seconds
+    
+    if(verbose) {
+      // Only use the timer handler in verbose mode.
+      struct sigaction sa;
+      memset(&sa,0,sizeof(sa));
+      sa.sa_handler = &timer_handler;
+      if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
+      alarm(status_interval); // trigger alarm in status_interval seconds
+    }
     
     // -----------------------------------
     // Now, begin solving the input graph!

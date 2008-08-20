@@ -4642,7 +4642,13 @@ done
 
 
 
-for ac_header in stdint.h sys/param.h sys/time.h
+
+
+
+
+
+
+for ac_header in stdint.h sys/param.h sys/time.h stddef.h unistd.h sys/types.h stdlib.h string.h errno.h
 do
 as_ac_Header=`$as_echo "ac_cv_header_$ac_header" | $as_tr_sh`
 if { as_var=$as_ac_Header; eval "test \"\${$as_var+set}\" = set"; }; then
@@ -4793,6 +4799,7 @@ done
 
 
 # Checks for typedefs, structures, and compiler characteristics.
+
 { $as_echo "$as_me:$LINENO: checking for stdbool.h that conforms to C99" >&5
 $as_echo_n "checking for stdbool.h that conforms to C99... " >&6; }
 if test "${ac_cv_header_stdbool_h+set}" = set; then
@@ -6659,6 +6666,7 @@ $as_echo "$ac_cv_sizeof_long_long" >&6; }
 cat >>confdefs.h <<_ACEOF
 #define SIZEOF_LONG_LONG $ac_cv_sizeof_long_long
 _ACEOF
+
 
 
 
