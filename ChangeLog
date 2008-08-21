@@ -1,4 +1,18 @@
 ====================================================================
+v0.9.10
+====================================================================
+
+1) Removed dependency on GMP by constructing a bigint class.
+
+2) Altered command-line interface to use --sparse and --dense instead
+of --minimise-sdegree and --vertex-order.
+
+3) Made default edge selection heuristic to be auto, and select based
+on graph density.
+
+4) Updated the configure scripts in various ways.
+	
+====================================================================
 v0.9.9
 ====================================================================
 
