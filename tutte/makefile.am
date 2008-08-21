@@ -3,4 +3,6 @@ bin_PROGRAMS = tutte
 AM_CPPFLAGS = -I$(top_srcdir)/nauty
 
 tutte_SOURCES = tutte.cpp graph/algorithms.cpp graph/hash.c misc/biguint.cpp misc/bigint.cpp misc/bistream.cpp misc/bstreambuf.cpp 
+include_HEADERS = cache/simple_cache.hpp graph/adjacency_list.hpp graph/algorithms.hpp graph/spanning_graph.hpp misc/bstreambuf.hpp misc/triple.hpp misc/biguint.hpp misc/bistream.hpp misc/bigword.hpp misc/bigint.hpp poly/simple_poly.hpp poly/factor_poly.hpp poly/xy_term.hpp reductions.hpp
+
 tutte_LDADD = ../nauty/libnauty.a
