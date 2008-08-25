@@ -791,6 +791,7 @@ void biguint::ripple_borrow(unsigned int level) {
 
 unsigned int *biguint::aligned_alloc(unsigned int c) {
   unsigned int *p = (unsigned int*) malloc(c * sizeof(unsigned int));  
+  if(p == NULL) { throw std::bad_alloc(); }
   if(((unsigned int)p) & 1) { throw std::runtime_error("Allocated memory not aligned!"); }
   return p;
 }
