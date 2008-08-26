@@ -11,39 +11,21 @@
 
 #include <iostream>
 #include <climits>
+#include <stdint.h>
 
 #include "../../config.h"
 #include "bstreambuf.hpp"
 #include "bistream.hpp"
 
-#if SIZEOF_LONG>4
-#define BUI_64BIT_COMPILE
-#endif
+typedef uint64_t bui_dword;
 
-#ifdef BUI_64BIT_COMPILE
-
-#define BUI_WORD_MAX ULONG_MAX
-typedef unsigned long bui_word;
-
-#else
-#define BUI_WORD_MAX UINT_MAX
-typedef unsigned int bui_word;
-#endif
-
-#define BUI_ONE ((bui_word)1U)
-#define BUI_WORD_WIDTH (sizeof(bui_word)*8U)
-#define BUI_LEFTMOST_BIT (BUI_ONE << (BUI_WORD_WIDTH-1))
-
-#define BUI_UINT_SIZE 1
-#define BUI_ULONG_SIZE (sizeof(unsigned long) / sizeof(bui_word))
-#define BUI_ULONGLONG_SIZE (sizeof(unsigned long long) / sizeof(bui_word))
-
-#define BUI_PACK(x) ((((bui_word)x) >> BUI_ONE) | BUI_LEFTMOST_BIT)
-#define BUI_UNPACK(x) ((bui_word*)(x << BUI_ONE))
+#define BUI_LEFTMOST_BIT (UINT32_C(1) << 31U)
+#define BUI_PACK(x) ((((uint32_t)x) >> 1U) | BUI_LEFTMOST_BIT)
+#define BUI_UNPACK(x) ((uint32_t*)(x << 1U))
 
 class biguint {
 public:
-  bui_word ptr; // either an bui_word or a bui_word* ...
+  uint32_t ptr;
 
   friend bstreambuf &operator<<(bstreambuf &, biguint const &);
   friend bistream &operator>>(bistream &, biguint &);
@@ -53,11 +35,12 @@ public:
   /* =============================== */
 
 private:
-  biguint(bui_word v, bui_word d);
+  biguint(uint32_t v, uint32_t d);
 
 public:
   inline biguint() { ptr = 0U; }  
-  inline biguint(bui_word v) { clone(v); }
+  inline biguint(uint32_t v) { clone(v); }
+  inline biguint(uint64_t v) { clone(v); }
   inline biguint(biguint const &src) { clone(src); }  
   inline ~biguint() { if(ptr & BUI_LEFTMOST_BIT) { free(BUI_UNPACK(ptr)); } }
 
@@ -66,7 +49,13 @@ public:
   /* ======== ASSIGNMENT OPS ======= */
   /* =============================== */
   
-  inline biguint const &operator=(bui_word v) {
+  inline biguint const &operator=(uint32_t v) {
+    if(ptr & BUI_LEFTMOST_BIT) { free(BUI_UNPACK(ptr)); }
+    clone(v);
+    return *this;
+  }
+  
+  inline biguint const &operator=(uint64_t v) {
     if(ptr & BUI_LEFTMOST_BIT) { free(BUI_UNPACK(ptr)); }
     clone(v);
     return *this;
@@ -76,16 +65,16 @@ public:
     if(this != &src) {
       if(src.ptr & BUI_LEFTMOST_BIT) {
 	if(ptr & BUI_LEFTMOST_BIT) {
-	  bui_word *s = BUI_UNPACK(src.ptr);
-	  bui_word *p = BUI_UNPACK(ptr);
+	  uint32_t *s = BUI_UNPACK(src.ptr);
+	  uint32_t *p = BUI_UNPACK(ptr);
 	  // attempt to reuse memory where possible.
-	  bui_word src_depth = s[0];
-	  bui_word depth = p[0];
-	  bui_word padding = p[1];	
+	  uint32_t src_depth = s[0];
+	  uint32_t depth = p[0];
+	  uint32_t padding = p[1];	
 	  
 	  if(src_depth <= (depth + padding)) {
-	    memcpy(p,s,(src_depth+2)*sizeof(bui_word));
-	    memset(p+src_depth+2,0,((depth+padding)-src_depth)*sizeof(bui_word));
+	    memcpy(p,s,(src_depth+2)*sizeof(uint32_t));
+	    memset(p+src_depth+2,0,((depth+padding)-src_depth)*sizeof(uint32_t));
 	  } else {
 	    free(BUI_UNPACK(ptr));
 	    clone(src);
@@ -109,68 +98,73 @@ public:
   /* ======== COMPARISON OPS ======= */
   /* =============================== */
 
-  bool operator==(bui_word v) const;
+  bool operator==(uint32_t v) const;
+  bool operator==(uint64_t v) const;
   bool operator==(biguint const &v) const;
 
-  bool operator!=(bui_word v) const;
+  bool operator!=(uint32_t v) const;
+  bool operator!=(uint64_t v) const;
   bool operator!=(biguint const &v) const;
 
-  bool operator<(bui_word v) const;
+  bool operator<(uint32_t v) const;
+  bool operator<(uint64_t v) const;
   bool operator<(biguint const &v) const;
 
-  bool operator<=(bui_word v) const;
+  bool operator<=(uint32_t v) const;
+  bool operator<=(uint64_t v) const;
   bool operator<=(biguint const &v) const;
 
-  bool operator>(bui_word v) const;
+  bool operator>(uint32_t v) const;
+  bool operator>(uint64_t v) const;
   bool operator>(biguint const &v) const;
 
-  bool operator>=(bui_word v) const;
+  bool operator>=(uint32_t v) const;
+  bool operator>=(uint64_t v) const;
   bool operator>=(biguint const &v) const;
 
   /* =============================== */
   /* ======== ARITHMETIC OPS ======= */
   /* =============================== */
 
-  void operator+=(bui_word w);
+  void operator+=(uint32_t w);
   void operator+=(biguint const &src);
 
-  void operator-=(bui_word w);
+  void operator-=(uint32_t w);
   void operator-=(biguint const &src);
 
-  void operator*=(bui_word v);
+  void operator*=(uint32_t v);
   void operator*=(biguint const &v);
 
-  void operator/=(bui_word v);
-  void operator%=(bui_word v);
-  void operator^=(bui_word v);   
+  void operator/=(uint32_t v);
+  void operator%=(uint32_t v);
+  void operator^=(uint32_t v);   
 
-  biguint operator+(bui_word w) const;
+  biguint operator+(uint32_t w) const;
   biguint operator+(biguint const &w) const;
-  biguint operator-(bui_word w) const;
+  biguint operator-(uint32_t w) const;
   biguint operator-(biguint const &w) const;
 
-  biguint operator*(bui_word w) const;
+  biguint operator*(uint32_t w) const;
   biguint operator*(biguint const &w) const;
-  biguint operator/(bui_word w) const;
-  bui_word operator%(bui_word w) const;
-  biguint operator^(bui_word v) const;
+  biguint operator/(uint32_t w) const;
+  uint32_t operator%(uint32_t w) const;
+  biguint operator^(uint32_t v) const;
 
   /* =============================== */
   /* ======== CONVERSION OPS ======= */
   /* =============================== */
 
-  unsigned int c_uint() const;
-  unsigned long c_ulong() const;
-  unsigned long long c_ulonglong() const;
+  uint32_t c_uint32() const;
+  uint64_t c_uint64() const;
   
   /* =============================== */
   /* ======== HELPER METHODS ======= */
   /* =============================== */
   
 private:
-  inline void clone(bui_word v) {
+  inline void clone(uint32_t v) {
     if(v & BUI_LEFTMOST_BIT) {
-      bui_word *p = aligned_alloc(3);
+      uint32_t *p = aligned_alloc(3);
       ptr = BUI_PACK(p);
       p[0] = 1;
       p[1] = 0;
@@ -180,24 +174,37 @@ private:
     }
   }
 
+  inline void clone(uint64_t v) {
+    if(v >= BUI_LEFTMOST_BIT) {
+      uint32_t *p = aligned_alloc(4);
+      ptr = BUI_PACK(p);
+      p[0] = 2;
+      p[1] = 0;
+      p[2] = v;
+      p[3] = v >> 32U;
+    } else {
+      ptr = v;
+    }
+  }
+
   inline void clone(biguint const &src) {
     if(src.ptr & BUI_LEFTMOST_BIT) {
-      bui_word *s = BUI_UNPACK(src.ptr);
-      bui_word depth = s[0];
-      bui_word padding = s[1];
-      bui_word *p = aligned_alloc(depth+padding+2);
-      memcpy(p,s,(padding+depth+2)*sizeof(bui_word));
+      uint32_t *s = BUI_UNPACK(src.ptr);
+      uint32_t depth = s[0];
+      uint32_t padding = s[1];
+      uint32_t *p = aligned_alloc(depth+padding+2);
+      memcpy(p,s,(padding+depth+2)*sizeof(uint32_t));
       ptr = BUI_PACK(p);
     } else {
       ptr = src.ptr;
     }
   }
 
-  void expand(bui_word ndepth);
-  bui_word *aligned_alloc(bui_word c);
+  void expand(uint32_t ndepth);
+  uint32_t *aligned_alloc(uint32_t c);
 
-  void ripple_carry(bui_word level);
-  void ripple_borrow(bui_word level);
+  void ripple_carry(uint32_t level);
+  void ripple_borrow(uint32_t level);
 };
 
 /* ===================================== */
@@ -207,6 +214,6 @@ private:
 std::ostream& operator<<(std::ostream &out, biguint val);
 bstreambuf &operator<<(bstreambuf &, biguint const &);
 bistream &operator>>(bistream &, biguint &);
-biguint pow(biguint const &r, bui_word power);
+biguint pow(biguint const &r, uint32_t power);
 
 #endif

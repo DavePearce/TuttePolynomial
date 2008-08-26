@@ -431,27 +431,9 @@ bigint bigint::operator^(unsigned int v) const {
 /* =============================== */
 
 int bigint::c_int() const {
-  unsigned int w = magnitude.c_uint();
+  unsigned int w = magnitude.c_uint32();
   if((!sign && (w > INT_MAX)) || w >= INT_MAX) {
     throw runtime_error("bigint too large for int");
-  } 
-  if(sign) { return -w; } 
-  else { return w; }
-}  
-
-long bigint::c_long() const {
-  unsigned long w = magnitude.c_ulong();
-  if((!sign && (w > LONG_MAX)) || w >= LONG_MAX) {
-    throw runtime_error("bigint too large for long");
-  } 
-  if(sign) { return -w; } 
-  else { return w; }
-}  
-
-long long bigint::c_longlong() const {
-  unsigned long long w = magnitude.c_ulonglong();
-  if((!sign && (w > LLONG_MAX)) || w >= LLONG_MAX) {
-    throw runtime_error("bigint too large for long long");
   } 
   if(sign) { return -w; } 
   else { return w; }
@@ -475,7 +457,7 @@ std::ostream& operator<<(ostream &out, bigint const &val) {
 /* ======== OTHER METHODS ======= */
 /* =============================== */
 
-bigint pow(bigint const &r, bui_word power) {
+bigint pow(bigint const &r, uint32_t power) {
   return r ^ power;
 }
 
