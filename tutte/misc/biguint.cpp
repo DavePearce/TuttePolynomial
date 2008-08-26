@@ -70,6 +70,7 @@ typedef unsigned long long bui_dword;
 #define BUI_DWORD_ADD(x,y) (((bui_dword)x)+y)
 #define BUI_DWORD_DIV(x,y) (((bui_dword)x)/y)
 #define BUI_DWORD_MOD(x,y) (((bui_dword)x)%y)
+
 #endif
 
 /* =============================== */
@@ -429,7 +430,7 @@ void biguint::operator*=(bui_word v) {
   } else {    
     // easier case!
     bui_dword w = BUI_DWORD_MUL(ptr,v);
-    if(BUI_DWORD_LOW(w) >= BUI_LEFTMOST_BIT) { 
+    if(BUI_DWORD_HIGH(w) > 0 || BUI_DWORD_LOW(w) >= BUI_LEFTMOST_BIT) { 
       // build new object
       bui_word *p = aligned_alloc(4);
       ptr = BUI_PACK(p);
