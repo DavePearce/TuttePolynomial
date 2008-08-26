@@ -68,23 +68,23 @@ void resize_nauty_workspace(int newsize);
 
 template<class T>
 unsigned char *graph_key(T const &graph) {
-  unsigned int N = graph.num_vertices();
-  unsigned int NN = N + graph.num_multiedges();
-  unsigned int M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
-  
+  setword N = graph.num_vertices();
+  setword NN = N + graph.num_multiedges();
+  setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
+
   // allocate a clear space for graph
-  unsigned int graph_size(sizeof(setword)*NN*M);
-  if(graph_size > nauty_graph_buf_size) {
+  if((NN*M) >= nauty_graph_buf_size) {
     // need to increase size of temporary buffer!
     delete [] nauty_graph_buf;
-    nauty_graph_buf = new setword[sizeof(setword)*NN*M];  
+    nauty_graph_buf = new setword[NN*M];  
+    nauty_graph_buf_size = NN*M;
     // SHOULD CHECK FOR INCREASE IN WORKSPACE SIZE?
     delete [] nauty_workspace;
     nauty_workspace = new setword[100 * M];
     _nauty_workspace_size = 100 * M;
   }
   
-  memset(nauty_graph_buf,0,graph_size);
+  memset(nauty_graph_buf,0,nauty_graph_buf_size * sizeof(setword));
 
   // build map from graph vertex space to nauty vertex space
   unsigned int vtxmap[graph.domain_size()];
@@ -143,7 +143,7 @@ unsigned char *graph_key(T const &graph) {
   ptn[N-1]=0;
   nvector orbits[NN];
 
-  setword *nauty_canong_buf = new setword[((NN*M)+NAUTY_HEADER_SIZE) * sizeof(setword)];
+  setword *nauty_canong_buf = new setword[((NN*M)+NAUTY_HEADER_SIZE)];
 
   // call nauty
   nauty(nauty_graph_buf,
@@ -159,7 +159,7 @@ unsigned char *graph_key(T const &graph) {
 	NN, // true graph size, since includes vertices added for multi edges.
 	nauty_canong_buf+NAUTY_HEADER_SIZE  // add two for header
 	);
-  
+
   // check for error
   if(stats.errstatus != 0) {
     throw std::runtime_error("internal error: nauty returned an error?");
@@ -174,9 +174,9 @@ unsigned char *graph_key(T const &graph) {
 template<class T>
 T graph_from_key(unsigned char *key) {
   setword *p = (setword*) key;  
-  unsigned int N = p[0];
-  unsigned int REAL_N = p[1];
-  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+  setword N = p[0];
+  setword REAL_N = p[1];
+  setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   p=p+NAUTY_HEADER_SIZE;
   
   T graph(REAL_N); // should make real N

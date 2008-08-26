@@ -116,7 +116,7 @@ public:
   long long c_longlong() const;
 };
 
-bigint pow(bigint const &r, unsigned int power);
+bigint pow(bigint const &r, bui_word power);
 
 bigint operator+(biguint const &a, bigint const &b);
 bigint operator-(biguint const &a, bigint const &b);

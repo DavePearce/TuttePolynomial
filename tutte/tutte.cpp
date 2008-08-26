@@ -416,7 +416,7 @@ P tutte(G &graph, unsigned int mid) {
       return r * RF;
     }
   }
-
+  
   P poly;
 
   // === 3. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
@@ -453,7 +453,6 @@ P tutte(G &graph, unsigned int mid) {
       }
     }
   } else {
-
     // TREE OUTPUT STUFF
     unsigned int lid = tree_id;
     unsigned int rid = tree_id+1;
@@ -464,7 +463,7 @@ P tutte(G &graph, unsigned int mid) {
     
     G g2(graph); 
     edge_t edge = select_edge(graph);
-    
+
     // now, delete/contract on the edge's endpoints
     graph.remove_edge(edge);
     g2.contract_edge(edge);
@@ -1114,7 +1113,6 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	cout << search_replace("x","(1-x)",tuttePoly.str()) << " ) :" << endl;
 	TP = "CP";
       }
-
       
       for(vector<pair<int,int> >::iterator i(evalpoints.begin());i!=evalpoints.end();++i) {
 	cout << TP << "[" << (ngraphs_completed+1) << "](" << i->first << "," << i->second << ") = " << tuttePoly.substitute(i->first,i->second) << endl;
@@ -1139,6 +1137,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	  // negative) power of 2. 
 	  bigint Tm1m1 = tuttePoly.substitute(-1,-1);
 	  bigint Tm1m1pow = 0;
+
 	  while((Tm1m1 % 2) == 0) {
 	    Tm1m1 = Tm1m1 / 2;
 	    Tm1m1pow = Tm1m1pow + 1;

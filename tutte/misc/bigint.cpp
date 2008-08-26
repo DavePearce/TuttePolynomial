@@ -475,7 +475,7 @@ std::ostream& operator<<(ostream &out, bigint const &val) {
 /* ======== OTHER METHODS ======= */
 /* =============================== */
 
-bigint pow(bigint const &r, unsigned int power) {
+bigint pow(bigint const &r, bui_word power) {
   return r ^ power;
 }
 

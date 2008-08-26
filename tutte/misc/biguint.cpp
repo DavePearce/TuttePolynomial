@@ -13,24 +13,79 @@
 
 using namespace std;
 
+/**
+ * the following is needed for * and / operators
+ */
+
+#if BUI_64BIT_COMPILE
+
+typedef struct { bui_word high; bui_word low; } bui_dword;
+
+#define BUI_HIGH_MASK (BUI_WORD_MAX << (BUI_WORD_WIDTH/2))
+#define BUI_DWORD(x,y) bui_dword(x,y)
+#define BUI_DWORD_LOW(x) (x.low)
+#define BUI_DWORD_HIGH(x) (x.high)
+#define BUI_DWORD_MUL(x,y) bui_dword_mul(x,y)
+#define BUI_DWORD_ADD(x,y) bui_dword_add(x,y)
+
+bui_dword bui_dword_add(bui_dword r, bui_word y) {
+  r.low += y;
+  if(r.low < low) { r.high++; } // overflow
+  return r;
+}
+
+bui_dword bui_dword_mul(bui_word x, bui_word y) {
+  bui_word lx = (x & BUI_HIGH_MASK) >> (BUI_WORD_WIDTH/2);
+  bui_word ly = (y & BUI_HIGH_MASK) >> (BUI_WORD_WIDTH/2);
+  bui_word hx = x >> (BUI_WORD_WIDTH/2);
+  bui_word hy = y >> (BUI_WORD_WIDTH/2);
+  
+  bui_word low = lx * ly;
+  bui_word high = hx * hy;
+  bui_word lxhy = lx * hy;
+  bui_word hxly = hx * ly;
+
+  bui_dword r;
+  r.low = low;
+  r.high = high;
+  
+  r.low += (lxhy) << (BUI_WORD_WITH/2);
+  if(r.low < low) { r.high++; } // overflow
+  r.low += (hxly) << (BUI_WORD_WITH/2);
+  if(r.low < low) { r.high++; } // overflow
+
+  r.high += lxhy >> (BUI_WORD_WIDTH/2);
+  r.high += hxly >> (BUI_WORD_WIDTH/2);
+
+  return r;
+}
+
+#else
+
+typedef unsigned long long bui_dword;
+#define BUI_DWORD(x,y) ((((bui_dword) x)<<BUI_WORD_WIDTH)+y)
+#define BUI_DWORD_LOW(x) ((bui_word) x)
+#define BUI_DWORD_HIGH(x) ((bui_word)(x>>BUI_WORD_WIDTH))
+#define BUI_DWORD_MUL(x,y) (((bui_dword)x)*y)
+#define BUI_DWORD_ADD(x,y) (((bui_dword)x)+y)
+#define BUI_DWORD_DIV(x,y) (((bui_dword)x)/y)
+#define BUI_DWORD_MOD(x,y) (((bui_dword)x)%y)
+#endif
+
 /* =============================== */
 /* ========= CONSTRUCTORS ======== */
 /* =============================== */
 
-biguint::biguint(unsigned int v, unsigned int depth) { 
-  unsigned int padding = depth*2;
-  unsigned int *p = aligned_alloc(depth+padding+2);
+biguint::biguint(bui_word v, bui_word depth) { 
+  bui_word padding = depth*2;
+  bui_word *p = aligned_alloc(depth+padding+2);
   p[0]=depth;
   p[1]=padding;
-  memset(p+2,0,(depth+padding)*sizeof(unsigned int));
+  memset(p+2,0,(depth+padding)*sizeof(bui_word));
   p[2]=v;
   ptr = BUI_PACK(p);
 }
 
-biguint::biguint(unsigned int *p) {
-  ptr = BUI_PACK(p);
-}
-    
 /* =============================== */
 /* ======== ASSIGNMENT OPS ======= */
 /* =============================== */
@@ -39,47 +94,17 @@ biguint::biguint(unsigned int *p) {
 /* ======== COMPARISON OPS ======= */
 /* =============================== */
 
-bool biguint::operator==(unsigned int v) const {
+bool biguint::operator==(bui_word v) const {
   if(ptr & BUI_LEFTMOST_BIT) {    
-    unsigned int *p = BUI_UNPACK(ptr);
+    bui_word *p = BUI_UNPACK(ptr);
     if(p[2] != v) { return false; }
-    unsigned int depth(p[0]);
-    for(unsigned int i=3;i<(depth+2);++i) {
+    bui_word depth(p[0]);
+    for(bui_word i=3;i<(depth+2);++i) {
       if(p[i] != 0) { return false; }
     }
     return true;
   } else {
     return ptr == v;
-  } 
-}
-
-bool biguint::operator==(unsigned long v) const {
-  if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p = BUI_UNPACK(ptr);
-    unsigned int depth(p[0]);
-    for(unsigned int i=2;i<(depth+2);i++) {
-      if(p[i] != (unsigned int) v) { return false; }
-      v >>= UINT_WIDTH;
-    }    
-    if(v != 0) { return false; }
-    return true;
-  } else {
-    return (v <= UINT_MAX) && ptr == v;
-  } 
-}
-
-bool biguint::operator==(unsigned long long v) const {
-  if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p = BUI_UNPACK(ptr);
-    unsigned int depth(p[0]);
-    for(unsigned int i=2;i<(depth+2);i++) {
-      if(p[i] != (unsigned int) v) { return false; }
-      v >>= UINT_WIDTH;
-    }    
-    if(v != 0) { return false; }
-    return true;
-  } else {
-    return (v <= UINT_MAX) && ptr == v;
   } 
 }
 
@@ -89,85 +114,39 @@ bool biguint::operator==(biguint const &v) const {
   } else if((v.ptr & BUI_LEFTMOST_BIT) == 0) {
     return (*this) == v.ptr;
   } else {
-    unsigned int *p(BUI_UNPACK(ptr));
-    unsigned int *s(BUI_UNPACK(v.ptr));
-    unsigned int depth(std::min(p[0],s[0]));
-    for(unsigned int i=2;i<(depth+2);i++) {
+    bui_word *p(BUI_UNPACK(ptr));
+    bui_word *s(BUI_UNPACK(v.ptr));
+    bui_word depth(std::min(p[0],s[0]));
+    for(bui_word i=2;i<(depth+2);i++) {
       if(p[i] != s[i]) { return false; }
     }
     // now, check remaining digits are zero.    
-    unsigned int m_depth(p[0]);
-    for(unsigned int i=depth+2;i<(m_depth+2);++i) {
+    bui_word m_depth(p[0]);
+    for(bui_word i=depth+2;i<(m_depth+2);++i) {
       if(p[i] != 0) { return false; }
     }
-    unsigned int v_depth(s[0]);
-    for(unsigned int i=depth+2;i<(v_depth+2);++i) {
+    bui_word v_depth(s[0]);
+    for(bui_word i=depth+2;i<(v_depth+2);++i) {
       if(s[i] != 0) { return false; }
     }      
   }
   return true;
 }
 
-bool biguint::operator!=(unsigned int v) const { return !((*this) == v); }
-bool biguint::operator!=(unsigned long v) const { return !((*this) == v); }
-bool biguint::operator!=(unsigned long long v) const { return !((*this) == v); }
+bool biguint::operator!=(bui_word v) const { return !((*this) == v); }
 bool biguint::operator!=(biguint const &v) const { return !((*this) == v); }
 
-bool biguint::operator<(unsigned int v) const {
+bool biguint::operator<(bui_word v) const {
   if(ptr & BUI_LEFTMOST_BIT) {    
-    unsigned int *p = BUI_UNPACK(ptr);
+    bui_word *p = BUI_UNPACK(ptr);
     if(p[2] >= v) { return false; }
-    unsigned int depth(p[0]);
-    for(unsigned int i=3;i<(depth+2);++i) {
+    bui_word depth(p[0]);
+    for(bui_word i=3;i<(depth+2);++i) {
       if(p[i] != 0) { return false; }
     }
     return true;
   } else {
     return ptr < v;
-  } 
-}
-
-bool biguint::operator<(unsigned long v) const {
-  if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p = BUI_UNPACK(ptr);
-    unsigned int depth_p(p[0]);
-    unsigned int depth_s(BUI_ULONG_SIZE);
-    unsigned int depth(max(depth_s,depth_p));
-
-    depth_p += 2;
-
-    for(unsigned int i=(depth+1);i>1;--i) {
-      unsigned int w = v >> ((i-2)*UINT_WIDTH);
-      if(i >= depth_p) {
-	if(w != 0) { return true; }
-      } else if(p[i] > w) { return false; }
-      else if(p[i] < w) { return true; }
-    }    
-    return false;
-  } else {
-    return (v > UINT_MAX) || ptr < v;
-  } 
-}
-
-bool biguint::operator<(unsigned long long v) const {
-  if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p = BUI_UNPACK(ptr);
-    unsigned int depth_p(p[0]);
-    unsigned int depth_s(BUI_ULONGLONG_SIZE);
-    unsigned int depth(max(depth_s,depth_p));
-
-    depth_p += 2;
-    
-    for(unsigned int i=(depth+1);i>1;--i) {
-      unsigned int w = v >> ((i-2)*UINT_WIDTH);
-      if(i >= depth_p) {
-	if(w != 0) { return true; }
-      } else if(p[i] > w) { return false; }
-      else if(p[i] < w) { return true; }
-    }    
-    return false;
-  } else {
-    return (v > UINT_MAX) || ptr < v;
   } 
 }
 
@@ -182,17 +161,17 @@ bool biguint::operator<(biguint const &v) const {
     return (*this < v.ptr);
   }
   
-  unsigned int *p = BUI_UNPACK(ptr);
-  unsigned int *s = BUI_UNPACK(v.ptr);
+  bui_word *p = BUI_UNPACK(ptr);
+  bui_word *s = BUI_UNPACK(v.ptr);
 
-  unsigned int depth_p(p[0]);
-  unsigned int depth_s(s[0]);
-  unsigned int depth(max(depth_s,depth_p));
+  bui_word depth_p(p[0]);
+  bui_word depth_s(s[0]);
+  bui_word depth(max(depth_s,depth_p));
 
   depth_p += 2;
   depth_s += 2;
 
-  for(unsigned int i(depth+1);i>1;--i) {
+  for(bui_word i(depth+1);i>1;--i) {
     if(i >= depth_p) {
       if(s[i] != 0) {
 	return true;
@@ -202,8 +181,8 @@ bool biguint::operator<(biguint const &v) const {
 	return false;
       }
     } else {
-      unsigned int sw = s[i];
-      unsigned int pw = p[i];
+      bui_word sw = s[i];
+      bui_word pw = p[i];
       
       if(sw < pw) {
 	return false;
@@ -217,61 +196,17 @@ bool biguint::operator<(biguint const &v) const {
   return false;
 }
 
-bool biguint::operator<=(unsigned int v) const {
+bool biguint::operator<=(bui_word v) const {
   if(ptr & BUI_LEFTMOST_BIT) {    
-    unsigned int *p = BUI_UNPACK(ptr);
+    bui_word *p = BUI_UNPACK(ptr);
     if(p[2] > v) { return false; }
-    unsigned int depth(p[0]);
-    for(unsigned int i=3;i<(depth+2);++i) {
+    bui_word depth(p[0]);
+    for(bui_word i=3;i<(depth+2);++i) {
       if(p[i] != 0) { return false; }
     }
     return true;
   } else {
     return ptr <= v;
-  } 
-}
-
-bool biguint::operator<=(unsigned long v) const {
-  if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p = BUI_UNPACK(ptr);
-    unsigned int depth_p(p[0]);
-    unsigned int depth_s(BUI_ULONG_SIZE);
-    unsigned int depth(max(depth_s,depth_p));
-
-    depth_p += 2;
-
-    for(unsigned int i=(depth+1);i>1;--i) {
-      unsigned int w = v >> ((i-2)*UINT_WIDTH);
-      if(i >= depth_p) {
-	if(w != 0) { return true; }
-      } else if(p[i] > w) { return false; }
-      else if(p[i] < w) { return true; }
-    }    
-    return true;
-  } else {
-    return (v > UINT_MAX) || ptr <= v;
-  } 
-}
-
-bool biguint::operator<=(unsigned long long v) const {
-  if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p = BUI_UNPACK(ptr);
-    unsigned int depth_p(p[0]);
-    unsigned int depth_s(BUI_ULONGLONG_SIZE);
-    unsigned int depth(max(depth_s,depth_p));
-
-    depth_p += 2;
-
-    for(unsigned int i=(depth+1);i>1;--i) {
-      unsigned int w = v >> ((i-2)*UINT_WIDTH);
-      if(i >= depth_p) {
-	if(w != 0) { return true; }
-      } else if(p[i] > w) { return false; }
-      else if(p[i] < w) { return true; }
-    }    
-    return true;
-  } else {
-    return (v > UINT_MAX) || ptr <= v;
   } 
 }
 
@@ -286,17 +221,17 @@ bool biguint::operator<=(biguint const &v) const {
     return (*this <= v.ptr);
   }
   
-  unsigned int *p = BUI_UNPACK(ptr);
-  unsigned int *s = BUI_UNPACK(v.ptr);
+  bui_word *p = BUI_UNPACK(ptr);
+  bui_word *s = BUI_UNPACK(v.ptr);
 
-  unsigned int depth_p(p[0]);
-  unsigned int depth_s(s[0]);
-  unsigned int depth(max(depth_s,depth_p));
+  bui_word depth_p(p[0]);
+  bui_word depth_s(s[0]);
+  bui_word depth(max(depth_s,depth_p));
 
   depth_p += 2;
   depth_s += 2;
 
-  for(unsigned int i(depth+1);i>1;--i) {
+  for(bui_word i(depth+1);i>1;--i) {
     if(i >= depth_p) {
       if(s[i] != 0) {
 	return true;
@@ -306,8 +241,8 @@ bool biguint::operator<=(biguint const &v) const {
 	return false;
       }
     } else {
-      unsigned int sw = s[i];
-      unsigned int pw = p[i];
+      bui_word sw = s[i];
+      bui_word pw = p[i];
       
       if(sw < pw) {
 	return false;
@@ -321,32 +256,28 @@ bool biguint::operator<=(biguint const &v) const {
   return true;
 }
 
-bool biguint::operator>(unsigned int v) const { return !(*this <= v); }
-bool biguint::operator>(unsigned long v) const { return !(*this <= v); }
-bool biguint::operator>(unsigned long long v) const { return !(*this <= v); }
+bool biguint::operator>(bui_word v) const { return !(*this <= v); }
 bool biguint::operator>(biguint const &v) const { return !(*this <= v); }
 
-bool biguint::operator>=(unsigned int v) const { return !(*this < v); }
-bool biguint::operator>=(unsigned long v) const { return !(*this < v); }
-bool biguint::operator>=(unsigned long long v) const { return !(*this < v); }
+bool biguint::operator>=(bui_word v) const { return !(*this < v); }
 bool biguint::operator>=(biguint const &v) const { return !(*this < v); }
 
 /* =============================== */
 /* ======== ARITHMETIC OPS ======= */
 /* =============================== */
 
-void biguint::operator+=(unsigned int w) {
+void biguint::operator+=(bui_word w) {
   if(ptr & BUI_LEFTMOST_BIT) {    
-    unsigned int *p(BUI_UNPACK(ptr));
-    unsigned int v = p[2];
+    bui_word *p(BUI_UNPACK(ptr));
+    bui_word v = p[2];
     w = v + w;
     p[2] = w;
     if(w < v) { ripple_carry(1); }
   } else {
-    unsigned int v = ptr;
+    bui_word v = ptr;
     ptr = v + w;
     if(ptr < v) {
-      unsigned int *p = aligned_alloc(4); 
+      bui_word *p = aligned_alloc(4); 
       p[0] = 2U;
       p[1] = 0;
       p[2] = ptr;
@@ -362,9 +293,9 @@ void biguint::operator+=(biguint const &src) {
   if((src.ptr & BUI_LEFTMOST_BIT) == 0) { 
     (*this) += src.ptr; 
   } else {
-    unsigned int *s(BUI_UNPACK(src.ptr));
-    unsigned int depth = s[0];
-    unsigned int *p;
+    bui_word *s(BUI_UNPACK(src.ptr));
+    bui_word depth = s[0];
+    bui_word *p;
     
     if((ptr & BUI_LEFTMOST_BIT) == 0) { 
       // assume it needs to go big
@@ -379,11 +310,11 @@ void biguint::operator+=(biguint const &src) {
       p = BUI_UNPACK(ptr);
     }
 
-    unsigned int carry = 0;
+    bui_word carry = 0;
     
-    for(unsigned int i=2;i<(depth+2);++i) {
-      unsigned int v = p[i];
-      unsigned int w = s[i];
+    for(bui_word i=2;i<(depth+2);++i) {
+      bui_word v = p[i];
+      bui_word w = s[i];
       
       w = v + w + carry;   
       p[i] = w;
@@ -404,20 +335,20 @@ biguint biguint::operator+(biguint const &w) const {
   return r;
 }
 
-biguint biguint::operator+(unsigned int w) const {
+biguint biguint::operator+(bui_word w) const {
   biguint r(*this);
   r += w;
   return r;
 }
 
-void biguint::operator-=(unsigned int w) {
+void biguint::operator-=(bui_word w) {
   if(ptr & BUI_LEFTMOST_BIT) {    
-    unsigned int *p(BUI_UNPACK(ptr));
-    unsigned int v = p[2];
+    bui_word *p(BUI_UNPACK(ptr));
+    bui_word v = p[2];
     p[2] = v - w;
     if(v < w) { ripple_borrow(1); }
   } else {
-    unsigned int v(ptr);
+    bui_word v(ptr);
     ptr = v - w;
     if(v < w) { throw std::runtime_error("biguint cannot go negative"); }
   }
@@ -427,9 +358,9 @@ void biguint::operator-=(biguint const &src) {
   if((src.ptr & BUI_LEFTMOST_BIT) == 0) { 
     (*this) -= src.ptr; 
   } else {
-    unsigned int *s(BUI_UNPACK(src.ptr));
-    unsigned int depth = s[0];
-    unsigned int *p;
+    bui_word *s(BUI_UNPACK(src.ptr));
+    bui_word depth = s[0];
+    bui_word *p;
     
     if((ptr & BUI_LEFTMOST_BIT) == 0) { 
       // assume it needs to go big
@@ -444,12 +375,12 @@ void biguint::operator-=(biguint const &src) {
       p = BUI_UNPACK(ptr);
     }
 
-    unsigned int borrow = 0;
+    bui_word borrow = 0;
 
-    for(unsigned int i=2;i<(depth+2);++i) {
-      unsigned int v = p[i];
-      unsigned int w = s[i];
-      unsigned int r = v - w - borrow;    
+    for(bui_word i=2;i<(depth+2);++i) {
+      bui_word v = p[i];
+      bui_word w = s[i];
+      bui_word r = v - w - borrow;    
       p[i] = r;
       
       if(borrow == 0) {
@@ -469,24 +400,24 @@ biguint biguint::operator-(biguint const &w) const {
   return r;
 }
 
-biguint biguint::operator-(unsigned int w) const {
+biguint biguint::operator-(bui_word w) const {
   biguint r(*this);
   r -= w;
   return r;
 }
 
-void biguint::operator*=(unsigned int v) {
+void biguint::operator*=(bui_word v) {
   if(ptr & BUI_LEFTMOST_BIT) {    
     // complicated case!
-    unsigned int *p(BUI_UNPACK(ptr));
-    unsigned int depth(p[0]);
-    unsigned int overflow = 0;
+    bui_word *p(BUI_UNPACK(ptr));
+    bui_word depth(p[0]);
+    bui_word overflow = 0;
 
-    for(unsigned int i=2;i<(depth+2);++i) {
-      d_unsigned_int w = p[i];
-      w = (w * v) + overflow;
-      p[i] = w;
-      overflow = w >> UINT_WIDTH;
+    for(bui_word i=2;i<(depth+2);++i) {
+      bui_dword w = BUI_DWORD_MUL(p[i],v);
+      w = BUI_DWORD_ADD(w,overflow);
+      p[i] = BUI_DWORD_LOW(w);
+      overflow = BUI_DWORD_HIGH(w);
     }
     
     if(overflow > 0) {
@@ -497,24 +428,19 @@ void biguint::operator*=(unsigned int v) {
     }
   } else {    
     // easier case!
-    d_unsigned_int w = ((d_unsigned_int) ptr) * v;
-    if(w >= BUI_LEFTMOST_BIT) { 
+    bui_dword w = BUI_DWORD_MUL(ptr,v);
+    if(BUI_DWORD_LOW(w) >= BUI_LEFTMOST_BIT) { 
       // build new object
-      unsigned int *p = aligned_alloc(4);
+      bui_word *p = aligned_alloc(4);
       ptr = BUI_PACK(p);
       p[0] = 2U;
       p[1] = 0;
-      p[2] = w;
-      p[3] = w >> UINT_WIDTH;
+      p[2] = BUI_DWORD_LOW(w);
+      p[3] = BUI_DWORD_HIGH(w);
     } else {
-      ptr = w;
+      ptr = BUI_DWORD_LOW(w);
     }
   }
-}
-
-void biguint::operator*=(unsigned long long v) {
-  biguint tmp(v);
-  (*this) *= tmp;
 }
 
 void biguint::operator*=(biguint const &src) {
@@ -527,27 +453,27 @@ void biguint::operator*=(biguint const &src) {
     ans *= ptr;
     swap(ans);
   } else {
-    unsigned int *s(BUI_UNPACK(src.ptr));
-    unsigned int depth = s[0];
+    bui_word *s(BUI_UNPACK(src.ptr));
+    bui_word depth = s[0];
     biguint ans(0U,depth);
 
-    for(unsigned int j=0;j<depth;++j) {
+    for(bui_word j=0;j<depth;++j) {
       biguint tmp(*this);
       tmp *= s[j+2];
 
-      unsigned int *tp(BUI_UNPACK(tmp.ptr));      
-      unsigned int t_depth(tp[0]);
-      unsigned int carry = 0;
+      bui_word *tp(BUI_UNPACK(tmp.ptr));      
+      bui_word t_depth(tp[0]);
+      bui_word carry = 0;
 
       ans.expand(j + t_depth); 
 
-      unsigned int *ap(BUI_UNPACK(ans.ptr));      
+      bui_word *ap(BUI_UNPACK(ans.ptr));      
 
       // standard add, although slightly modified
       // to give the base shift for free.
-      for(unsigned int i=0;i!=t_depth;++i) {
-	unsigned int v = ap[j+i+2];
-	unsigned int w = tp[i+2];
+      for(bui_word i=0;i!=t_depth;++i) {
+	bui_word v = ap[j+i+2];
+	bui_word w = tp[i+2];
 	
 	w = v + w + carry;   
 	ap[j+i+2] = w;
@@ -562,13 +488,7 @@ void biguint::operator*=(biguint const &src) {
   }
 }
 
-biguint biguint::operator*(unsigned int w) const {
-  biguint r(*this);
-  r *= w;
-  return r;
-}
-
-biguint biguint::operator*(unsigned long long w) const {
+biguint biguint::operator*(bui_word w) const {
   biguint r(*this);
   r *= w;
   return r;
@@ -578,26 +498,26 @@ biguint biguint::operator*(biguint const &src) const {
   if((src.ptr & BUI_LEFTMOST_BIT) == 0) { return (*this) * src.ptr; }
   else if((ptr & BUI_LEFTMOST_BIT) == 0) { return src * ptr; }
   else {
-    unsigned int *s(BUI_UNPACK(src.ptr));
-    unsigned int depth = s[0];
+    bui_word *s(BUI_UNPACK(src.ptr));
+    bui_word depth = s[0];
     biguint ans(0U,depth);
 
-    for(unsigned int j=0;j<depth;++j) {
+    for(bui_word j=0;j<depth;++j) {
       biguint tmp(*this);
       tmp *= s[j+2];
       
-      unsigned int *tp(BUI_UNPACK(tmp.ptr));      
-      unsigned int t_depth(tp[0]);
-      unsigned int carry = 0;
+      bui_word *tp(BUI_UNPACK(tmp.ptr));      
+      bui_word t_depth(tp[0]);
+      bui_word carry = 0;
       
       ans.expand(j + t_depth); 
-      unsigned int *ap(BUI_UNPACK(ans.ptr));      
+      bui_word *ap(BUI_UNPACK(ans.ptr));      
 
       // standard add, although slightly modified
       // to give the base shift for free.
-      for(unsigned int i=0;i!=t_depth;++i) {
-	unsigned int v = ap[j+i+2];
-	unsigned int w = tp[i+2];
+      for(bui_word i=0;i!=t_depth;++i) {
+	bui_word v = ap[j+i+2];
+	bui_word w = tp[i+2];
 
 	w = v + w + carry;   
 	ap[j+i+2] = w;
@@ -612,17 +532,16 @@ biguint biguint::operator*(biguint const &src) const {
   }
 }
 
-void biguint::operator/=(unsigned int v) {
+void biguint::operator/=(bui_word v) {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
   if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p(BUI_UNPACK(ptr));
-    unsigned int remainder=0;
+    bui_word *p(BUI_UNPACK(ptr));
+    bui_word remainder=0;
     
-    for(unsigned int i=p[0]+1;i>1;--i) {
-      d_unsigned_int w = remainder;
-      w = (w << UINT_WIDTH) + p[i];
-      p[i] = w / v;
-      remainder = w % v;
+    for(bui_word i=p[0]+1;i>1;--i) {
+      bui_dword w = BUI_DWORD(remainder,p[i]);
+      p[i] = BUI_DWORD_DIV(w,v);
+      remainder = BUI_DWORD_MOD(w,v);
     }    
   } else {
     // real easy!
@@ -630,22 +549,21 @@ void biguint::operator/=(unsigned int v) {
   }
 }
 
-biguint biguint::operator/(unsigned int w) const {
+biguint biguint::operator/(bui_word w) const {
   biguint r(*this);
   r /= w;
   return r;
 }
 
-void biguint::operator%=(unsigned int v) {
+void biguint::operator%=(bui_word v) {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
   if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p(BUI_UNPACK(ptr));
-    unsigned int remainder=0;
+    bui_word *p(BUI_UNPACK(ptr));
+    bui_word remainder=0;
     
-    for(unsigned int i=p[0]+1;i>1;--i) {
-      d_unsigned_int w = remainder;
-      w = (w << UINT_WIDTH) + p[i];
-      remainder = w % v;
+    for(bui_word i=p[0]+1;i>1;--i) {
+      bui_dword w = BUI_DWORD(remainder,p[i]);
+      remainder = BUI_DWORD_MOD(w,v);
     }    
     clone(remainder);
   } else {
@@ -653,16 +571,15 @@ void biguint::operator%=(unsigned int v) {
   }
 }
 
-unsigned int biguint::operator%(unsigned int v) const {
+bui_word biguint::operator%(bui_word v) const {
   if(v == 0) { throw new std::runtime_error("divide by zero"); }
   if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p(BUI_UNPACK(ptr));
-    unsigned int remainder=0;
+    bui_word *p(BUI_UNPACK(ptr));
+    bui_word remainder=0;
   
-   for(unsigned int i=p[0]+1;i>1;--i) {
-     d_unsigned_int w = remainder;
-     w = (w << UINT_WIDTH) + p[i];
-     remainder = w % v;
+   for(bui_word i=p[0]+1;i>1;--i) {
+     bui_dword w = BUI_DWORD(remainder,p[i]);
+     remainder = BUI_DWORD_MOD(w,v);
    }     
    return remainder;
   } else {
@@ -670,18 +587,18 @@ unsigned int biguint::operator%(unsigned int v) const {
   }
 }
 
-void biguint::operator^=(unsigned int v) {
+void biguint::operator^=(bui_word v) {
   if(v == 0) { (*this) = 1U; }
   else {
     biguint p(*this);
     
-    for(unsigned int i=1;i<v;++i) {
+    for(bui_word i=1;i<v;++i) {
       (*this) *= p;
     }
   }
 }
 
-biguint biguint::operator^(unsigned int v) const {
+biguint biguint::operator^(bui_word v) const {
   biguint r(*this);
   r ^= v;
   return r;
@@ -693,7 +610,7 @@ biguint biguint::operator^(unsigned int v) const {
 
 unsigned int biguint::c_uint() const {
   if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p(BUI_UNPACK(ptr));
+    bui_word *p(BUI_UNPACK(ptr));
     if(p[0] > BUI_UINT_SIZE) { throw runtime_error("biguint too large for unsigned int"); }
     return p[2];
   } else {
@@ -703,8 +620,8 @@ unsigned int biguint::c_uint() const {
 
 unsigned long biguint::c_ulong() const {
   if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p(BUI_UNPACK(ptr));
-    if(p[0] > BUI_ULONG_SIZE) { throw runtime_error("biguint too large for unsigned int"); }
+    bui_word *p(BUI_UNPACK(ptr));
+    if(p[0] > BUI_ULONG_SIZE) { throw runtime_error("biguint too large for unsigned long"); }
     return p[2];
   } else {
     return ptr;
@@ -713,12 +630,12 @@ unsigned long biguint::c_ulong() const {
 
 unsigned long long biguint::c_ulonglong() const {
   if(ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *p(BUI_UNPACK(ptr));
-    unsigned int depth = p[0];
+    bui_word *p(BUI_UNPACK(ptr));
+    bui_word depth = p[0];
     if(depth > BUI_ULONGLONG_SIZE) { throw runtime_error("biguint too large for unsigned long long"); }
     unsigned long long r=0;
-    for(unsigned int i=depth+1;i>1;--i) {
-      r <<= UINT_WIDTH;
+    for(bui_word i=depth+1;i>1;--i) {
+      r <<= BUI_WORD_WIDTH;
       r += p[i];
     }
     return r;
@@ -735,34 +652,34 @@ unsigned long long biguint::c_ulonglong() const {
 // nothing happens.  
 //
 // PRE: assumes this in array format
-void biguint::expand(unsigned int ndepth) {
-  unsigned int *p(BUI_UNPACK(ptr));
-  unsigned int depth = p[0];
-  unsigned int padding = p[1];
+void biguint::expand(bui_word ndepth) {
+  bui_word *p(BUI_UNPACK(ptr));
+  bui_word depth = p[0];
+  bui_word padding = p[1];
   if(depth >= ndepth) { return; }
   else if((depth+padding) >= ndepth) {
     // no need to expand as we have space in the padding
     p[0] = ndepth;
     p[1] = (depth+padding)-ndepth;
   } else {
-    unsigned int *nptr = aligned_alloc((ndepth*2)+2);
+    bui_word *nptr = aligned_alloc((ndepth*2)+2);
     nptr[0]=ndepth;
     nptr[1]=ndepth;
-    memset(nptr+depth+2,0,((ndepth*2)-depth)*sizeof(unsigned int));
-    memcpy(nptr+2,p+2,depth*sizeof(unsigned int));
+    memset(nptr+depth+2,0,((ndepth*2)-depth)*sizeof(bui_word));
+    memcpy(nptr+2,p+2,depth*sizeof(bui_word));
     free(p);
     ptr = BUI_PACK(nptr);
   }
 }
 
-void biguint::ripple_carry(unsigned int level) {
-  unsigned int *p(BUI_UNPACK(ptr));
-  unsigned int depth(p[0]);
+void biguint::ripple_carry(bui_word level) {
+  bui_word *p(BUI_UNPACK(ptr));
+  bui_word depth(p[0]);
 
-  for(unsigned int i(level+2);i<(depth+2);++i) {
-    unsigned int v = p[i];
+  for(bui_word i(level+2);i<(depth+2);++i) {
+    bui_word v = p[i];
     
-    if(v == UINT_MAX) { p[i] = 0; } 
+    if(v == BUI_WORD_MAX) { p[i] = 0; } 
     else {
       p[i] = v + 1;
       return;
@@ -773,13 +690,13 @@ void biguint::ripple_carry(unsigned int level) {
   BUI_UNPACK(ptr)[depth+2]=1U;  
 }
 
-void biguint::ripple_borrow(unsigned int level) {  
-  unsigned int *p(BUI_UNPACK(ptr));
-  unsigned int depth = p[0];
-  for(unsigned int i(level+2);i<(depth+2);++i) {
-    unsigned int v = p[i];
+void biguint::ripple_borrow(bui_word level) {  
+  bui_word *p(BUI_UNPACK(ptr));
+  bui_word depth = p[0];
+  for(bui_word i(level+2);i<(depth+2);++i) {
+    bui_word v = p[i];
     if(v == 0) {
-      p[i] = UINT_MAX;
+      p[i] = BUI_WORD_MAX;
     } else {
       p[i] = v - 1;
       return;
@@ -789,10 +706,10 @@ void biguint::ripple_borrow(unsigned int level) {
   throw std::runtime_error("biguint cannot go negative"); 
 }
 
-unsigned int *biguint::aligned_alloc(unsigned int c) {
-  unsigned int *p = (unsigned int*) malloc(c * sizeof(unsigned int));  
+bui_word *biguint::aligned_alloc(bui_word c) {
+  bui_word *p = (bui_word*) malloc(c * sizeof(bui_word));  
   if(p == NULL) { throw std::bad_alloc(); }
-  if(((unsigned int)p) & 1) { throw std::runtime_error("Allocated memory not aligned!"); }
+  if(((bui_word)p) & 1) { throw std::runtime_error("Allocated memory not aligned!"); }
   return p;
 }
 
@@ -806,7 +723,7 @@ std::ostream& operator<<(ostream &out, biguint val) {
   if(val == 0U) { return out << "0"; }
   
   while(val != 0U) {
-    unsigned int digit = val % 10;
+    bui_word digit = val % 10;
     char d = digit + '0'; // YUK
     r = d + r;
     val = val / 10;
@@ -815,44 +732,46 @@ std::ostream& operator<<(ostream &out, biguint val) {
   return out << r;
 }
 
-biguint pow(biguint const &r, unsigned int power) {
+biguint pow(biguint const &r, bui_word power) {
   return r ^ power;
 }
 
 bstreambuf &operator<<(bstreambuf &bout, biguint const &src) {
   if(src.ptr & BUI_LEFTMOST_BIT) {
-    unsigned int *s(BUI_UNPACK(src.ptr));
-    unsigned int depth(s[0]);
+    bui_word *s(BUI_UNPACK(src.ptr));
+    bui_word depth(s[0]);
     
     bout << depth;
-    for(unsigned int i=2;i<(depth+2);++i) { bout << s[i]; }
+    for(bui_word i=2;i<(depth+2);++i) { bout << s[i]; }
   } else {
     bout << 1U << src.ptr;
   }
 }
 
 bistream &operator>>(bistream &bin, biguint &src) {  
-  unsigned int depth;
+  bui_word depth;
 
   bin >> depth;
   if(depth == 1) {
-    unsigned int v;
+    bui_word v;
     bin >> v;
     biguint tmp(v);
     src.swap(tmp);
   } else {  
     // inlined align_alloc
-    unsigned int *ptr = (unsigned int*) malloc(((2*depth)+2) * sizeof(unsigned int));  
-    if(((unsigned int)ptr) & 1) { throw std::runtime_error("Allocated memory not aligned!"); }
+    bui_word *ptr = (bui_word*) malloc(((2*depth)+2) * sizeof(bui_word));  
+    if(ptr == NULL) { throw std::bad_alloc(); }
+    if(((bui_word)ptr) & 1) { throw std::runtime_error("Allocated memory not aligned!"); }
     
     ptr[0] = depth;
     ptr[1] = depth;
     // copy data
-    for(unsigned int i=2;i<(depth+2);++i) { bin >> ptr[i]; }
+    for(bui_word i=2;i<(depth+2);++i) { bin >> ptr[i]; }
     // clear padding zeros
-    memset(ptr+2+depth,0,depth*sizeof(unsigned int));
+    memset(ptr+2+depth,0,depth*sizeof(bui_word));
 
-    biguint tmp(ptr);
+    biguint tmp;
+    tmp.ptr = (bui_word) ptr;
     src.swap(tmp);
   }
 

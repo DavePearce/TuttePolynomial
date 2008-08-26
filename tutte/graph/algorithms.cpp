@@ -30,16 +30,16 @@ bool compare_graph_keys(unsigned char const *_k1, unsigned char const *_k2) {
   setword *k1 = (setword*) _k1;
   setword *k2 = (setword*) _k2;
   
-  unsigned int N1 = k1[0];
-  unsigned int N2 = k2[0];
-  unsigned int REAL_N1 = k1[1];
-  unsigned int REAL_N2 = k2[1];
+  setword N1 = k1[0];
+  setword N2 = k2[0];
+  setword REAL_N1 = k1[1];
+  setword REAL_N2 = k2[1];
 
   if(N1 != N2 || REAL_N1 != REAL_N2) { return false; }
   else {
     k1=k1+NAUTY_HEADER_SIZE;
     k2=k2+NAUTY_HEADER_SIZE;
-    unsigned int M = ((N1 % WORDSIZE) > 0) ? (N1 / WORDSIZE)+1 : N1 / WORDSIZE;
+    setword M = ((N1 % WORDSIZE) > 0) ? (N1 / WORDSIZE)+1 : N1 / WORDSIZE;
     for(int i=0;i!=(N1*M);++i,++k1,++k2) {
       if(*k1 != *k2) { 	return false; }
     }
@@ -51,24 +51,24 @@ bool compare_graph_keys(unsigned char const *_k1, unsigned char const *_k2) {
 // returns the sizeof the graph key in bytes
 size_t sizeof_graph_key(unsigned char const *key) {
   setword *k1 = (setword*) key;  
-  unsigned int N = k1[0];
-  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+  setword N = k1[0];
+  setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   return ((N*M)+NAUTY_HEADER_SIZE) * sizeof(setword);
 }
 
 // generate a hash code from a graph key
 unsigned int hash_graph_key(unsigned char const *key) {
   setword *p = (setword*) key;  
-  unsigned int N = p[0];
-  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+  setword N = p[0];
+  setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   return hashlittle(key,sizeof(setword)*((N*M)+NAUTY_HEADER_SIZE),0);
 }
 
 void print_graph_key(std::ostream &ostr, unsigned char const *key) {
   setword *p = (setword*) key;  
-  unsigned int N = p[0];
-  unsigned int REAL_N = p[1];
-  unsigned int M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+  setword N = p[0];
+  setword REAL_N = p[1];
+  setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   p=p+NAUTY_HEADER_SIZE;
   
   ostr << "V = { 0.." << N << "(" << REAL_N << ") }" << std::endl;
