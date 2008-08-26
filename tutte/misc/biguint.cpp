@@ -17,9 +17,16 @@ using namespace std;
  * the following is needed for * and / operators
  */
 
-#if BUI_64BIT_COMPILE
+#ifdef BUI_64BIT_COMPILE
 
-typedef struct { bui_word high; bui_word low; } bui_dword;
+class bui_dword { 
+public: 
+  bui_word high; 
+  bui_word low; 
+  
+  bui_dword() : high(0), low(0) {}
+  bui_dword(bui_word h, bui_word l) : high(h), low(l) {}
+};
 
 #define BUI_HIGH_MASK (BUI_WORD_MAX << (BUI_WORD_WIDTH/2))
 #define BUI_DWORD(x,y) bui_dword(x,y)
@@ -29,6 +36,7 @@ typedef struct { bui_word high; bui_word low; } bui_dword;
 #define BUI_DWORD_ADD(x,y) bui_dword_add(x,y)
 
 bui_dword bui_dword_add(bui_dword r, bui_word y) {
+  bui_word low = r.low;
   r.low += y;
   if(r.low < low) { r.high++; } // overflow
   return r;
@@ -49,9 +57,9 @@ bui_dword bui_dword_mul(bui_word x, bui_word y) {
   r.low = low;
   r.high = high;
   
-  r.low += (lxhy) << (BUI_WORD_WITH/2);
+  r.low += (lxhy) << (BUI_WORD_WIDTH/2);
   if(r.low < low) { r.high++; } // overflow
-  r.low += (hxly) << (BUI_WORD_WITH/2);
+  r.low += (hxly) << (BUI_WORD_WIDTH/2);
   if(r.low < low) { r.high++; } // overflow
 
   r.high += lxhy >> (BUI_WORD_WIDTH/2);

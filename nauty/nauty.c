@@ -579,6 +579,7 @@ firstpathnode(int *lab, int *ptn, int level, int numcells)
 
     /* use the elements of the target cell to produce the children: */
         index = 0;
+
         for (tv1 = tv = nextelement(tcell,M,-1); tv >= 0;
                                         tv = nextelement(tcell,M,tv))
         {
@@ -622,6 +623,7 @@ firstpathnode(int *lab, int *ptn, int level, int numcells)
             if (orbits[tv] == tv1)  /* ie, in same orbit as tv1 */
                 ++index;
         }
+
         MULTIPLY(stats->grpsize1,stats->grpsize2,index);
 
         if (tcellsize == index && allsamelevel == level + 1)
@@ -631,6 +633,7 @@ firstpathnode(int *lab, int *ptn, int level, int numcells)
             writemarker(level,tv1,index,tcellsize,stats->numorbits,numcells);
         OPTCALL(userlevelproc)(lab,ptn,level,orbits,stats,tv1,index,tcellsize,
                                                         numcells,childcount,n);
+
         return level-1;
 }
 
