@@ -14,12 +14,10 @@ private:
 
   friend std::ostream &operator<<(std::ostream &, bigint const &);
 public:
-  bigint(int v);
-  bigint(long v);
-  bigint(long long v);
-  bigint(unsigned int v);
-  bigint(unsigned long v);
-  bigint(unsigned long long v);
+  bigint(int32_t v);
+  bigint(int64_t v);
+  bigint(uint32_t v);
+  bigint(uint64_t v);
   bigint(bigint const &v);
   bigint(biguint const &v);
 
@@ -27,93 +25,86 @@ public:
   /* ======== COMPARISON OPS ======= */
   /* =============================== */
 
-  bool operator==(int v) const;
-  bool operator==(long v) const;
-  bool operator==(long long v) const;
-  //  bool operator==(unsigned int v) const;
+  bool operator==(int32_t v) const;
+  bool operator==(int64_t v) const;
+  //  bool operator==(uint32_t v) const;
   //  bool operator==(unsigned long v) const;
-  //  bool operator==(unsigned long long v) const;
+  //  bool operator==(uint64_t v) const;
   bool operator==(bigint const &v) const;
   bool operator==(biguint const &v) const;
 
-  bool operator!=(int v) const;
-  bool operator!=(long v) const;
-  bool operator!=(long long v) const;
+  bool operator!=(int32_t v) const;
+  bool operator!=(int64_t v) const;
   bool operator!=(bigint const &v) const;
 
-  bool operator<(int v) const;
-  bool operator<(long v) const;
-  bool operator<(long long v) const;
+  bool operator<(int32_t v) const;
+  bool operator<(int64_t v) const;
   bool operator<(bigint const &v) const;
 
-  bool operator<=(int v) const;
-  bool operator<=(long v) const;
-  bool operator<=(long long v) const;
+  bool operator<=(int32_t v) const;
+  bool operator<=(int64_t v) const;
   bool operator<=(bigint const &v) const;
 
-  bool operator>(int v) const;
-  bool operator>(long v) const;
-  bool operator>(long long v) const;
+  bool operator>(int32_t v) const;
+  bool operator>(int64_t v) const;
   bool operator>(bigint const &v) const;
 
-  bool operator>=(int v) const;
-  bool operator>=(long v) const;
-  bool operator>=(long long v) const;
+  bool operator>=(int32_t v) const;
+  bool operator>=(int64_t v) const;
   bool operator>=(bigint const &v) const;
 
   /* =============================== */
   /* ======== ARITHMETIC OPS ======= */
   /* =============================== */
 
-  void operator+=(int w);
-  void operator+=(unsigned int w);
+  void operator+=(int32_t w);
+  void operator+=(uint32_t w);
   void operator+=(bigint const &src);
   void operator+=(biguint const &src);
-  bigint operator+(int w) const;
-  bigint operator+(unsigned int w) const;
+  bigint operator+(int32_t w) const;
+  bigint operator+(uint32_t w) const;
   bigint operator+(bigint const &w) const;
   bigint operator+(biguint const &w) const;
 
-  void operator-=(int w);
-  void operator-=(unsigned int w);
+  void operator-=(int32_t w);
+  void operator-=(uint32_t w);
   void operator-=(bigint const &src);
   void operator-=(biguint const &src);
-  bigint operator-(int w) const;
-  bigint operator-(unsigned int w) const;
+  bigint operator-(int32_t w) const;
+  bigint operator-(uint32_t w) const;
   bigint operator-(bigint const &w) const;
   bigint operator-(biguint const &w) const;
 
-  void operator*=(int v);
-  void operator*=(long long v);
-  void operator*=(unsigned int v);
-  void operator*=(unsigned long long v);
+  void operator*=(int32_t v);
+  void operator*=(int64_t v);
+  void operator*=(uint32_t v);
+  void operator*=(uint64_t v);
   void operator*=(bigint const &v);
   void operator*=(biguint const &src);
-  bigint operator*(int w) const;
-  bigint operator*(long long w) const;
-  bigint operator*(unsigned int w) const;
-  bigint operator*(unsigned long long w) const;
+  bigint operator*(int32_t w) const;
+  bigint operator*(int64_t w) const;
+  bigint operator*(uint32_t w) const;
+  bigint operator*(uint64_t w) const;
   bigint operator*(bigint const &w) const;
   bigint operator*(biguint const &w) const;
 
-  void operator/=(int v);
-  bigint operator/(int w) const;
+  void operator/=(int32_t v);
+  bigint operator/(int32_t w) const;
 
-  void operator%=(int v);
-  void operator%=(unsigned int v);
-  bigint operator%(int w) const;
-  bigint operator%(unsigned int w) const;
+  void operator%=(int32_t v);
+  void operator%=(uint32_t v);
+  bigint operator%(int32_t w) const;
+  bigint operator%(uint32_t w) const;
 
-  void operator^=(unsigned int v);   
-  bigint operator^(unsigned int v) const;
+  void operator^=(uint32_t v);   
+  bigint operator^(uint32_t v) const;
 
   /* =============================== */
   /* ======== CONVERSION OPS ======= */
   /* =============================== */
 
-  int c_int() const;
-  long c_long() const;
-  long long c_longlong() const;
+  int32_t c_int32() const;
+  int64_t c_int64() const;
 };
 
 bigint pow(bigint const &r, uint32_t power);

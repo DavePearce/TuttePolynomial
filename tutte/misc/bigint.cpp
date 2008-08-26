@@ -2,9 +2,9 @@
 
 using namespace std;
 
-unsigned int my_abs(int v) {
-  if(v == INT_MIN) {
-    return ((unsigned int) INT_MAX)+1;
+uint32_t my_abs(int32_t v) {
+  if(v == INT32_MIN) {
+    return ((uint32_t) INT32_MAX)+1;
   } else if(v < 0) {
     return -v;    
   } else { 
@@ -12,9 +12,9 @@ unsigned int my_abs(int v) {
   }
 }
 
-unsigned long my_abs(long v) {
-  if(v == LONG_MIN) {
-    return ((unsigned long) LONG_MAX)+1;
+uint64_t my_abs(int64_t v) {
+  if(v == INT64_MIN) {
+    return ((uint64_t) INT64_MAX)+1;
   } else if(v < 0) {
     return -v;    
   } else { 
@@ -22,56 +22,34 @@ unsigned long my_abs(long v) {
   }
 }
 
-unsigned long long my_abs(long long v) {
-  if(v == LLONG_MIN) {
-    return ((unsigned long long) LLONG_MAX)+1;
-  } else if(v < 0) {
-    return -v;    
-  } else { 
-    return v; 
-  }
-}
-
-bigint::bigint(int v) : magnitude(my_abs(v)), sign(v < 0) { }
-bigint::bigint(long v) : magnitude(my_abs(v)), sign(v < 0) { }
-bigint::bigint(long long v) : magnitude(my_abs(v)), sign(v < 0) { }
-bigint::bigint(unsigned int v) : magnitude(v), sign(false) { }
-bigint::bigint(unsigned long v) : magnitude(v), sign(false) { }
-bigint::bigint(unsigned long long v) : magnitude(v), sign(false) { }
+bigint::bigint(int32_t v) : magnitude(my_abs(v)), sign(v < 0) { }
+bigint::bigint(int64_t v) : magnitude(my_abs(v)), sign(v < 0) { }
+bigint::bigint(uint32_t v) : magnitude(v), sign(false) { }
+bigint::bigint(uint64_t v) : magnitude(v), sign(false) { }
 bigint::bigint(bigint const &v) : magnitude(v.magnitude), sign(v.sign) { }
 bigint::bigint(biguint const &v) : magnitude(v), sign(false) { }
 
-bool bigint::operator==(int v) const {
+bool bigint::operator==(int32_t v) const {
   return ((v < 0) == sign) && magnitude == my_abs(v);
 }
-bool bigint::operator==(long v) const {
-  return ((v < 0) == sign) && magnitude == my_abs(v);
-}
-bool bigint::operator==(long long v) const {
+bool bigint::operator==(int64_t v) const {
   return ((v < 0) == sign) && magnitude == my_abs(v);
 }
 bool bigint::operator==(bigint const &v) const {
   return (v.sign == sign) && v.magnitude == magnitude;
 }
 
-bool bigint::operator!=(int v) const { return !(*this == v); }
-bool bigint::operator!=(long v) const { return !(*this == v); }
-bool bigint::operator!=(long long v) const { return !(*this == v); }
+bool bigint::operator!=(int32_t v) const { return !(*this == v); }
+bool bigint::operator!=(int64_t v) const { return !(*this == v); }
 bool bigint::operator!=(bigint const &v) const { return !(*this == v); }
 
-bool bigint::operator<(int v) const {
+bool bigint::operator<(int32_t v) const {
   if(v < 0 && !sign) { return false; }
   if(v >= 0 && sign) { return true; }
   else if(v<0 && sign) { return magnitude > my_abs(v); } 
   else { return magnitude < my_abs(v); }
 }
-bool bigint::operator<(long v) const {
-  if(v < 0 && !sign) { return false; }
-  if(v >= 0 && sign) { return true; }
-  else if(v<0 && sign) { return magnitude > my_abs(v); } 
-  else { return magnitude < my_abs(v); }
-}
-bool bigint::operator<(long long v) const {
+bool bigint::operator<(int64_t v) const {
   if(v < 0 && !sign) { return false; }
   if(v >= 0 && sign) { return true; }
   else if(v<0 && sign) { return magnitude > my_abs(v); } 
@@ -84,19 +62,13 @@ bool bigint::operator<(bigint const &v) const {
   else { return magnitude < v.magnitude; }
 }
 
-bool bigint::operator<=(int v) const {
+bool bigint::operator<=(int32_t v) const {
   if(v < 0 && !sign) { return false; }
   if(v >= 0 && sign) { return true; }
   else if(v<0 && sign) { return magnitude >= my_abs(v); } 
   else { return magnitude <= my_abs(v); }
 }
-bool bigint::operator<=(long v) const {
-  if(v < 0 && !sign) { return false; }
-  if(v >= 0 && sign) { return true; }
-  else if(v < 0 && sign) { return magnitude >= my_abs(v); } 
-  else { return magnitude <= my_abs(v); }
-}
-bool bigint::operator<=(long long v) const {
+bool bigint::operator<=(int64_t v) const {
   if(v < 0 && !sign) { return false; }
   if(v >= 0 && sign) { return true; }
   else if(v<0 && sign) { return magnitude >= my_abs(v); } 
@@ -109,20 +81,18 @@ bool bigint::operator<=(bigint const &v) const {
   else { return magnitude <= v.magnitude; }
 }
 
-bool bigint::operator>(int v) const { return !(*this <= v); }
-bool bigint::operator>(long v) const { return !(*this <= v); }
-bool bigint::operator>(long long v) const { return !(*this <= v); }
+bool bigint::operator>(int32_t v) const { return !(*this <= v); }
+bool bigint::operator>(int64_t v) const { return !(*this <= v); }
 bool bigint::operator>(bigint const &v) const { return !(*this <= v); }
 
-bool bigint::operator>=(int v) const { return !(*this < v); }
-bool bigint::operator>=(long v) const { return !(*this < v); }
-bool bigint::operator>=(long long v) const { return !(*this < v); }
+bool bigint::operator>=(int32_t v) const { return !(*this < v); }
+bool bigint::operator>=(int64_t v) const { return !(*this < v); }
 bool bigint::operator>=(bigint const &v) const { return !(*this < v); }
 
 /* ========= OPERATOR + ========== */
 
-void bigint::operator+=(int w) {
-  unsigned int w_magnitude = my_abs(w);
+void bigint::operator+=(int32_t w) {
+  uint32_t w_magnitude = my_abs(w);
   if((w<0) != sign) {
     // neg + pos, pos + neg
     if(magnitude < w_magnitude) {
@@ -131,7 +101,7 @@ void bigint::operator+=(int w) {
       sign = !sign;
     } else {
       magnitude -= w_magnitude;
-      if(magnitude == 0U) { sign = false; }
+      if(magnitude == UINT32_C(0)) { sign = false; }
     }
   } else {
     // neg + neg, pos + pos.
@@ -139,7 +109,7 @@ void bigint::operator+=(int w) {
   }
 }
 
-void bigint::operator+=(unsigned int w) {
+void bigint::operator+=(uint32_t w) {
   if(sign) {
     if(magnitude <= w) {
       // swap sign here
@@ -162,7 +132,7 @@ void bigint::operator+=(bigint const &w) {
       sign = !sign;
     } else {
       magnitude -= w.magnitude;
-      if(magnitude == 0U) { sign = false; }
+      if(magnitude == UINT32_C(0)) { sign = false; }
     }
   } else {
     // neg + neg, pos + pos.
@@ -184,12 +154,12 @@ void bigint::operator+=(biguint const &w) {
   }
 }
 
-bigint bigint::operator+(int w) const {
+bigint bigint::operator+(int32_t w) const {
   bigint r(*this);
   r += w;
   return r;
 }
-bigint bigint::operator+(unsigned int w) const {
+bigint bigint::operator+(uint32_t w) const {
   bigint r(*this);
   r += w;
   return r;
@@ -207,8 +177,8 @@ bigint bigint::operator+(biguint const &w) const {
 
 /* ========= OPERATOR - ========== */
 
-void bigint::operator-=(int w) {
-  unsigned int w_magnitude = my_abs(w);
+void bigint::operator-=(int32_t w) {
+  uint32_t w_magnitude = my_abs(w);
   if((w<0) == sign) {
     // neg - neg, pos - pos
     if(magnitude < w_magnitude) {
@@ -217,7 +187,7 @@ void bigint::operator-=(int w) {
       sign = !sign;
     } else {
       magnitude -= w_magnitude;
-      if(magnitude == 0U) { sign = false; }
+      if(magnitude == UINT32_C(0)) { sign = false; }
     }
   } else {
     // neg - pos, pos - neg.
@@ -225,7 +195,7 @@ void bigint::operator-=(int w) {
   }
 }
 
-void bigint::operator-=(unsigned int w) {
+void bigint::operator-=(uint32_t w) {
   if(!sign) {
     if(magnitude < w) {
       // swap sign here
@@ -248,7 +218,7 @@ void bigint::operator-=(bigint const &w) {
       sign = !sign;
     } else {
       magnitude -= w.magnitude;
-      if(magnitude == 0U) { sign = false; }
+      if(magnitude == UINT32_C(0)) { sign = false; }
     }
   } else {
     // neg + neg, pos + pos.
@@ -270,13 +240,13 @@ void bigint::operator-=(biguint const &w) {
   }
 }
 
-bigint bigint::operator-(int w) const {
+bigint bigint::operator-(int32_t w) const {
   bigint r(*this);
   r -= w;
   return r;
 }
 
-bigint bigint::operator-(unsigned int w) const {
+bigint bigint::operator-(uint32_t w) const {
   bigint r(*this);
   r -= w;
   return r;
@@ -296,61 +266,61 @@ bigint bigint::operator-(biguint const &w) const {
 
 /* ========= OPERATOR * ========== */
 
-void bigint::operator*=(int w) {
+void bigint::operator*=(int32_t w) {
   magnitude *= my_abs(w);
-  if(w == 0U) { sign = false; }
+  if(w == UINT32_C(0)) { sign = false; }
   else if(sign != (w < 0)) { sign = true; }
   else if(sign) { sign=false; }
 }
 
-void bigint::operator*=(long long w) {
+void bigint::operator*=(int64_t w) {
   magnitude *= my_abs(w);
-  if(w == 0U) { sign = false; }
+  if(w == UINT32_C(0)) { sign = false; }
   else if(sign != (w < 0)) { sign = true; }
   else if(sign) { sign = false; }
 }
 
-void bigint::operator*=(unsigned int w) {
+void bigint::operator*=(uint32_t w) {
   magnitude *= w;
-  if(w == 0U) { sign = false; }
+  if(w == UINT32_C(0)) { sign = false; }
 }
 
-void bigint::operator*=(unsigned long long w) {
+void bigint::operator*=(uint64_t w) {
   magnitude *= w;
-  if(w == 0U) { sign = false; }
+  if(w == UINT64_C(0)) { sign = false; }
 }
 
 void bigint::operator*=(bigint const &w) {
   magnitude *= w.magnitude;
-  if(magnitude == 0U) { sign = false; }
+  if(magnitude == UINT32_C(0)) { sign = false; }
   else if(sign != w.sign) { sign = true; }
   else if(sign) { sign = false; }
 }
 
 void bigint::operator*=(biguint const &w) {
   magnitude *= w;
-  if(w == 0U) { sign = false; }
+  if(w == UINT32_C(0)) { sign = false; }
 }
 
-bigint bigint::operator*(int w) const {
+bigint bigint::operator*(int32_t w) const {
   bigint r(*this);
   r *= w;
   return r;
 }
 
-bigint bigint::operator*(long long w) const {
+bigint bigint::operator*(int64_t w) const {
   bigint r(*this);
   r *= w;
   return r;
 }
 
-bigint bigint::operator*(unsigned int w) const {
+bigint bigint::operator*(uint32_t w) const {
   bigint r(*this);
   r *= w;
   return r;
 }
 
-bigint bigint::operator*(unsigned long long w) const {
+bigint bigint::operator*(uint64_t w) const {
   bigint r(*this);
   r *= w;
   return r;
@@ -370,14 +340,14 @@ bigint bigint::operator*(biguint const &w) const {
 
 /* ========= OPERATOR / ========== */
 
-void bigint::operator/=(int w) {
+void bigint::operator/=(int32_t w) {
   magnitude /= my_abs(w);
-  if(magnitude == 0U) { sign = false; }
+  if(magnitude == UINT32_C(0)) { sign = false; }
   else if(sign != (w < 0)) { sign = true; }
   else if(sign) { sign = false; }
 }
 
-bigint bigint::operator/(int w) const {
+bigint bigint::operator/(int32_t w) const {
   bigint r(*this);
   r /= w;
   return r;
@@ -385,23 +355,23 @@ bigint bigint::operator/(int w) const {
 
 /* ========= OPERATOR % ========== */
 
-void bigint::operator%=(int v) {
+void bigint::operator%=(int32_t v) {
   magnitude %= my_abs(v);
-  if(magnitude == 0U) { sign = false; }
+  if(magnitude == UINT32_C(0)) { sign = false; }
 }
 
-void bigint::operator%=(unsigned int v) {
+void bigint::operator%=(uint32_t v) {
   magnitude %= v;
-  if(magnitude == 0U) { sign = false; }
+  if(magnitude == UINT32_C(0)) { sign = false; }
 }
 
-bigint bigint::operator%(int v) const {
+bigint bigint::operator%(int32_t v) const {
   bigint r(*this);
   r %= v;
   return r;
 }
 
-bigint bigint::operator%(unsigned int v) const {
+bigint bigint::operator%(uint32_t v) const {
   bigint r(*this);
   r %= v;
   return r;
@@ -409,8 +379,8 @@ bigint bigint::operator%(unsigned int v) const {
 
 /* ========= OPERATOR ^ ========== */
 
-void bigint::operator^=(unsigned int v) {
-  if(v == 0) { (*this) = 1; }
+void bigint::operator^=(uint32_t v) {
+  if(v == UINT32_C(0)) { (*this) = UINT32_C(1); }
   else {
     bigint p(*this);
     
@@ -420,7 +390,7 @@ void bigint::operator^=(unsigned int v) {
   }
 }
 
-bigint bigint::operator^(unsigned int v) const {
+bigint bigint::operator^(uint32_t v) const {
   bigint r(*this);
   r ^= v;
   return r;
@@ -430,9 +400,9 @@ bigint bigint::operator^(unsigned int v) const {
 /* ======== CONVERSION OPS ======= */
 /* =============================== */
 
-int bigint::c_int() const {
-  unsigned int w = magnitude.c_uint32();
-  if((!sign && (w > INT_MAX)) || w >= INT_MAX) {
+int32_t bigint::c_int32() const {
+  uint32_t w = magnitude.c_uint32();
+  if((!sign && (w > INT32_MAX)) || w >= INT32_MAX) {
     throw runtime_error("bigint too large for int");
   } 
   if(sign) { return -w; } 
@@ -446,7 +416,7 @@ int bigint::c_int() const {
 std::ostream& operator<<(ostream &out, bigint const &val) {
   std::string r;
 
-  if(val == 0) { return out << "0"; }
+  if(val == INT32_C(0)) { return out << "0"; }
   else if(val.sign) { return out << "-" << val.magnitude; }
   else {
     return out << val.magnitude;

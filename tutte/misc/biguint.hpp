@@ -17,8 +17,6 @@
 #include "bstreambuf.hpp"
 #include "bistream.hpp"
 
-typedef uint64_t bui_dword;
-
 #define BUI_LEFTMOST_BIT (UINT32_C(1) << 31U)
 #define BUI_PACK(x) ((((uint32_t)x) >> 1U) | BUI_LEFTMOST_BIT)
 #define BUI_UNPACK(x) ((uint32_t*)(x << 1U))
