@@ -70,7 +70,11 @@ public:
 	// copy old stuff over
 	for(unsigned int i=0;i<src_ncoeffs;++i) { 
 	  coefficients[i] = src.coefficients[i];
-	}	
+	}
+	// clear any old coefficients
+	for(unsigned int i=src_ncoeffs;i<space;++i) {
+	  coefficients[i] = 0U;
+	}
       }
     }
     return *this;
