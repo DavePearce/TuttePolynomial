@@ -1249,7 +1249,7 @@ int main(int argc, char *argv[]) {
     NULL
   };
   
-  char *descriptions[]={
+  char const *descriptions[]={
     "        --help                    display this information",
     "        --version                 display the version number of this program",
     " -i     --info                    output summary information regarding computation",
@@ -1298,7 +1298,7 @@ int main(int argc, char *argv[]) {
     case OPT_HELP:
       cout << "usage: " << argv[0] << " [options] <input graph file>" << endl;
       cout << "options:" << endl;
-      for(char **ptr=descriptions;*ptr != NULL; ptr++) {
+      for(char const **ptr=descriptions;*ptr != NULL; ptr++) {
 	cout << *ptr << endl;
       }    
       exit(1);          
@@ -1447,7 +1447,7 @@ int main(int argc, char *argv[]) {
   if(optind >= argc) {
     cout << "usage: " << argv[0] << " [options] <input graph file>" << endl;
     cout << "options:" << endl;
-    for(char **ptr=descriptions;*ptr != NULL; ptr++) {
+    for(char const **ptr=descriptions;*ptr != NULL; ptr++) {
       cout << *ptr << endl;
     }    
     exit(1);
