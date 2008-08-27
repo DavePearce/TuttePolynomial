@@ -697,7 +697,7 @@ void biguint::ripple_borrow(uint32_t level) {
 uint32_t *biguint::aligned_alloc(uint32_t c) {
   uint32_t *p = (uint32_t*) malloc(c * sizeof(uint32_t));  
   if(p == NULL) { throw std::bad_alloc(); }
-  if(((uint32_t)p) & 1) { throw std::runtime_error("Allocated memory not aligned!"); }
+  if(((uint32_ptr_t)p) & 1) { throw std::runtime_error("Allocated memory not aligned!"); }
   return p;
 }
 
@@ -749,7 +749,7 @@ bistream &operator>>(bistream &bin, biguint &src) {
     // inlined align_alloc
     uint32_t *ptr = (uint32_t*) malloc(((2*depth)+2) * sizeof(uint32_t));  
     if(ptr == NULL) { throw std::bad_alloc(); }
-    if(((uint32_t)ptr) & 1) { throw std::runtime_error("Allocated memory not aligned!"); }
+    if(((uint32_ptr_t)ptr) & 1U) { throw std::runtime_error("Allocated memory not aligned!"); }
     
     ptr[0] = depth;
     ptr[1] = depth;
@@ -759,7 +759,7 @@ bistream &operator>>(bistream &bin, biguint &src) {
     memset(ptr+2+depth,0,depth*sizeof(uint32_t));
 
     biguint tmp;
-    tmp.ptr = (uint32_t) ptr;
+    tmp.ptr = (uint32_ptr_t) ptr;
     src.swap(tmp);
   }
 
