@@ -17,13 +17,25 @@
 #include "bstreambuf.hpp"
 #include "bistream.hpp"
 
+#if SIZEOF_UNSIGNED_INT_P==4
 #define BUI_LEFTMOST_BIT (UINT32_C(1) << 31U)
 #define BUI_PACK(x) ((((uint32_t)x) >> 1U) | BUI_LEFTMOST_BIT)
 #define BUI_UNPACK(x) ((uint32_t*)(x << 1U))
+typedef uint32_t uint32_ptr_t;
+
+#elif SIZEOF_UNSIGNED_INT_==8
+#define BUI_LEFTMOST_BIT (UINT32_C(1) << 63U)
+#define BUI_PACK(x) ((((uint32_t)x) >> 1U) | BUI_LEFTMOST_BIT)
+#define BUI_UNPACK(x) ((uint32_t*)(x << 1U))
+typedef uint64_t uint32_ptr_t;
+
+#else
+#error "sizeof(int*) is neither 32bit or 64bit."
+#endif
 
 class biguint {
 public:
-  uint32_t ptr;
+  uint32_ptr_t ptr;
 
   friend bstreambuf &operator<<(bstreambuf &, biguint const &);
   friend bistream &operator>>(bistream &, biguint &);
