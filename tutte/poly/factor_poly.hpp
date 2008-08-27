@@ -156,7 +156,7 @@ public:
       unsigned int width = (yend-ystart)+1;
       
       // going up the triangle
-      T acc = UINT32_C(0);    
+      T acc = 0U;    
       for(unsigned int i=0;i<std::min(width,depth);++i) {
 	acc += o_coefficients[i+ypadding];
 	coefficients[i+nystart+fpadding-ymin] = acc;
@@ -166,7 +166,7 @@ public:
 	coefficients[i+nystart+fpadding-ymin] = acc;
       }    
       // going along the top (if there is one)
-      T sub = UINT32_C(0);
+      T sub = 0U;
       for(unsigned int i=depth;i<width;++i) {
 	sub += o_coefficients[i+ypadding-depth];
 	acc += o_coefficients[i+ypadding];
@@ -229,14 +229,14 @@ public:
 
   bigint substitute(int32_t y) const {
     if(coefficients != NULL) {
-      bigint r(INT32_C(0));
+      bigint r(0);
       bigint p(y); 
       for(unsigned int i=ymin;i<=ymax;++i) {	
 	r += (*this)[i] * pow(p,i);
       }
       return r;
     } else {
-      return bigint(INT32_C(0));
+      return bigint(0);
     }
   }
 
@@ -338,7 +338,7 @@ private:
     // why the following line is needed is just plain
     // wierd.
     for(unsigned int i=0;i<nyterms+fpadding+bpadding;++i) {
-      coefficients[i] = UINT32_C(0);
+      coefficients[i] = 0U;
     }
   }
 };
@@ -584,7 +584,7 @@ public:
 
 
   bigint substitute(int32_t x, int32_t y) const {
-    bigint r(INT32_C(0));
+    bigint r(0U);
     bigint p(x); 
     for(unsigned int i=0;i<nxterms;++i) {
       r += pow(p,i) * xterms[i].substitute(y);

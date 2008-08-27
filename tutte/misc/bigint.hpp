@@ -4,6 +4,22 @@
 #include <stdexcept>
 #include "biguint.hpp"
 
+#ifndef INT32_MAX
+#define INT32_MAX INT_MAX
+#endif
+
+#ifndef INT32_MIN
+#define INT32_MIN INT_MIN
+#endif
+
+#ifndef INT64_MIN
+#define	INT64_MIN	(-0x7fffffffffffffffLL-1)
+#endif
+
+#ifndef INT64_MAX
+#define	INT64_MAX	0x7fffffffffffffffLL
+#endif
+
 class bigint {
 private:
   // Store integer in sign magnitude representation, using biguint.
