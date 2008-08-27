@@ -103,13 +103,13 @@ bool nauty_add_edge(int from, int to, int M) {
   unsigned int wb = (from / WORDSIZE);      
   unsigned int wo = from - (wb*WORDSIZE); 
 
-  setword mask = (1U << (WORDSIZE-wo-1));
+  setword mask = (((setword)1U) << (WORDSIZE-wo-1));
   if(nauty_graph_buf[(to*M)+wb] & mask) { return false; }
   nauty_graph_buf[(to*M)+wb] |= mask; 	  
   
   wb = (to / WORDSIZE);       
   wo = to - (wb*WORDSIZE);  
-  mask = (1U << (WORDSIZE-wo-1));	  
+  mask = (((setword)1U) << (WORDSIZE-wo-1));
   nauty_graph_buf[(from*M)+wb] |= mask;
 
   return true;

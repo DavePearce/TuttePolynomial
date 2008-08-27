@@ -95,7 +95,7 @@ public:
     write_ptr += sizeof(short);
   }
 
-  void write(unsigned int v) {    
+  void write(unsigned int v) {
     if((size()+sizeof(unsigned int)) > max()) {
       resize(size() + sizeof(unsigned int));      
     } 

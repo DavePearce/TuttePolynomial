@@ -728,11 +728,10 @@ bstreambuf &operator<<(bstreambuf &bout, biguint const &src) {
   if(src.ptr & BUI_LEFTMOST_BIT) {
     uint32_t *s(BUI_UNPACK(src.ptr));
     uint32_t depth(s[0]);
-    
     bout << depth;
     for(uint32_t i=2;i<(depth+2);++i) { bout << s[i]; }
   } else {
-    bout << 1U << src.ptr;
+    bout << 1U << (uint32_t) src.ptr;
   }
 }
 

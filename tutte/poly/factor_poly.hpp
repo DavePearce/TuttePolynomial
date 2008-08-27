@@ -652,7 +652,6 @@ bistream &operator>>(bistream &bin, factor_poly<T> &fp) {
   // the number of copy assignments
   factor_poly<T> tmp(nxterms,xterms);
   fp.swap(tmp);
-  
   return bin;
 }
 

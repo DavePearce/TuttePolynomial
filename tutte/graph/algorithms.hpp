@@ -126,7 +126,7 @@ unsigned char *graph_key(T const &graph) {
 
   statsblk stats;
   DEFAULTOPTIONS(opts); 
-  opts.getcanon=TRUE;
+  opts.getcanon = TRUE;
   opts.defaultptn = FALSE;
   opts.writemarkers = FALSE;
 
