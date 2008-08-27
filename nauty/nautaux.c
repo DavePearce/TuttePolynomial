@@ -1,9 +1,9 @@
 /*****************************************************************************
 *                                                                            *
-* Auxiliary procedures for use with nauty 2.2.                               *
+* Auxiliary procedures for use with nauty 2.4.                               *
 * None of these procedures are needed by nauty or by dreadnaut.              *
 *                                                                            *
-*   Copyright (1984-2002) Brendan McKay.  All rights reserved.               *
+*   Copyright (1984-2007) Brendan McKay.  All rights reserved.               *
 *   Subject to waivers and disclaimers in nauty.h.                           *
 *                                                                            *
 *   CHANGE HISTORY                                                           *
@@ -15,6 +15,8 @@
 *       24-Jan-00 : renamed to version 2.0 (no changes to this file)         *
 *       16-Nov-00 : made changes listed in nauty.h                           *
 *        8-Aug-02 : updated for version 2.2 (dynamic storage)                *
+*        3-Nov-04 : fixed names of nautaux_freedyn() and nautaux_check()     *
+*       10-Dec-06 : removed BIGNAUTY                                         *
 *                                                                            *
 *****************************************************************************/
 
@@ -50,8 +52,8 @@ static permutation workperm[MAXN+2];
 long
 ptncode(graph *g, int *lab, int *ptn, int level, int m, int n)
 {
-        register int i;
-        register long code;
+        int i;
+        long code;
         int v1,v2,nc,inter,cellend;
 
 #if !MAXN
@@ -104,7 +106,7 @@ ptncode(graph *g, int *lab, int *ptn, int level, int m, int n)
 boolean
 equitable(graph *g, int *lab, int *ptn, int level, int m, int n)
 {
-        register int i;
+        int i;
         int v1,v2,nc,inter,cellend;
         boolean ok;
 
@@ -127,7 +129,7 @@ equitable(graph *g, int *lab, int *ptn, int level, int m, int n)
         workperm[nc] = n;
 
         ok = TRUE;
-        for (v2 = 0; v2 < nc; ++v2)
+        for (v2 = 0; v2 < nc && ok; ++v2)
         {
             EMPTYSET(workset,m);
             for (i = workperm[v2], cellend = workperm[v2+1] - 1;
@@ -146,7 +148,7 @@ equitable(graph *g, int *lab, int *ptn, int level, int m, int n)
             }
         }
 
-        return(ok);
+        return ok;
 }
 
 /*****************************************************************************
@@ -163,7 +165,7 @@ equitable(graph *g, int *lab, int *ptn, int level, int m, int n)
 int
 component(graph *g, int v, set *cmpt, int m, int n)
 {
-        register int i,z;
+        int i,z;
         set newverts[MAXM],*gx;
         int head,tail,x;
 
@@ -193,68 +195,54 @@ component(graph *g, int v, set *cmpt, int m, int n)
         if (cmpt != NULL)
             for (i = m; --i >= 0;) cmpt[i] = workset[i];
 
-        return(tail);
+        return tail;
 }
 
 /*****************************************************************************
 *                                                                            *
-*  nautyaux_check() checks that this file is compiled compatibly with the    *
+*  nautaux_check() checks that this file is compiled compatibly with the    *
 *  given parameters.   If not, call exit(1).                                 *
 *                                                                            *
 *****************************************************************************/
 
 void
-nautyaux_check(int wordsize, int m, int n, int version)
+nautaux_check(int wordsize, int m, int n, int version)
 {
         if (wordsize != WORDSIZE)
         {
-            fprintf(ERRFILE,"Error: WORDSIZE mismatch in nautyaux.c\n");
+            fprintf(ERRFILE,"Error: WORDSIZE mismatch in nautaux.c\n");
             exit(1);
         }
 
 #if MAXN
         if (m > MAXM)
         {
-            fprintf(ERRFILE,"Error: MAXM inadequate in nautyaux.c\n");
+            fprintf(ERRFILE,"Error: MAXM inadequate in nautaux.c\n");
             exit(1);
         }
 
         if (n > MAXN)
         {
-            fprintf(ERRFILE,"Error: MAXN inadequate in nautyaux.c\n");
-            exit(1);
-        }
-#endif
-
-#ifdef BIGNAUTY
-        if ((version & 1) == 0)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in nautyaux.c\n");
-            exit(1);
-        }
-#else
-        if ((version & 1) == 1)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in nautyaux.c\n");
+            fprintf(ERRFILE,"Error: MAXN inadequate in nautaux.c\n");
             exit(1);
         }
 #endif
 
         if (version < NAUTYREQUIRED)
         {
-            fprintf(ERRFILE,"Error: nautyaux.c version mismatch\n");
+            fprintf(ERRFILE,"Error: nautaux.c version mismatch\n");
             exit(1);
         }
 }
 
 /*****************************************************************************
 *                                                                            *
-*  nautyaux_freedyn() - free the dynamic memory in this module               *
+*  nautaux_freedyn() - free the dynamic memory in this module               *
 *                                                                            *
 *****************************************************************************/
 
 void
-naugraph_freedyn(void)
+nautaux_freedyn(void)
 {
 #if !MAXN
         DYNFREE(workset,workset_sz);

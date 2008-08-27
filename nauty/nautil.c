@@ -1,8 +1,8 @@
 /*****************************************************************************
 *                                                                            *
-*  Auxiliary source file for version 2.2 of nauty.                           *
+*  Auxiliary source file for version 2.4 of nauty.                           *
 *                                                                            *
-*   Copyright (1984-2002) Brendan McKay.  All rights reserved.               *
+*   Copyright (1984-2007) Brendan McKay.  All rights reserved.               *
 *   Subject to waivers and disclaimers in nauty.h.                           *
 *                                                                            *
 *   CHANGE HISTORY                                                           *
@@ -48,6 +48,8 @@
 *                     the array (thanks to Jan Kieffer)                      *
 *       17-Nov-03 : changed INFINITY to NAUTY_INFINITY                       *
 *       14-Sep-04 : extended prototypes to recursive functions               *
+*       23-Nov-06 : replave targetcell() by maketargetcell()                 *
+*       10-Dec-06 : remove BIGNAUTY                                          *
 *                                                                            *
 *****************************************************************************/
 
@@ -58,6 +60,8 @@
 #endif
 
     /* macros for hash-codes: */
+    /* Don't use NAUTY_INFINITY here as that would make the canonical
+     * labelling depend on whether BIGNAUTY is in operation */
 #define MASH(l,i) ((((l) ^ 065435) + (i)) & 077777)
     /* : expression whose long value depends only on long l and int/long i.
 	 Anything goes, preferably non-commutative. */
@@ -96,8 +100,8 @@ int labelorg = 0;
 int
 nextelement(set *set1, int m, int pos)
 {
-	register setword setwd;
-	register int w;
+	setword setwd;
+	int w;
 
 #if  MAXM==1
 	if (pos < 0) setwd = set1[0];
@@ -139,8 +143,8 @@ nextelement(set *set1, int m, int pos)
 void
 permset(set *set1, set *set2, int m, permutation *perm)
 {
-	register setword setw;
-	register int pos,w,b;
+	setword setw;
+	int pos,w,b;
 
 	EMPTYSET(set2,m);
 
@@ -195,8 +199,8 @@ putstring(FILE *f, char *s)
 int
 itos(int i, char *s)
 {
-	register int digit,j,k;
-	register char c;
+	int digit,j,k;
+	char c;
 	int ans;
 
 	if (i < 0)
@@ -248,7 +252,7 @@ itos(int i, char *s)
 int
 orbjoin(int *orbits, permutation *perm, int n)
 {
-	register int i,j1,j2;
+	int i,j1,j2;
 
 	for (i = 0; i < n; ++i)
 	{
@@ -285,7 +289,7 @@ orbjoin(int *orbits, permutation *perm, int n)
 void
 writeperm(FILE *f, permutation *perm, boolean cartesian, int linelength, int n)
 {
-	register int i,k,l,curlen,intlen;
+	int i,k,l,curlen,intlen;
 	char s[30];
 
 #if !MAXN
@@ -360,7 +364,7 @@ writeperm(FILE *f, permutation *perm, boolean cartesian, int linelength, int n)
 void
 fmperm(permutation *perm, set *fix, set *mcr, int m, int n)
 {
-	register int i,k,l;
+	int i,k,l;
 
 #if !MAXN
 	DYNALLOC1(permutation,workperm,workperm_sz,n,"writeperm");
@@ -406,7 +410,7 @@ fmperm(permutation *perm, set *fix, set *mcr, int m, int n)
 void
 fmptn(int *lab, int *ptn, int level, set *fix, set *mcr, int m, int n)
 {
-	register int i,lmin;
+	int i,lmin;
 
 	EMPTYSET(fix,m);
 	EMPTYSET(mcr,m);
@@ -462,8 +466,8 @@ doref(graph *g, int *lab, int *ptn, int level, int *numcells,
      int mininvarlev, int maxinvarlev, int invararg,
      boolean digraph, int m, int n)
 {
-	register int j,h;
-	register permutation pw;
+	int j,h;
+	permutation pw;
 	int iw;
 	int i,cell1,cell2,nc,tvpos,minlev,maxlev;
 	long longcode;
@@ -547,14 +551,14 @@ doref(graph *g, int *lab, int *ptn, int level, int *numcells,
 
 /*****************************************************************************
 *                                                                            *
-*  targetcell(g,lab,ptn,level,numcells,tcell,tcellsize,&cellpos,tc_level,    *
-*             hint,goodcell,m,n)                                             *
-*  examines the partition at the specified level in the partition nest       *
-*  (lab,ptn) and finds a non-trival cell (if none, the first cell).          *
-*  If hint >= 0 and there is a non-trivial cell starting at position hint    *
-*      in lab, that cell is chosen.                                          *
-*  Else, If level <= tc_level, *goodcell is called to choose a cell.         *
-*        Else, the first non-trivial cell is chosen.                         *
+*  maketargetcell(g,lab,ptn,level,tcell,tcellsize,&cellpos,                  *
+*                 tc_level,digraph,hint,targetcell,m,n)                      *
+*  calls targetcell() to determine the target cell at the specified level    *
+*  in the partition nest (lab,ptn).  It must be a nontrivial cell (if not,   *
+*  the first cell.  The intention of hint is that, if hint >= 0 and there    *
+*  is a suitable non-trivial cell starting at position hint in lab,          *
+*  that cell is chosen.                                                      *
+*  tc_level and digraph are input options.                                   *
 *  When a cell is chosen, tcell is set to its contents, *tcellsize to its    *
 *  size, and cellpos to its starting position in lab.                        *
 *                                                                            *
@@ -563,25 +567,16 @@ doref(graph *g, int *lab, int *ptn, int level, int *numcells,
 *****************************************************************************/
 
 void
-targetcell(graph *g, int *lab, int *ptn, int level, int numcells,
-           set *tcell, int *tcellsize, int *cellpos, int tc_level,
-           int hint, int (*goodcell)(graph*,int*,int*,int,int,int,int),
+maketargetcell(graph *g, int *lab, int *ptn, int level, set *tcell,
+           int *tcellsize, int *cellpos, int tc_level, boolean digraph,
+	   int hint,
+           int (*targetcell)(graph*,int*,int*,int,int,boolean,int,int,int),
            int m, int n)
 {
-	register int i,j,k;
+	int i,j,k;
 
-	if (hint >= 0 && ptn[hint] > level &&
-	                 (hint == 0 || ptn[hint-1] <= level))
-	    i = hint;
-	else if (level <= tc_level && goodcell != NULL)
-	    i = (*goodcell)(g,lab,ptn,level,tc_level,m,n);
-	else
-	    for (i = 0; i < n && ptn[i] <= level; ++i) {}
-
-	if (i == n)
-	    i = j = 0;
-	else
-	    for (j = i + 1; ptn[j] > level; ++j) {}
+	i = (*targetcell)(g,lab,ptn,level,tc_level,digraph,hint,m,n);
+	for (j = i + 1; ptn[j] > level; ++j) {}
 
 	*tcellsize = j - i + 1;
 
@@ -602,7 +597,7 @@ targetcell(graph *g, int *lab, int *ptn, int level, int numcells,
 void
 shortprune(set *set1, set *set2, int m)
 {
-	register int i;
+	int i;
 
 	for (i = 0; i < M; ++i) INTERSECT(set1[i],set2[i]);
 }
@@ -623,7 +618,7 @@ void
 breakout(int *lab, int *ptn, int level, int tc, int tv,
          set *active, int m)
 {
-	register int i,prev,next;
+	int i,prev,next;
 
 	EMPTYSET(active,m);
 	ADDELEMENT(active,tc);
@@ -656,7 +651,7 @@ breakout(int *lab, int *ptn, int level, int tc, int tv,
 void
 longprune(set *tcell, set *fix, set *bottom, set *top, int m)
 {
-	register int i;
+	int i;
 
 	while (bottom < top)
 	{
@@ -698,20 +693,6 @@ nautil_check(int wordsize, int m, int n, int version)
 	    fprintf(ERRFILE,"Error: MAXN inadequate in nautil.c\n");
 	    exit(1);
 	}
-#endif
-
-#ifdef BIGNAUTY
-	if ((version & 1) == 0)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in nautil.c\n");
-            exit(1);
-        }
-#else
-        if ((version & 1) == 1)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in nautil.c\n");
-            exit(1);
-        }
 #endif
 
         if (version < NAUTYREQUIRED)

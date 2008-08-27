@@ -1,6 +1,6 @@
 /*****************************************************************************
-* This is the header file for versions 2.2 of naututil.c and dreadnaut.c.    *
-* Generated automatically from naututil-h.in by configure.
+* This is the header file for versions 2.4 of naututil.c and dreadnaut.c.    *
+* naututil.h.  Generated from naututil-h.in by configure.
 *****************************************************************************/
 
 /* The parts between the ==== lines are modified by configure when
@@ -20,7 +20,7 @@ used, it is necessary to check they are correct.
 
 /*****************************************************************************
 *                                                                            *
-*   Copyright (1984-2002) Brendan McKay.  All rights reserved.               *
+*   Copyright (1984-2007) Brendan McKay.  All rights reserved.               *
 *   Subject to the waivers and disclaimers in nauty.h.                       *
 *                                                                            *
 *   CHANGE HISTORY                                                           *

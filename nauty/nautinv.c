@@ -1,8 +1,8 @@
 /*****************************************************************************
 *                                                                            *
-*  Vertex-invariants source file for nauty 2.2.                              *
+*  Vertex-invariants source file for nauty 2.4.                              *
 *                                                                            *
-*   Copyright (1989-2002) Brendan McKay.  All rights reserved.               *
+*   Copyright (1989-2007) Brendan McKay.  All rights reserved.               *
 *   Subject to waivers and disclaimers in nauty.h.                           *
 *                                                                            *
 *   CHANGE HISTORY                                                           *
@@ -31,6 +31,7 @@
 *       12-Jul-01 - use invararg in distances()                              *
 *                 - fixed comments in ind and cliq routines                  *
 *       21-Nov-01 : use NAUTYREQUIRED in nautinv_check()                     *
+*       10-Dec-06 : remove BIGNAUTY                                          *
 *                                                                            *
 *****************************************************************************/
 
@@ -167,8 +168,8 @@ void
 twopaths(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
          permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i,v,w;
-        register shortish wt;
+        int i,v,w;
+        shortish wt;
         set *gv,*gw;
 
 #if !MAXN
@@ -213,10 +214,10 @@ void
 quadruples(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
            permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i,pc;
-        register setword sw;
-        register set *gw;
-        register shortish wt;
+        int i,pc;
+        setword sw;
+        set *gw;
+        shortish wt;
         int v,iv,v1,v2,v3;
         set *gv;
         long wv,wv1,wv2,wv3;
@@ -292,10 +293,10 @@ void
 triples(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
         permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i,pc;
-        register setword sw;
-        register set *gw;
-        register shortish wt;
+        int i,pc;
+        setword sw;
+        set *gw;
+        shortish wt;
         int v,iv,v1,v2;
         set *gv;
         long wv,wv1,wv2;
@@ -360,10 +361,10 @@ void
 adjtriang(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
           permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int j,pc;
-        register setword sw;
-        register set *gi;
-        register shortish wt;
+        int j,pc;
+        setword sw;
+        set *gi;
+        shortish wt;
         int i,v1,v2;
         boolean v1v2;
         set *gv1,*gv2;
@@ -426,8 +427,8 @@ void
 getbigcells(int *ptn, int level, int minsize, int *bigcells,
             shortish *cellstart, shortish *cellsize, int n)
 {
-        register int cell1,cell2,j;
-        register shortish si,st;
+        int cell1,cell2,j;
+        shortish si,st;
         int bc,i,h;
 
         bc = 0;
@@ -485,10 +486,10 @@ void
 celltrips(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
           permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i,pc;
-        register setword sw;
-        register set *gw;
-        register shortish wt;
+        int i,pc;
+        setword sw;
+        set *gw;
+        shortish wt;
         int v,iv,v1,iv1,v2,iv2;
         int icell,bigcells,cell1,cell2;
         shortish *cellstart,*cellsize;
@@ -553,10 +554,10 @@ void
 cellquads(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
           permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i,pc;
-        register setword sw;
-        register set *gw;
-        register shortish wt;
+        int i,pc;
+        setword sw;
+        set *gw;
+        shortish wt;
         int v,iv,v1,iv1,v2,iv2,v3,iv3;
         int icell,bigcells,cell1,cell2;
         shortish *cellstart,*cellsize;
@@ -629,10 +630,10 @@ void
 cellquins(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
           permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i,pc;
-        register setword sw;
-        register set *gw;
-        register shortish wt;
+        int i,pc;
+        setword sw;
+        set *gw;
+        shortish wt;
         int v,iv,v1,iv1,v2,iv2,v3,iv3,v4,iv4;
         int icell,bigcells,cell1,cell2;
         shortish *cellstart,*cellsize;
@@ -708,8 +709,8 @@ cellquins(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
 static int
 uniqinter(set *s1, set *s2, int m)
 {
-	register int i,j;
-	register setword w;
+	int i,j;
+	setword w;
 
 	for (i = 0; i < M; ++i)
 	{
@@ -741,9 +742,9 @@ void
 cellfano2(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
           permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i,pc;
-        register setword sw;
-        register shortish wt;
+        int i,pc;
+        setword sw;
+        shortish wt;
         int v0,v1,v2,v3,iv0,iv1,iv2,iv3;
         int icell,bigcells,cell1,cell2;
         shortish *cellstart,*cellsize;
@@ -855,8 +856,8 @@ cellfano2(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
 void
 setnbhd(graph *g, int m, int n, set *w, set *wn)
 {
-	register int i,j;
-	register set *gi;
+	int i,j;
+	set *gi;
 
 	i = nextelement(w,M,-1);
 	if (i < 0)
@@ -890,13 +891,13 @@ void
 cellfano(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
          permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i,pc;
-        register setword sw;
-        register shortish wt;
+        int i,pc;
+        setword sw;
+        shortish wt;
         int v0,v1,v2,v3,iv0,iv1,iv2,iv3;
         int icell,bigcells,cell1,cell2;
         shortish *cellstart,*cellsize;
-	register set *gv0,*gv1,*gv2,*gv3;
+	set *gv0,*gv1,*gv2,*gv3;
 
 #if !MAXN
         DYNALLOC1(shortish,workshort,workshort_sz,n+2,"cellfano");
@@ -1000,9 +1001,9 @@ void
 distances(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
           permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i;
-        register set *gw;
-        register shortish wt;
+        int i;
+        set *gw;
+        shortish wt;
         int d,dlim,cell1,cell2,iv,v,w;
         boolean success;
 
@@ -1077,9 +1078,9 @@ void
 indsets(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
         permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i;
-        register shortish wt;
-        register set *gv;
+        int i;
+        shortish wt;
+        set *gv;
         int ss,setsize;
         int v[MAXCLIQUE];
         long wv[MAXCLIQUE];
@@ -1152,9 +1153,9 @@ void
 cliques(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
         permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i;
-        register shortish wt;
-        register set *gv;
+        int i;
+        shortish wt;
+        set *gv;
         int ss,setsize;
         int v[MAXCLIQUE];
         long wv[MAXCLIQUE];
@@ -1228,9 +1229,9 @@ void
 cellcliq(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
          permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i;
-        register shortish wt;
-        register set *gv;
+        int i;
+        shortish wt;
+        set *gv;
         int ss,setsize;
         int v[MAXCLIQUE];
         set *ns;
@@ -1324,9 +1325,9 @@ void
 cellind(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
         permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i;
-        register shortish wt;
-        register set *gv;
+        int i;
+        shortish wt;
+        set *gv;
         int ss,setsize;
         int v[MAXCLIQUE];
         set *ns;
@@ -1411,6 +1412,7 @@ cellind(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
 *  adjacencies() assigns to each vertex v a code depending on which cells    *
 *  it is joined to and from, and how many times.  It is intended to provide  *
 *  better partitioning that the normal refinement routine for digraphs.      *
+*  It will not help with undirected graphs in nauty at all.                  *
 *                                                                            *
 *****************************************************************************/
 
@@ -1418,8 +1420,8 @@ void
 adjacencies(graph *g, int *lab, int *ptn, int level, int numcells, int tvpos,
             permutation *invar, int invararg, boolean digraph, int m, int n)
 {
-        register int i,v,w;
-        register shortish vwt,wwt;
+        int i,v,w;
+        shortish vwt,wwt;
         set *gv;
 
 #if !MAXN
@@ -1474,20 +1476,6 @@ nautinv_check(int wordsize, int m, int n, int version)
         if (n > MAXN)
         {
             fprintf(ERRFILE,"Error: MAXN inadequate in nautinv.c\n");
-            exit(1);
-        }
-#endif
-
-#ifdef BIGNAUTY
-        if ((version & 1) == 0)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in nautinv.c\n");
-            exit(1);
-        }
-#else
-        if ((version & 1) == 1)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in nautinv.c\n");
             exit(1);
         }
 #endif

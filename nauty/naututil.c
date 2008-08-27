@@ -1,9 +1,9 @@
 /*****************************************************************************
 *                                                                            *
-* miscellaneous utilities for use with nauty 2.2.                            *
+* miscellaneous utilities for use with nauty 2.4.                            *
 * None of these procedures are needed by nauty, but all are by dreadnaut.    *
 *                                                                            *
-*   Copyright (1984-2002) Brendan McKay.  All rights reserved.               *
+*   Copyright (1984-2007) Brendan McKay.  All rights reserved.               *
 *   Subject to waivers and disclaimers in nauty.h.                           *
 *                                                                            *
 *   CHANGE HISTORY                                                           *
@@ -55,6 +55,7 @@
 *       11-Apr-03 : changes for version 2.2 :                                *
 *                   - added rangraph2()                                      *
 *       17-Nov-03 : changed INFINITY to NAUTY_INFINITY                       *
+*       10-Dec-06 : removed BIGNAUTY                                         *
 *                                                                            *
 *****************************************************************************/
 
@@ -99,13 +100,13 @@ static set workset[MAXM];              /* used for scratch purposes */
 int
 setinter(set *set1, set *set2, int m)
 {
-        register setword x;
+        setword x;
 
 #if  MAXM==1
         if (x = *set1 & *set2) return POPCOUNT(x);
         else                   return 0;
 #else
-        register int count,i;
+        int count,i;
 
         count = 0;
         for (i = m; --i >= 0;)
@@ -129,8 +130,8 @@ setsize(set *set1, int m)
         if (set1 != 0) return POPCOUNT(*set1);
         else           return 0;
 #else
-        register int count,i;
-        register setword x;
+        int count,i;
+        setword x;
 
         count = 0;
         for (i = m; --i >= 0;)
@@ -178,7 +179,7 @@ flushline(FILE *f)
 boolean
 readinteger(FILE *f, int *p)
 {
-        register int c,ans,minus;
+        int c,ans,minus;
 
         GETNWL(c,f);
         if (!ISDIGIT(c) && c != '-' && c != '+')
@@ -217,8 +218,8 @@ readinteger(FILE *f, int *p)
 boolean
 readstring(FILE *f, char *s, int slen)
 {
-        register int c;
-	register char *slim;
+        int c;
+	char *slim;
 
 	slim = s + slen - 1;
         GETNWL(c,f);
@@ -338,9 +339,9 @@ void
 readgraph(FILE *f, graph *g, boolean digraph, boolean prompt,
           boolean edit, int linelength, int m, int n)
 {
-        register int v,c;
+        int v,c;
         int curlen,w;
-        register graph *gv;
+        graph *gv;
         boolean neg;
 
         if (!edit)
@@ -519,7 +520,7 @@ putmapping(FILE *f, int *lab1, int org1,int *lab2, int org2,
 void
 putorbits(FILE *f, int *orbits, int linelength, int n)
 {
-        register int i,j;
+        int i,j;
         int m,curlen;
 
         m = (n + WORDSIZE - 1) / WORDSIZE;
@@ -574,7 +575,7 @@ void
 putquotient(FILE *f, graph *g, int *lab, int *ptn, int level,
             int linelength, int m, int n)
 {
-        register int i;
+        int i;
         char s[50];
         int ic,curlen,v,w,cell1,cell2,numcells,jc,csize,k;
         set *gw;
@@ -670,7 +671,7 @@ putquotient(FILE *f, graph *g, int *lab, int *ptn, int level,
 void
 putptn(FILE *f, int *lab, int *ptn, int level, int linelength, int n)
 {
-        register int i;
+        int i;
         int curlen,m;
 
         m = (n + WORDSIZE - 1) / WORDSIZE;
@@ -715,7 +716,7 @@ putptn(FILE *f, int *lab, int *ptn, int level, int linelength, int n)
 void
 putcanon(FILE *f, int *canonlab, graph *canong, int linelength, int m, int n)
 {
-        register int i;
+        int i;
 
 #if !MAXN
         DYNALLOC1(permutation,workperm,workperm_sz,n+2,"putcanon");
@@ -739,7 +740,7 @@ putcanon(FILE *f, int *canonlab, graph *canong, int linelength, int m, int n)
 void
 readptn(FILE *f, int *lab, int *ptn, int *numcells, boolean prompt, int n)
 {
-        register int i,j;
+        int i,j;
         int c,v1,v2,m;
 
         m = (n + WORDSIZE - 1) / WORDSIZE;
@@ -850,7 +851,7 @@ readptn(FILE *f, int *lab, int *ptn, int *numcells, boolean prompt, int n)
 void
 unitptn(int *lab,int *ptn, int *numcells, int n)
 {
-        register int i;
+        int i;
 
         for (i = 0; i < n; ++i)
         {
@@ -871,7 +872,7 @@ unitptn(int *lab,int *ptn, int *numcells, int n)
 void
 cellstarts(int *ptn, int level, set *cell, int m, int n)
 {
-        register int i;
+        int i;
 
         EMPTYSET(cell,m);
         i = 0;
@@ -894,7 +895,7 @@ cellstarts(int *ptn, int level, set *cell, int m, int n)
 void
 fixit(int *lab, int *ptn, int *numcells, int fixedvertex, int n)
 {
-        register int i;
+        int i;
 
         for (i = 1; i < n; ++i)
         {
@@ -924,9 +925,9 @@ fixit(int *lab, int *ptn, int *numcells, int fixedvertex, int n)
 long
 sethash(set *s, int n, long seed, int key)
 {
-	register int i,j,lsh,rsh;
-	register long l,res,salt,lshmask;
-	register setword si;
+	int i,j,lsh,rsh;
+	long l,res,salt,lshmask;
+	setword si;
 
 	lsh = key & 0xF;
 	rsh = 28 - lsh;
@@ -975,8 +976,8 @@ sethash(set *s, int n, long seed, int key)
 long
 hash(set *setarray, long length, int key)
 {
-        register long code;
-        register set *sptr;
+        long code;
+        set *sptr;
 
         code = length;
         sptr = setarray + length;
@@ -1016,7 +1017,7 @@ readperm(FILE *f, permutation *perm, boolean prompt, int n)
 void
 readvperm(FILE *f, permutation *perm, boolean prompt, int n, int *nv)
 {
-        register int i;
+        int i;
         int m,c,v1,v2;
 
         m = (n + WORDSIZE - 1) / WORDSIZE;
@@ -1128,8 +1129,8 @@ ranperm(permutation *perm, int n)
 void
 relabel(graph *g, int *lab, permutation *perm, graph *workg, int m, int n)
 {
-        register long li;
-        register int i;
+        long li;
+        int i;
 
         for (li = (long)M * (long)n; --li >= 0;) workg[li] = g[li];
 
@@ -1152,10 +1153,10 @@ relabel(graph *g, int *lab, permutation *perm, graph *workg, int m, int n)
 void
 sublabel(graph *g, permutation *perm, int nperm, graph *workg, int m, int n)
 {
-        register long li;
-        register int i,j,k;
+        long li;
+        int i,j,k;
 	int newm;
-	register set *gi,*wgi;
+	set *gi,*wgi;
 
         for (li = (long)m * (long)n; --li >= 0;) workg[li] = g[li];
 
@@ -1186,7 +1187,7 @@ sublabel(graph *g, permutation *perm, int nperm, graph *workg, int m, int n)
 void
 copycomment(FILE *fin, FILE *fout, int delimiter)
 {
-        register int c,backslash;
+        int c,backslash;
 
         backslash = FALSE;
 
@@ -1243,9 +1244,9 @@ copycomment(FILE *fin, FILE *fout, int delimiter)
 void
 mathon(graph *g1, int m1, int n1, graph *g2, int m2, int n2)
 {
-        register int i,j,ii,jj;
+        int i,j,ii,jj;
         long li;
-        register set *rowptr,*gp;
+        set *rowptr,*gp;
 
         for (li = (long)m2 * (long)n2; --li >= 0;) g2[li] = 0;
 
@@ -1295,7 +1296,7 @@ mathon(graph *g1, int m1, int n1, graph *g2, int m2, int n2)
 void
 rangraph(graph *g, boolean digraph, int invprob, int m, int n)
 {
-        register int i,j;
+        int i,j;
         long li;
         set *row,*col;
 
@@ -1327,7 +1328,7 @@ rangraph(graph *g, boolean digraph, int invprob, int m, int n)
 void
 rangraph2(graph *g, boolean digraph, int p1, int p2, int m, int n)
 {
-        register int i,j;
+        int i,j;
         long li;
         set *row,*col;
 
@@ -1414,8 +1415,8 @@ void
 complement(graph *g, int m, int n)
 {
         boolean loops;
-        register int i,j;
-        register graph *gp;
+        int i,j;
+        graph *gp;
 
 #if !MAXN
         DYNALLOC1(set,workset,workset_sz,m,"complement");
@@ -1445,8 +1446,8 @@ complement(graph *g, int m, int n)
 void
 converse(graph *g, int m, int n)
 {
-        register int i,j;
-        register graph *gi,*gj;
+        int i,j;
+        graph *gi,*gj;
 
         for (i = 0, gi = g; i < n; ++i, gi += M)
             for (j = i+1, gj = gi+M; j < n; ++j, gj += M)
@@ -1483,20 +1484,6 @@ naututil_check(int wordsize, int m, int n, int version)
         if (n > MAXN)
         {
             fprintf(ERRFILE,"Error: MAXN inadequate in naututil.c\n");
-            exit(1);
-        }
-#endif
-
-#ifdef BIGNAUTY
-        if ((version & 1) == 0)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in naututil.c\n");
-            exit(1);
-        }
-#else
-        if ((version & 1) == 1)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in naututil.c\n");
             exit(1);
         }
 #endif

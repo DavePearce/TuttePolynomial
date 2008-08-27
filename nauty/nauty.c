@@ -1,8 +1,8 @@
 /*****************************************************************************
 *                                                                            *
-*  Main source file for version 2.2 of nauty.                                *
+*  Main source file for version 2.4 of nauty.                                *
 *                                                                            *
-*   Copyright (1984-2004) Brendan McKay.  All rights reserved.  Permission   *
+*   Copyright (1984-2007) Brendan McKay.  All rights reserved.  Permission   *
 *   Subject to the waivers and disclaimers in nauty.h.                       *
 *                                                                            *
 *   CHANGE HISTORY                                                           *
@@ -54,6 +54,12 @@
 *       17-Nov-03 : changed INFINITY to NAUTY_INFINITY                       *
 *       14-Sep-04 : extended prototypes even to recursive functions          *
 *       16-Oct-04 : disallow NULL dispatch vector                            *
+*       11-Nov-05 : changes for version 2.3:                                 *
+*                   - init() and cleanup() optional calls                    *
+*       23-Nov-06 : changes for version 2.4:                                 *
+*                   - use maketargetcell() instead of tcellproc()            *
+*       29-Nov-06 : add extra_autom, extra_level, extra_options              *
+*       10-Dec-06 : remove BIGNAUTY                                          *
 *                                                                            *
 *****************************************************************************/
 
@@ -81,9 +87,9 @@ static int othernode0(int*, int*, int, int, tcnode*);
 static int firstpathnode(int*, int*, int, int);
 static int othernode(int*, int*, int, int);
 #endif
-static void firstterminal(int*, register int);
+static void firstterminal(int*, int);
 static int processnode(int*, int*, int, int);
-static void recover(register int*, register int);
+static void recover(int*, int);
 static void writemarker(int, int, int, int, int, int);
 #endif
 
@@ -102,8 +108,6 @@ static void (*usernodeproc)(graph*,int*,int*,int,int,int,int,int,int);
 static void (*userautomproc)(int,permutation*,int*,int,int,int);
 static void (*userlevelproc)
               (int*,int*,int,int*,statsblk*,int,int,int,int,int,int);
-static void (*tcellproc)(graph*,int*,int*,int,int,set*,int*,int*,int,int,
-                        int(*)(graph*,int*,int*,int,int,int,int),int,int);
 static void (*invarproc)
 	      (graph*,int*,int*,int,int,int,permutation*,int,boolean,int,int);
 static FILE *outfile;
@@ -115,7 +119,7 @@ static graph *g,*canong;
 static int *orbits;
 static statsblk *stats;
     /* temporary versions of some stats: */
-static long invapplics,invsuccesses;
+static unsigned long invapplics,invsuccesses;
 static int invarsuclevel;
 
     /* working variables: <the "bsf leaf" is the leaf which is best guess so
@@ -235,9 +239,10 @@ nauty(graph *g_arg, int *lab, int *ptn, set *active_arg,
       int *orbits_arg, optionblk *options, statsblk *stats_arg,
       set *ws_arg, int worksize, int m_arg, int n_arg, graph *canong_arg)
 {
-        register int i;
+        int i;
         int numcells;
 	int retval;
+	int initstatus;
 #if !MAXN
 	tcnode *tcp,*tcq;
 #endif
@@ -259,15 +264,12 @@ nauty(graph *g_arg, int *lab, int *ptn, set *active_arg,
             dispatch.refine = dispatch.refine1;
 
 	if (dispatch.refine == NULL || dispatch.updatecan == NULL
-		|| dispatch.bestcell == NULL || dispatch.cheapautom == NULL)
+		|| dispatch.targetcell == NULL || dispatch.cheapautom == NULL)
 	{
 	    fprintf(ERRFILE,">E bad dispatch vector\n");
 	    exit(1);
 	}
 
-	if (options->usertcellproc) tcellproc = options->usertcellproc;
-        else                        tcellproc = targetcell;
- 
     /* check for excessive sizes: */
 
 #if !MAXN
@@ -300,7 +302,7 @@ nauty(graph *g_arg, int *lab, int *ptn, set *active_arg,
             return;
         }
 #endif
-	if (n_arg == 0)   /* Special code for Wendy */
+	if (n_arg == 0)   /* Special code for zero-sized graph */
 	{
 	    stats_arg->grpsize1 = 1.0;
 	    stats_arg->grpsize2 = 0;
@@ -350,7 +352,7 @@ nauty(graph *g_arg, int *lab, int *ptn, set *active_arg,
         }
 #endif
 
-        g = g_arg;
+       /* OLD g = g_arg; */
         orbits = orbits_arg;
         stats = stats_arg;
 
@@ -386,10 +388,9 @@ nauty(graph *g_arg, int *lab, int *ptn, set *active_arg,
                       "nauty: canong=NULL but options.getcanon=TRUE\n\n");
                 return;
             }
-            else
-                canong = canong_arg;
 
     /* initialize everything: */
+
         if (options->defaultptn)
         {
             for (i = 0; i < n; ++i)   /* give all verts same colour */
@@ -421,6 +422,19 @@ nauty(graph *g_arg, int *lab, int *ptn, set *active_arg,
             else
                 for (i = 0; i < M; ++i) active[i] = active_arg[i];
         }
+
+	g = canong = NULL;
+	initstatus = 0;
+	OPTCALL(dispatch.init)(g_arg,&g,canong_arg,&canong,
+		lab,ptn,active,options,&initstatus,m,n);
+	if (initstatus)
+	{
+	    stats->errstatus = initstatus;
+	    return;
+	}
+
+	if (g == NULL) g = g_arg;
+	if (canong == NULL) canong = canong_arg;
 
         for (i = 0; i < n; ++i) orbits[i] = i;
         stats->grpsize1 = 1.0;
@@ -482,6 +496,8 @@ nauty(graph *g_arg, int *lab, int *ptn, set *active_arg,
 	    nauty_freedyn();
         }
 #endif  
+	OPTCALL(dispatch.cleanup)(g_arg,&g,canong_arg,&canong,
+		                               lab,ptn,options,stats,m,n);
 }
 
 /*****************************************************************************
@@ -511,7 +527,7 @@ firstpathnode0(int *lab, int *ptn, int level, int numcells,
 firstpathnode(int *lab, int *ptn, int level, int numcells)
 #endif
 {
-        register int tv;
+        int tv;
         int tv1,index,rtnlevel,tcellsize,tc,childcount,qinvar,refcode;
 #if !MAXN
         set *tcell;
@@ -556,8 +572,8 @@ firstpathnode(int *lab, int *ptn, int level, int numcells)
         {
      /* locate new target cell, setting tc to its position in lab, tcell
                           to its contents, and tcellsize to its size: */
-            (*tcellproc)(g,lab,ptn,level,numcells,tcell,&tcellsize,
-                                        &tc,tc_level,-1,dispatch.bestcell,M,n);
+            maketargetcell(g,lab,ptn,level,tcell,&tcellsize,
+                            &tc,tc_level,digraph,-1,dispatch.targetcell,M,n);
             stats->tctotal += tcellsize;
         }
         firsttc[level] = tc;
@@ -579,7 +595,6 @@ firstpathnode(int *lab, int *ptn, int level, int numcells)
 
     /* use the elements of the target cell to produce the children: */
         index = 0;
-
         for (tv1 = tv = nextelement(tcell,M,-1); tv >= 0;
                                         tv = nextelement(tcell,M,tv))
         {
@@ -623,7 +638,6 @@ firstpathnode(int *lab, int *ptn, int level, int numcells)
             if (orbits[tv] == tv1)  /* ie, in same orbit as tv1 */
                 ++index;
         }
-
         MULTIPLY(stats->grpsize1,stats->grpsize2,index);
 
         if (tcellsize == index && allsamelevel == level + 1)
@@ -633,7 +647,6 @@ firstpathnode(int *lab, int *ptn, int level, int numcells)
             writemarker(level,tv1,index,tcellsize,stats->numorbits,numcells);
         OPTCALL(userlevelproc)(lab,ptn,level,orbits,stats,tv1,index,tcellsize,
                                                         numcells,childcount,n);
-
         return level-1;
 }
 
@@ -658,7 +671,7 @@ othernode0(int *lab, int *ptn, int level, int numcells,
 othernode(int *lab, int *ptn, int level, int numcells)
 #endif
 {
-        register int tv;
+        int tv;
         int tv1,refcode,rtnlevel,tcellsize,tc,qinvar;
         short code;
 #if !MAXN
@@ -729,13 +742,13 @@ othernode(int *lab, int *ptn, int level, int numcells)
         {
             if (!getcanon || comp_canon < 0)
             {
-                (*tcellproc)(g,lab,ptn,level,numcells,tcell,&tcellsize,
-                            &tc,tc_level,firsttc[level],dispatch.bestcell,M,n);
+                maketargetcell(g,lab,ptn,level,tcell,&tcellsize,&tc,
+                      tc_level,digraph,firsttc[level],dispatch.targetcell,M,n);
                 if (tc != firsttc[level]) eqlev_first = level - 1;
             }
             else
-                (*tcellproc)(g,lab,ptn,level,numcells,tcell,&tcellsize,
-                                        &tc,tc_level,-1,dispatch.bestcell,M,n);
+                maketargetcell(g,lab,ptn,level,tcell,&tcellsize,&tc,
+                      tc_level,digraph,-1,dispatch.targetcell,M,n);
             stats->tctotal += tcellsize;
         }
 
@@ -795,7 +808,7 @@ othernode(int *lab, int *ptn, int level, int numcells)
 static void
 firstterminal(int *lab, int level)
 {
-        register int i;
+        int i;
 
         stats->maxlevel = level;
         gca_first = allsamelevel = eqlev_first = level;
@@ -851,7 +864,7 @@ firstterminal(int *lab, int level)
 static int
 processnode(int *lab, int *ptn, int level, int numcells)
 {
-        register int i,code,save,newlevel;
+        int i,code,save,newlevel;
         boolean ispruneok;
         int sr;
 
@@ -984,7 +997,7 @@ processnode(int *lab, int *ptn, int level, int numcells)
 static void
 recover(int *ptn, int level)
 {
-        register int i;
+        int i;
 
         for (i = 0; i < n; ++i)
             if (ptn[i] > level) ptn[i] = NAUTY_INFINITY;
@@ -1088,25 +1101,46 @@ nauty_check(int wordsize, int m, int n, int version)
         }
 #endif
 
-#ifdef BIGNAUTY
-        if ((version & 1) == 0)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in nauty.c\n");
-            exit(1);
-        }
-#else
-        if ((version & 1) == 1)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in nauty.c\n");
-            exit(1);
-        }
-#endif
-
 	if (version < NAUTYREQUIRED)
 	{
 	    fprintf(ERRFILE,"Error: nauty.c version mismatch\n");
 	    exit(1);
 	}
+}
+
+/*****************************************************************************
+*                                                                            *
+*  extra_autom(p,n)  - add an extra automophism, hard to do correctly        *
+*                                                                            *
+*****************************************************************************/
+
+void
+extra_autom(permutation *p, int n)
+{
+        if (writeautoms)
+            writeperm(outfile,p,cartesian,linelength,n);
+        stats->numorbits = orbjoin(orbits,p,n);
+        ++stats->numgenerators;
+        OPTCALL(userautomproc)(stats->numgenerators,p,orbits,
+                                        stats->numorbits,stabvertex,n);
+}
+
+/*****************************************************************************
+*                                                                            *
+*  extra_level(level,lab,ptn,numcells,tv1,index,tcellsize,childcount)        *
+*     creates an artificial level in the search.  This is dangerous.         *
+*                                                                            *
+*****************************************************************************/
+
+void
+extra_level(int level, int *lab, int *ptn, int numcells, int tv1, int index,
+            int tcellsize, int childcount, int n)
+{
+        MULTIPLY(stats->grpsize1,stats->grpsize2,index);
+        if (domarkers)
+            writemarker(level,tv1,index,tcellsize,stats->numorbits,numcells);
+        OPTCALL(userlevelproc)(lab,ptn,level,orbits,stats,tv1,index,tcellsize,
+                                                        numcells,childcount,n);
 }
 
 /*****************************************************************************

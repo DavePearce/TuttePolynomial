@@ -1,20 +1,12 @@
 /**************************************************************************
-*    This is the header file for Version 2.2 of nauty().                  *
-*    Generated automatically from nauty-h.in by configure.
+*    This is the header file for Version 2.4 of nauty().                  *
+*    nauty.h.  Generated from nauty-h.in by configure.
 **************************************************************************/
 
 #ifndef  _NAUTY_H_    /* only process this file once */
 #define  _NAUTY_H_
 
-/* The parts between the ==== lines are modified by configure when
-creating nauty.h out of nauty-h.in.  If configure is not being used,
-it is necessary to check they are correct.
-====================================================================*/
-
-
 #include "../config.h"
-
-/*==================================================================*/
 
 /* The following line must be uncommented for compiling into Magma. */
 /* #define NAUTY_IN_MAGMA  */
@@ -23,9 +15,6 @@ it is necessary to check they are correct.
 #include "defs.h"
 #include "system.h"
 #include "bs.h"
-#undef BIGNAUTY
-#define BIGNAUTY
-#undef OLDEXTDEFS
 #define OLDEXTDEFS
 #else
 #include <stdio.h>
@@ -49,7 +38,7 @@ it is necessary to check they are correct.
 *            phone:  +61 2 6125 3845    fax:  +61 2 6125 0010                *
 *            email:  bdm@cs.anu.edu.au                                       *
 *                                                                            *
-*   Copyright (1984-2004) Brendan McKay.  All rights reserved.  Permission   *
+*   Copyright (1984-2007) Brendan McKay.  All rights reserved.  Permission   *
 *   is hereby given for use and/or distribution with the exception of        *
 *   sale for profit or application with nontrivial military significance.    *
 *   You must not remove this copyright notice, and you must document any     *
@@ -68,9 +57,8 @@ it is necessary to check they are correct.
 *   If you wish to acknowledge use of this program in published articles,    *
 *   please do so by citing the User's Guide:                                 *
 *                                                                            *
-*     B. D. McKay, nauty User's Guide (Version 1.5), Technical Report        *
-*         TR-CS-90-02, Australian National University, Department of         *
-*         Computer Science, 1990.                                            *
+*     B. D. McKay, nauty User's Guide (Version 2.4), 
+*         http://cs.anu.edu.au/~bdm/nauty/.
 *                                                                            *
 *   CHANGE HISTORY                                                           *
 *       10-Nov-87 : final changes for version 1.2                            *
@@ -197,6 +185,19 @@ it is necessary to check they are correct.
 *                     tend to find them a nuisance                           *
 *                   - Don't define the obsolete symbol INFINITY if it is     *
 *                     defined already                                        *
+*       17-Nov-04 : - make 6 counters in statsblk unsigned long              *
+*       17-Jan-04 : - add init() and cleanup() to dispatchvec                *
+*       12-Nov-05 : - Changed NAUTY_INFINITY to 2^30+2 in BIGNAUTY case      *
+*       22-Nov-06 : Starting 2.4                                             *
+*                   - removed usertcellproc from options                     *
+*                     changed bestcell to targetcell in dispatch vector      *
+*                     declare targetcell and maketargetcell                  *
+*       29-Nov-06 : - add extraoptions to optionblk                          *
+*                   - add declarations of extra_autom and extra_level        *
+*       10-Dec-06 : - BIGNAUTY is gone!  Now permutation=shortish=int.       *
+*                     NAUTY_INFINITY only depends on whether sizeof(int)=2.  *
+*                     
+*    nauty.h.  Generated from nauty-h.in by configure.
 *                                                                            *
 *****************************************************************************/
 
@@ -205,7 +206,7 @@ it is necessary to check they are correct.
 *   16-bit, 32-bit and 64-bit versions can be selected by defining WORDSIZE. *
 *   The largest graph that can be handled has MAXN vertices.                 *
 *   Both WORDSIZE and MAXN can be defined on the command line.               *
-*   WORDSIZE must be 16, 32 or 64; MAXN must be <= NAUTY_INFINITY - 2;       *
+*   WORDSIZE must be 16, 32 or 64; MAXN must be <= NAUTY_INFINITY-2;         *
 *                                                                            *
 *   With a very slight loss of efficiency (depending on platform), nauty     *
 *   can be compiled to dynamically allocate arrays.  Predefine MAXN=0 to     *
@@ -239,10 +240,9 @@ it is necessary to check they are correct.
 *    A 'graph' consists of n contiguous sets.  The i-th set represents       *
 *    the vertices adjacent to vertex i, for i = 0,1,...,n-1.                 *
 *                                                                            *
-*    A 'permutation' is an array of n short ints (ints in the case that      *
-*    BIGNAUTY is defined) , repesenting a permutation of the set             *
-*    {0,1,...,n-1}.  The value of the i-th entry is the number to which      *
-*    i is mapped.                                                            *
+*    A 'permutation' is an array of n ints repesenting a permutation of      *
+*    the set {0,1,...,n-1}.  The value of the i-th entry is the number to    *
+*    which i is mapped.                                                      *
 *                                                                            *
 *    If g is a graph and p is a permutation, then g^p is the graph in        *
 *    which vertex i is adjacent to vertex j iff vertex p[i] is adjacent      *
@@ -257,13 +257,8 @@ it is necessary to check they are correct.
 *                                                                            *
 *****************************************************************************/
 
-#ifdef BIGNAUTY
-#define NAUTYVERSIONID 2201   /* 1000 times the version number */
-#define NAUTYREQUIRED 2201    /* Minimum compatible version */
-#else
-#define NAUTYVERSIONID 2200
-#define NAUTYREQUIRED 2200
-#endif
+#define NAUTYVERSIONID 2400   /* 1000 times the version number */
+#define NAUTYREQUIRED 2400    /* Minimum compatible version */
 
 #ifndef NAUTY_IN_MAGMA
 #if HAVE_SYSTYPES_H
@@ -318,10 +313,6 @@ it is necessary to check they are correct.
 
 #endif  /* WORDSIZE */
 
-#if defined(BIGNAUTY) && (WORDSIZE==16)
- #error "BIGNAUTY requires WORDSIZE 32 or 64"
-#endif
-
 #ifdef NAUTY_IN_MAGMA
 typedef t_uint setword;
 #define SETWORD_INT  /* Don't assume this is correct in Magma. */
@@ -361,13 +352,13 @@ typedef unsigned long long setword;
 #endif /* NAUTY_IN_MAGMA else */
 
 #if WORDSIZE==16
-#define NAUTYVERSION "2.2 (16 bits)"
+#define NAUTYVERSION "2.4 (16 bits)"
 #endif
 #if WORDSIZE==32
-#define NAUTYVERSION "2.2 (32 bits)"
+#define NAUTYVERSION "2.4 (32 bits)"
 #endif
 #if WORDSIZE==64
-#define NAUTYVERSION "2.2 (64 bits)"
+#define NAUTYVERSION "2.4 (64 bits)"
 #endif
 
 #ifndef  MAXN  /* maximum allowed n value; use 0 for dynamic sizing. */
@@ -557,6 +548,7 @@ typedef unsigned long long setword;
    POPCOUNT(x) = number of first 1-bit in non-zero setword (0..WORDSIZE-1)
    BITMASK(x)  = setword whose rightmost WORDSIZE-x-1 (numbered) bits
                  are 1 and the rest 0 (0 <= x < WORDSIZE)
+                 (I.e., bits 0..x are unselected and the rest selected.)
    ALLBITS     = all (numbered) bits in a setword  */
 
 #if  WORDSIZE==64
@@ -633,21 +625,21 @@ typedef unsigned long long setword;
 #define FALSE    0
 #define TRUE     1
 
-#ifdef BIGNAUTY
-#define NAUTY_INFINITY 0xFFFFFFF   /* positive int greater than MAXN+2 */
-typedef int shortish;
+#if SIZEOF_INT>=4
+#define NAUTY_INFINITY 0x40000002
 #else
-#define NAUTY_INFINITY 0x7FFF      /* positive short int greater than MAXN+2 */
-typedef short shortish;
+#define NAUTY_INFINITY 0x7FFF
 #endif
+
+typedef int shortish;
 
 /* For backward compatibility: */
 #if !HAS_MATH_INF && !defined(INFINITY)
 #define INFINITY NAUTY_INFINITY
 #endif
 
-#if MAXN > NAUTY_INFINITY-3
- #error MAXN must be at most NAUTY_INFINITY-3
+#if MAXN > NAUTY_INFINITY-2
+ #error MAXN must be at most NAUTY_INFINITY-2
 #endif
 
     /* typedefs for sets, graphs, permutations, etc.: */
@@ -674,13 +666,13 @@ typedef struct
     int numgenerators;      /* number of generators found */
     int errstatus;          /* if non-zero : an error code */
 #define outofspace errstatus;   /* for backwards compatibility */
-    long numnodes;          /* total number of nodes */
-    long numbadleaves;      /* number of leaves of no use */
-    int maxlevel;           /* maximum depth of search */
-    long tctotal;           /* total size of all target cells */
-    long canupdates;        /* number of updates of best label */
-    long invapplics;        /* number of applications of invarproc */
-    long invsuccesses;      /* number of successful applics of invarproc() */
+    unsigned long numnodes;      /* total number of nodes */
+    unsigned long numbadleaves;  /* number of leaves of no use */
+    int maxlevel;                /* maximum depth of search */
+    unsigned long tctotal;       /* total size of all target cells */
+    unsigned long canupdates;    /* number of updates of best label */
+    unsigned long invapplics;    /* number of applications of invarproc */
+    unsigned long invsuccesses;  /* number of successful uses of invarproc() */
     int invarsuclevel;      /* least level where invarproc worked */
 } statsblk;
 
@@ -691,6 +683,8 @@ typedef struct
 
 /* manipulation of real approximation to group size */
 #define MULTIPLY(s1,s2,i) if ((s1 *= i) >= 1e10) {s1 /= 1e10; s2 += 10;}
+
+struct optionstruct;  /* incomplete definition */
 
 typedef struct
 {
@@ -706,16 +700,18 @@ typedef struct
             (graph*,int*,int*,int,int*,permutation*,set*,int*,int,int);
     boolean (*cheapautom)     /* test for easy automorphism */
             (int*,int,boolean,int);
-    int     (*bestcell)       /* find best cell to split */
-            (graph*,int*,int*,int,int,int,int);
+    int     (*targetcell)     /* decide which cell to split */
+            (graph*,int*,int*,int,int,boolean,int,int,int);
     void    (*freedyn)(void); /* free dynamic memory */
     void    (*check)          /* check compilation parameters */
             (int,int,int,int);
-    void    (*dv_spare1)();
-    void    (*dv_spare2)();
+    void    (*init)(graph*,graph**,graph*,graph**,int*,int*,set*,
+                   struct optionstruct*,int*,int,int);
+    void    (*cleanup)(graph*,graph**,graph*,graph**,int*,int*,
+                      struct optionstruct*,statsblk*,int,int);
 } dispatchvec;
 
-typedef struct
+typedef struct optionstruct
 {
     int getcanon;             /* make canong and canonlab? */
 #define LABELONLY 2   /* new value UNIMPLEMENTED */
@@ -734,9 +730,6 @@ typedef struct
          (int*,int*,int,int*,statsblk*,int,int,int,int,int,int);
     void (*usernodeproc)      /* procedure called for each node */
          (graph*,int*,int*,int,int,int,int,int,int);
-    void (*usertcellproc)     /* replacement for targetcell procedure */
-         (graph*,int*,int*,int,int,set*,int*,int*,int,int,
-              int(*)(graph*,int*,int*,int,int,int,int),int,int);
     void (*invarproc)         /* procedure to compute vertex-invariant */
          (graph*,int*,int*,int,int,int,permutation*,int,boolean,int,int);
     int tc_level;             /* max level for smart target cell choosing */
@@ -744,6 +737,7 @@ typedef struct
     int maxinvarlevel;        /* max level for invariant computation */
     int invararg;             /* value passed to (*invarproc)() */
     dispatchvec *dispatch;    /* vector of object-specific routines */
+    void *extra_options;      /* arbitrary extra options */
 #ifdef NAUTY_IN_MAGMA
     boolean print_stats;      /* CAYLEY specfic - GYM Sep 1990 */
     char *invarprocname;      /* Magma - no longer global sjc 1994 */
@@ -764,7 +758,7 @@ typedef struct
 
 #define DEFAULTOPTIONS_GRAPH(options) optionblk options = \
  {0,FALSE,FALSE,FALSE,TRUE,FALSE,CONSOLWIDTH, \
-  NULL,NULL,NULL,NULL,NULL,NULL,NULL,100,0,1,0,&dispatch_graph}
+  NULL,NULL,NULL,NULL,NULL,NULL,100,0,1,0,&dispatch_graph,NULL}
 
 #ifndef DEFAULTOPTIONS
 #define DEFAULTOPTIONS DEFAULTOPTIONS_GRAPH
@@ -860,7 +854,8 @@ extern void free(void*);
 /* File to write error messages to (used as first argument to fprintf()). */
 #define ERRFILE stderr
 
-#ifdef OLDEXTDEFS
+/* Don't use OLDEXTDEFS, it is only still here for Magma. */
+#ifdef OLDEXTDEFS   
 #define EXTDEF_CLASS
 #ifdef EXTDEFS
 #define EXTDEF_TYPE 1
@@ -996,13 +991,14 @@ extern "C" {
 #endif
 
 extern void alloc_error(char*);
-extern int bestcell(graph*,int*,int*,int,int,int,int);
 extern void breakout(int*,int*,int,int,int,set*,int);
 extern boolean cheapautom(int*,int,boolean,int);
 extern void doref(graph*,int*,int*,int,int*,int*,permutation*,set*,int*,
   void(*)(graph*,int*,int*,int,int*,permutation*,set*,int*,int,int),
   void(*)(graph*,int*,int*,int,int,int,permutation*,int,boolean,int,int),
   int,int,int,boolean,int,int);
+extern void extra_autom(permutation*,int);
+extern void extra_level(int,int*,int*,int,int,int,int,int,int);
 extern boolean isautom(graph*,permutation*,boolean,int,int);
 extern dispatchvec dispatch_graph;
 extern int itos(int,char*);
@@ -1011,6 +1007,8 @@ extern void fmptn(int*,int*,int,set*,set*,int,int);
 extern void longprune(set*,set*,set*,set*,int);
 extern void nauty(graph*,int*,int*,set*,int*,optionblk*,
                   statsblk*,set*,int,int,int,graph*);
+extern void maketargetcell(graph*,int*,int*,int,set*,int*,int*,int,boolean,
+           int,int (*)(graph*,int*,int*,int,int,boolean,int,int,int),int,int);
 extern int nextelement(set*,int,int);
 extern int orbjoin(int*,permutation*,int);
 extern void permset(set*,set*,int,permutation*);
@@ -1018,8 +1016,7 @@ extern void putstring(FILE*,char*);
 extern void refine(graph*,int*,int*,int,int*,permutation*,set*,int*,int,int);
 extern void refine1(graph*,int*,int*,int,int*,permutation*,set*,int*,int,int);
 extern void shortprune(set*,set*,int);
-extern void targetcell(graph*,int*,int*,int,int,set*,int*,
-         int*,int,int,int(*)(graph*,int*,int*,int,int,int,int),int,int);
+extern int targetcell(graph*,int*,int*,int,int,boolean,int,int,int);
 extern int testcanlab(graph*,graph*,int*,int*,int,int);
 extern void updatecan(graph*,graph*,permutation*,int,int,int);
 extern void writeperm(FILE*,permutation*,boolean,int,int);

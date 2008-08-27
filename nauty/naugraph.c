@@ -1,8 +1,8 @@
 /*****************************************************************************
 *                                                                            *
-*  Graph-specific auxiliary source file for version 2.2 of nauty.            *
+*  Graph-specific auxiliary source file for version 2.4 of nauty.            *
 *                                                                            *
-*   Copyright (1984-2002) Brendan McKay.  All rights reserved.               *
+*   Copyright (1984-2007) Brendan McKay.  All rights reserved.               *
 *   Subject to waivers and disclaimers in nauty.h.                           *
 *                                                                            *
 *   CHANGE HISTORY                                                           *
@@ -11,6 +11,8 @@
 *                   EXTDEFS is no longer required                            *
 *                   removed dynamic allocation from refine1()                *
 *       21-Nov-01 : use NAUTYREQUIRED in naugraph_check()                    *
+*       23-Nov-06 : add targetcell(); make bestcell() local                  *
+*       10-Dec-06 : remove BIGNAUTY                                          *
 *                                                                            *
 *****************************************************************************/
 
@@ -35,7 +37,7 @@
 /* aproto: header new_nauty_protos.h */
 
 dispatchvec dispatch_graph =
-  {isautom,testcanlab,updatecan,refine,refine1,cheapautom,bestcell,
+  {isautom,testcanlab,updatecan,refine,refine1,cheapautom,targetcell,
    naugraph_freedyn,naugraph_check,NULL,NULL};
 
 #if !MAXN
@@ -58,8 +60,8 @@ static int bucket[MAXN+2];
 boolean
 isautom(graph *g, permutation *perm, boolean digraph, int m, int n)
 {
-	register set *pg;
-	register int pos;
+	set *pg;
+	int pos;
 	set *pgp;
 	int posp,i;
 
@@ -91,8 +93,8 @@ isautom(graph *g, permutation *perm, boolean digraph, int m, int n)
 int
 testcanlab(graph *g, graph *canong, int *lab, int *samerows, int m, int n)
 {
-	register int i,j;
-	register set *ph;
+	int i,j;
+	set *ph;
 
 #if !MAXN
 	DYNALLOC1(permutation,workperm,workperm_sz,n,"testcanlab");
@@ -133,8 +135,8 @@ testcanlab(graph *g, graph *canong, int *lab, int *samerows, int m, int n)
 void
 updatecan(graph *g, graph *canong, permutation *lab, int samerows, int m, int n)
 {
-	register int i;
-	register set *ph;
+	int i;
+	set *ph;
 
 #if !MAXN
 	DYNALLOC1(permutation,workperm,workperm_sz,n,"updatecan");
@@ -175,9 +177,9 @@ refine(graph *g, int *lab, int *ptn, int level, int *numcells,
 }
 #else
 
-	register int i,c1,c2,labc1;
-	register setword x;
-	register set *set1,*set2;
+	int i,c1,c2,labc1;
+	setword x;
+	set *set1,*set2;
 	int split1,split2,cell1,cell2;
 	int cnt,bmin,bmax;
 	long longcode;
@@ -332,8 +334,8 @@ void
 refine1(graph *g, int *lab, int *ptn, int level, int *numcells,
        permutation *count, set *active, int *code, int m, int n)
 {
-	register int i,c1,c2,labc1;
-	register setword x;
+	int i,c1,c2,labc1;
+	setword x;
 	int split1,split2,cell1,cell2;
 	int cnt,bmin,bmax;
 	long longcode;
@@ -484,7 +486,7 @@ refine1(graph *g, int *lab, int *ptn, int level, int *numcells,
 boolean
 cheapautom(int *ptn, int level, boolean digraph, int n)
 {
-	register int i,k,nnt;
+	int i,k,nnt;
 
 	if (digraph) return FALSE;
 
@@ -515,18 +517,18 @@ cheapautom(int *ptn, int level, boolean digraph, int n)
 *                                                                            *
 *****************************************************************************/
 
-int
+static int
 bestcell(graph *g, int *lab, int *ptn, int level, int tc_level, int m, int n)
 {
-	register int i;
+	int i;
 	set *gp;
-	register setword setword1,setword2;
+	setword setword1,setword2;
 	int v1,v2,nnt;
 
 #if !MAXN 
-	DYNALLOC1(permutation,workperm,workperm_sz,n,"refine"); 
-	DYNALLOC1(set,workset,workset_sz,m,"refine"); 
-	DYNALLOC1(int,bucket,bucket_sz,n+2,"refine"); 
+	DYNALLOC1(permutation,workperm,workperm_sz,n,"bestcell"); 
+	DYNALLOC1(set,workset,workset_sz,m,"bestcell"); 
+	DYNALLOC1(int,bucket,bucket_sz,n+2,"bestcell"); 
 #endif
 
    /* find non-singleton cells: put starts in workperm[0..nnt-1] */
@@ -597,7 +599,35 @@ bestcell(graph *g, int *lab, int *ptn, int level, int tc_level, int m, int n)
 
 /*****************************************************************************
 *                                                                            *
-*  naugraph_check() checks that this file is compiled compatibly with the      *
+*  targetcell(g,lab,ptn,level,tc_level,digraph,hint,m,n) returns the index   *
+*  in lab of the next cell to split.                                         *
+*  hint is a suggestion for the answer, which is obeyed if it is valid.      *
+*  Otherwise we use bestcell() up to tc_level and the first non-trivial      *
+*  cell after that.                                                          *
+*                                                                            *
+*****************************************************************************/
+
+int
+targetcell(graph *g, int *lab, int *ptn, int level, int tc_level,
+           boolean digraph, int hint, int m, int n)
+{
+	int i,j;
+
+        if (hint >= 0 && ptn[hint] > level &&
+                         (hint == 0 || ptn[hint-1] <= level))
+            return hint;
+        else if (level <= tc_level)
+            return bestcell(g,lab,ptn,level,tc_level,m,n);
+        else
+	{
+            for (i = 0; i < n && ptn[i] <= level; ++i) {}
+	    return (i == n ? 0 : i);
+	}
+}
+
+/*****************************************************************************
+*                                                                            *
+*  naugraph_check() checks that this file is compiled compatibly with the    *
 *  given parameters.   If not, call exit(1).                                 *
 *                                                                            *
 *****************************************************************************/
@@ -623,20 +653,6 @@ naugraph_check(int wordsize, int m, int n, int version)
 	    fprintf(ERRFILE,"Error: MAXN inadequate in naugraph.c\n");
 	    exit(1);
 	}
-#endif
-
-#ifdef BIGNAUTY
-	if ((version & 1) == 0)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in naugraph.c\n");
-            exit(1);
-        }
-#else
-        if ((version & 1) == 1)
-        {   
-            fprintf(ERRFILE,"Error: BIGNAUTY mismatch in naugraph.c\n");
-            exit(1);
-        }
 #endif
 
         if (version < NAUTYREQUIRED)
