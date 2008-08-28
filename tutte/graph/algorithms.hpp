@@ -83,7 +83,7 @@ unsigned char *graph_key(T const &graph) {
     nauty_workspace = new setword[100 * M];
     _nauty_workspace_size = 100 * M;
   }
-  
+
   memset(nauty_graph_buf,0,nauty_graph_buf_size * sizeof(setword));
 
   // build map from graph vertex space to nauty vertex space
@@ -119,7 +119,7 @@ unsigned char *graph_key(T const &graph) {
       }   
     }
   }  
-
+  
   // At this stage, we have constructed a nauty graph representing our
   // original graph.  We now need to run nauty to generate the
   // canonical graph which essentially corresponds to our "graph key"
