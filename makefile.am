@@ -1,1 +1,51 @@
-SUBDIRS = nauty tutte tutteviz examples
+SUBDIRS = nauty tutte tutteviz
+examplesdir = examples/
+dist_examples_DATA = examples/edge10 \
+                     examples/edge10.solution \
+                     examples/edge11 \
+                     examples/edge11.solution \
+                     examples/edge12 \
+                     examples/edge12.solution \
+                     examples/edge13 \
+                     examples/edge13.solution \
+                     examples/edge14 \
+                     examples/edge14.solution \
+                     examples/edge15 \
+                     examples/edge16 \
+                     examples/edge17 \
+                     examples/edge18 \
+                     examples/edge19 \
+                     examples/edge20 \
+                     examples/edge21 \
+                     examples/edge22 \
+                     examples/edge23 \
+                     examples/edge24 \
+                     examples/edge25 \
+                     examples/edge26 \
+                     examples/edge27 \
+                     examples/edge28 \
+                     examples/edge29 \
+                     examples/edge30 \
+                     examples/edge31 \
+                     examples/edge31 \
+                     examples/k10 \
+                     examples/k10.solution \
+                     examples/k11 \
+                     examples/k11.solution \
+                     examples/k12 \
+                     examples/k12.solution \
+                     examples/k13 \
+                     examples/k14 \
+                     examples/k15 \
+                     examples/k16 \
+                     examples/k17 \
+                     examples/k18 \
+                     examples/k19 \
+                     examples/k20 \
+                     examples/k21 \
+                     examples/k22 \
+                     examples/k23 \
+                     examples/k24 \
+                     examples/k25 \
+                     examples/k26 \
+                     examples/k27

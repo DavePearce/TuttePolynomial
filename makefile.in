@@ -13,6 +13,7 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
 VPATH = @srcdir@
 pkgdatadir = $(datadir)/@PACKAGE@
 pkglibdir = $(libdir)/@PACKAGE@
@@ -30,10 +31,10 @@ NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
 subdir = .
-DIST_COMMON = README $(am__configure_deps) $(srcdir)/config.h.in \
-	$(srcdir)/makefile.am $(srcdir)/makefile.in \
-	$(top_srcdir)/configure AUTHORS COPYING ChangeLog INSTALL NEWS \
-	depcomp install-sh missing
+DIST_COMMON = README $(am__configure_deps) $(dist_examples_DATA) \
+	$(srcdir)/config.h.in $(srcdir)/makefile.am \
+	$(srcdir)/makefile.in $(top_srcdir)/configure AUTHORS COPYING \
+	ChangeLog INSTALL NEWS depcomp install-sh missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.in
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
@@ -52,6 +53,15 @@ RECURSIVE_TARGETS = all-recursive check-recursive dvi-recursive \
 	install-pdf-recursive install-ps-recursive install-recursive \
 	installcheck-recursive installdirs-recursive pdf-recursive \
 	ps-recursive uninstall-recursive
+am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
+am__vpath_adj = case $$p in \
+    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
+    *) f=$$p;; \
+  esac;
+am__strip_dir = `echo $$p | sed -e 's|^.*/||'`;
+am__installdirs = "$(DESTDIR)$(examplesdir)"
+dist_examplesDATA_INSTALL = $(INSTALL_DATA)
+DATA = $(dist_examples_DATA)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
 ETAGS = etags
@@ -161,7 +171,58 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = nauty tutte tutteviz examples
+SUBDIRS = nauty tutte tutteviz
+examplesdir = examples/
+dist_examples_DATA = examples/edge10 \
+                     examples/edge10.solution \
+                     examples/edge11 \
+                     examples/edge11.solution \
+                     examples/edge12 \
+                     examples/edge12.solution \
+                     examples/edge13 \
+                     examples/edge13.solution \
+                     examples/edge14 \
+                     examples/edge14.solution \
+                     examples/edge15 \
+                     examples/edge16 \
+                     examples/edge17 \
+                     examples/edge18 \
+                     examples/edge19 \
+                     examples/edge20 \
+                     examples/edge21 \
+                     examples/edge22 \
+                     examples/edge23 \
+                     examples/edge24 \
+                     examples/edge25 \
+                     examples/edge26 \
+                     examples/edge27 \
+                     examples/edge28 \
+                     examples/edge29 \
+                     examples/edge30 \
+                     examples/edge31 \
+                     examples/edge31 \
+                     examples/k10 \
+                     examples/k10.solution \
+                     examples/k11 \
+                     examples/k11.solution \
+                     examples/k12 \
+                     examples/k12.solution \
+                     examples/k13 \
+                     examples/k14 \
+                     examples/k15 \
+                     examples/k16 \
+                     examples/k17 \
+                     examples/k18 \
+                     examples/k19 \
+                     examples/k20 \
+                     examples/k21 \
+                     examples/k22 \
+                     examples/k23 \
+                     examples/k24 \
+                     examples/k25 \
+                     examples/k26 \
+                     examples/k27
+
 all: config.h
 	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
@@ -216,6 +277,23 @@ $(srcdir)/config.h.in:  $(am__configure_deps)
 
 distclean-hdr:
 	-rm -f config.h stamp-h1
+install-dist_examplesDATA: $(dist_examples_DATA)
+	@$(NORMAL_INSTALL)
+	test -z "$(examplesdir)" || $(MKDIR_P) "$(DESTDIR)$(examplesdir)"
+	@list='$(dist_examples_DATA)'; for p in $$list; do \
+	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
+	  f=$(am__strip_dir) \
+	  echo " $(dist_examplesDATA_INSTALL) '$$d$$p' '$(DESTDIR)$(examplesdir)/$$f'"; \
+	  $(dist_examplesDATA_INSTALL) "$$d$$p" "$(DESTDIR)$(examplesdir)/$$f"; \
+	done
+
+uninstall-dist_examplesDATA:
+	@$(NORMAL_UNINSTALL)
+	@list='$(dist_examples_DATA)'; for p in $$list; do \
+	  f=$(am__strip_dir) \
+	  echo " rm -f '$(DESTDIR)$(examplesdir)/$$f'"; \
+	  rm -f "$(DESTDIR)$(examplesdir)/$$f"; \
+	done
 
 # This directory's subdirectories are mostly independent; you can cd
 # into them and run `make' without going through this Makefile.
@@ -497,9 +575,12 @@ distcleancheck: distclean
 	       exit 1; } >&2
 check-am: all-am
 check: check-recursive
-all-am: makefile config.h
+all-am: makefile $(DATA) config.h
 installdirs: installdirs-recursive
 installdirs-am:
+	for dir in "$(DESTDIR)$(examplesdir)"; do \
+	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
+	done
 install: install-recursive
 install-exec: install-exec-recursive
 install-data: install-data-recursive
@@ -543,7 +624,7 @@ info: info-recursive
 
 info-am:
 
-install-data-am:
+install-data-am: install-dist_examplesDATA
 
 install-dvi: install-dvi-recursive
 
@@ -579,7 +660,7 @@ ps: ps-recursive
 
 ps-am:
 
-uninstall-am:
+uninstall-am: uninstall-dist_examplesDATA
 
 .MAKE: $(RECURSIVE_CLEAN_TARGETS) $(RECURSIVE_TARGETS) install-am \
 	install-strip
@@ -591,13 +672,14 @@ uninstall-am:
 	distclean-generic distclean-hdr distclean-tags distcleancheck \
 	distdir distuninstallcheck dvi dvi-am html html-am info \
 	info-am install install-am install-data install-data-am \
-	install-dvi install-dvi-am install-exec install-exec-am \
-	install-html install-html-am install-info install-info-am \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs installdirs-am maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
-	pdf-am ps ps-am tags tags-recursive uninstall uninstall-am
+	install-dist_examplesDATA install-dvi install-dvi-am \
+	install-exec install-exec-am install-html install-html-am \
+	install-info install-info-am install-man install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs installdirs-am \
+	maintainer-clean maintainer-clean-generic mostlyclean \
+	mostlyclean-generic pdf pdf-am ps ps-am tags tags-recursive \
+	uninstall uninstall-am uninstall-dist_examplesDATA
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
