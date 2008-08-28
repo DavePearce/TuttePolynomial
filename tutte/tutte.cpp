@@ -412,7 +412,7 @@ P tutte(G &graph, unsigned int mid) {
     if(cache.lookup(key,r,match_id)) { 
       if(write_tree) { write_tree_match(mid,match_id,graph,cout); }
       delete [] key; // free space used by key
-      cache_hit_sizes[graph.num_vertices()+1]++;
+      cache_hit_sizes[graph.num_vertices()]++;
       return r * RF;
     }
   }
