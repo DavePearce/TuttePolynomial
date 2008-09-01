@@ -490,9 +490,11 @@ biguint biguint::operator*(uint32_t w) const {
 }
 
 biguint biguint::operator*(biguint const &src) const {
-  if((src.ptr & BUI_LEFTMOST_BIT) == 0) { return (*this) * src.ptr; }
-  else if((ptr & BUI_LEFTMOST_BIT) == 0) { return src * ptr; }
-  else {
+  if((src.ptr & BUI_LEFTMOST_BIT) == 0) { 
+    return (*this) * src.ptr; 
+  } else if((ptr & BUI_LEFTMOST_BIT) == 0) { 
+    return src * ptr; 
+  } else {
     uint32_t *s(BUI_UNPACK(src.ptr));
     uint32_t depth = s[0];
     biguint ans(0U,depth);

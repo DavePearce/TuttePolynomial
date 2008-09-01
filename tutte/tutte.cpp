@@ -1137,7 +1137,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	  // negative) power of 2. 
 	  bigint Tm1m1 = tuttePoly.substitute(-1,-1);
 	  bigint Tm1m1pow = INT32_C(0);
-	  
+
 	  while((Tm1m1 % INT32_C(2)) == INT32_C(0)) {
 	    Tm1m1 = Tm1m1 / INT32_C(2);
 	    Tm1m1pow = Tm1m1pow + INT32_C(1);

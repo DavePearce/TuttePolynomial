@@ -248,13 +248,13 @@ int main(int argc, char *argv[]) {
     cout << "PRIM ADD DONE" << endl;
     primitive_test(count,SUB);
     cout << "PRIM SUB DONE" << endl;
-    commutative_add_test(count,10);
+    commutative_add_test(count,100);
     cout << "COMM ADD/SUB DONE" << endl;
     primitive_test(count,MUL);
     cout << "PRIM MUL DONE" << endl;
     primitive_test(count,DIV);
     cout << "PRIM DIV DONE" << endl;
-    commutative_mul_test(count,10);
+    commutative_mul_test(count,100);
     cout << "COMM MUL/DIV DONE" << endl;
     comparator_test(count,EQ);
     cout << "COMP ==, != DONE" << endl;

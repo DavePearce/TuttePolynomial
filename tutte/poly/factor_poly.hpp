@@ -591,7 +591,8 @@ public:
     bigint r(INT32_C(0));
     bigint p(x); 
     for(unsigned int i=0;i<nxterms;++i) {
-      r += pow(p,i) * xterms[i].substitute(y);
+      bigint x = xterms[i].substitute(y);
+      r += pow(p,i) * x;
     }
     return r;
   }
