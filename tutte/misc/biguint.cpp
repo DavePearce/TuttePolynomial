@@ -356,12 +356,12 @@ void biguint::operator-=(biguint const &src) {
     uint32_t *s(BUI_UNPACK(src.ptr));
     uint32_t depth = s[0];
     uint32_t *p;
-    
+
     if((ptr & BUI_LEFTMOST_BIT) == 0) { 
       // assume it needs to go big
       p = aligned_alloc(depth+2);
       p[0] = depth;      
-      p[1] = depth;      
+      p[1] = 0;      
       p[2] = ptr;
       for(int i=3;i<(depth+2);++i) { p[i] = 0U; }
       ptr = BUI_PACK(p);
@@ -369,9 +369,9 @@ void biguint::operator-=(biguint const &src) {
       expand(depth);
       p = BUI_UNPACK(ptr);
     }
-
+    
     uint32_t borrow = 0;
-
+    
     for(uint32_t i=2;i<(depth+2);++i) {
       uint32_t v = p[i];
       uint32_t w = s[i];

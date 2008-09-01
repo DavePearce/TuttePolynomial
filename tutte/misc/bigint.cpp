@@ -187,7 +187,7 @@ void bigint::operator-=(int32_t w) {
       sign = !sign;
     } else {
       magnitude -= w_magnitude;
-      if(magnitude == UINT32_C(0)) { sign = false; }
+      if(magnitude == UINT32_C(0)) { sign = false; }      
     }
   } else {
     // neg - pos, pos - neg.
@@ -391,7 +391,16 @@ bigint bigint::operator^(uint32_t v) const {
 int32_t bigint::c_int32() const {
   uint32_t w = magnitude.c_uint32();
   if((!sign && (w > INT32_MAX)) || w >= INT32_MAX) {
-    throw runtime_error("bigint too large for int");
+    throw runtime_error("bigint too large for int32");
+  } 
+  if(sign) { return -w; } 
+  else { return w; }
+}  
+
+int64_t bigint::c_int64() const {
+  uint64_t w = magnitude.c_uint64();
+  if((!sign && (w > INT64_MAX)) || w >= INT64_MAX) {
+    throw runtime_error("bigint too large for int64");
   } 
   if(sign) { return -w; } 
   else { return w; }
@@ -416,7 +425,8 @@ std::ostream& operator<<(ostream &out, bigint const &val) {
 /* =============================== */
 
 bigint pow(bigint const &r, uint32_t power) {
-  return r ^ power;
+  bigint x = r ^ power;
+  return x;
 }
 
 bigint operator+(biguint const &a, bigint const &b) {

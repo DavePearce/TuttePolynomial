@@ -1135,13 +1135,20 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	  cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(UINT32_C(2)),E) << ")" << endl;	
 	  // The tutte at T(-1,-1) should always give a (positive or
 	  // negative) power of 2. 
+	  cout << "STAGE -1" << endl;
 	  bigint Tm1m1 = tuttePoly.substitute(-1,-1);
+	  cout << "STAGE 0" << endl;
 	  bigint Tm1m1pow = INT32_C(0);
-
+	  
+	  cout << "STAGE 1" << endl;
 	  while((Tm1m1 % INT32_C(2)) == INT32_C(0)) {
+	    cout << "STAGE 2" << endl;
 	    Tm1m1 = Tm1m1 / INT32_C(2);
+	    cout << "STAGE 3" << endl;
 	    Tm1m1pow = Tm1m1pow + INT32_C(1);
+	    cout << "STAGE 4" << endl;
 	  }
+	  cout << "STAGE 5" << endl;
 	  if(Tm1m1 == INT32_C(-1)) {
 	    cout << "T(-1,-1) = -2^" << Tm1m1pow << endl;
 	  } else if(Tm1m1 == INT32_C(1)) {

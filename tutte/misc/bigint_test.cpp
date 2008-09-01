@@ -9,10 +9,10 @@ using namespace std;
 
 typedef enum { ADD, SUB, DIV, MUL, LT, LTEQ, GT, GTEQ, EQ, NEQ } aop;
 
-int random_word() {
+int32_t random_word() {
   unsigned int w1 = (unsigned int) (65536.0*rand()/(RAND_MAX+1.0));
   unsigned int w2 = (unsigned int) (65536.0*rand()/(RAND_MAX+1.0));
-  return (int) ((w1 << 16U) + w2);
+  return (int32_t) ((w1 << 16U) + w2);
 }
 
 string op2str(aop op) {
@@ -30,8 +30,8 @@ string op2str(aop op) {
 
 void comparator_test(unsigned int count, aop op) {
   for(unsigned int i=0;i!=count;++i) {
-    int w1(random_word());
-    int w2(random_word());
+    int32_t w1(random_word());
+    int32_t w2(random_word());
 
     bigint r1(w1);
     bigint r2(w2);
@@ -58,8 +58,8 @@ void comparator_test(unsigned int count, aop op) {
   }
 
   for(unsigned int i=0;i!=count;++i) {
-    long long w1(random_word());
-    long long w2(random_word());
+    int64_t w1(random_word());
+    int64_t w2(random_word());
     w1 = w1 * random_word();
     w2 = w2 * random_word();
 
@@ -90,13 +90,13 @@ void comparator_test(unsigned int count, aop op) {
 
 void commutative_mul_test(unsigned int count, unsigned int length) {
   for(unsigned int i=0;i!=count;++i) {
-    int ws[length];
+    int32_t ws[length];
 
     for(unsigned int j=0;j!=length;++j) {
       ws[j] = random_word();
     }
 
-    bigint v(1);
+    bigint v(INT32_C(1));
     for(unsigned int j=0;j!=length;++j) {
       v *= ws[j];
     }
@@ -108,7 +108,7 @@ void commutative_mul_test(unsigned int count, unsigned int length) {
       v /= ws[j-1];
     }
     
-    if(v != 1) {
+    if(v != INT32_C(1)) {
       // error
       cout << "ERROR: commutative mul test failed! " << endl;
       for(unsigned int j=0;j!=length;++j) {
@@ -128,24 +128,25 @@ void commutative_mul_test(unsigned int count, unsigned int length) {
 void commutative_add_test(unsigned int count, unsigned int length) {
 
   for(unsigned int i=0;i!=count;++i) {
-    int ws[length];
+    int32_t ws[length];
+    
     for(unsigned int j=0;j!=length;++j) {
       ws[j] = random_word();
     }
-
-    bigint v(0);
+    
+    bigint v(INT32_C(0));
     for(unsigned int j=0;j!=length;++j) {
       v += ws[j];
     }
-
+    
     bigint w(v);
-
+    
     // now for the commutative part
     for(unsigned int j=0;j!=length;++j) {      
       v -= ws[j];
     }
-
-    if(v != 0) {
+    
+    if(v != INT32_C(0)) {
       // error
       cout << "ERROR: commutative add test failed!" << endl;
       for(unsigned int j=0;j!=length;++j) {
@@ -164,8 +165,8 @@ void commutative_add_test(unsigned int count, unsigned int length) {
 
 void primitive_test(unsigned int count, aop op) {
   for(unsigned int i=0;i!=count;++i) {
-    int w1(random_word());
-    int w2(random_word());
+    int32_t w1(random_word());
+    int32_t w2(random_word());
     if((op == SUB || op == DIV) && w1 < w2) { swap(w1,w2); }
     bigint r1(w1);
     bigint r2(w1);
@@ -191,10 +192,10 @@ void primitive_test(unsigned int count, aop op) {
 
     if(r1 != r3) {
       // error
-      cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r1.c_longlong() << ", not " << r3 << endl;
+      cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r1.c_int64() << ", not " << r3 << endl;
     } else if(r2 != r3) {
       // error
-      cout << "ERROR(2): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r2.c_longlong() << ", not " << r3 << endl;
+      cout << "ERROR(2): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r2.c_int64() << ", not " << r3 << endl;
     } 
   }
 }
@@ -242,22 +243,26 @@ int main(int argc, char *argv[]) {
   // seed random number generator
   srand(time(NULL));  
   // do the tests!
-  primitive_test(count,ADD);
-  cout << "PRIM ADD DONE" << endl;
-  primitive_test(count,SUB);
-  cout << "PRIM SUB DONE" << endl;
-  commutative_add_test(count,10);
-  cout << "COMM ADD/SUB DONE" << endl;
-  primitive_test(count,MUL);
-  cout << "PRIM MUL DONE" << endl;
-  primitive_test(count,DIV);
-  cout << "PRIM DIV DONE" << endl;
-  commutative_mul_test(count,10);
-  cout << "COMM MUL/DIV DONE" << endl;
-  comparator_test(count,EQ);
-  cout << "COMP ==, != DONE" << endl;
-  comparator_test(count,LT);
-  cout << "COMP <, >= DONE" << endl;
-  comparator_test(count,LTEQ);
-  cout << "COMP <=, > DONE" << endl;
+  try {
+    primitive_test(count,ADD);
+    cout << "PRIM ADD DONE" << endl;
+    primitive_test(count,SUB);
+    cout << "PRIM SUB DONE" << endl;
+    commutative_add_test(count,10);
+    cout << "COMM ADD/SUB DONE" << endl;
+    primitive_test(count,MUL);
+    cout << "PRIM MUL DONE" << endl;
+    primitive_test(count,DIV);
+    cout << "PRIM DIV DONE" << endl;
+    commutative_mul_test(count,10);
+    cout << "COMM MUL/DIV DONE" << endl;
+    comparator_test(count,EQ);
+    cout << "COMP ==, != DONE" << endl;
+    comparator_test(count,LT);
+    cout << "COMP <, >= DONE" << endl;
+    comparator_test(count,LTEQ);
+    cout << "COMP <=, > DONE" << endl;
+  } catch(exception const &e) {
+    cout << "CAUGHT EXCEPTION: " << e.what() << endl;
+  }
 }
