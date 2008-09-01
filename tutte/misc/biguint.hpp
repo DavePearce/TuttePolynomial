@@ -21,6 +21,10 @@
 #define UINT32_MAX UINT_MAX
 #endif
 
+#ifndef UINT32_C
+#define UINT32_C(x) ((uint32_t)x)
+#endif
+
 #if SIZEOF_UNSIGNED_INT_P==4
 #define BUI_LEFTMOST_BIT (1U << 31U)
 typedef uint32_t uint32_ptr_t;

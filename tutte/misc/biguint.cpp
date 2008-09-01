@@ -586,7 +586,7 @@ uint32_t biguint::operator%(uint32_t v) const {
 }
 
 void biguint::operator^=(uint32_t v) {
-  if(v == 0) { (*this) = 1U; }
+  if(v == UINT32_C(0)) { (*this) = UINT32_C(1); }
   else {
     biguint p(*this);
     
@@ -708,9 +708,9 @@ uint32_t *biguint::aligned_alloc(uint32_t c) {
 std::ostream& operator<<(ostream &out, biguint val) {
   std::string r;
 
-  if(val == 0U) { return out << "0"; }
+  if(val == UINT32_C(0)) { return out << "0"; }
   
-  while(val != 0U) {
+  while(val != UINT32_C(0)) {
     uint32_t digit = val % 10;
     char d = digit + '0'; // YUK
     r = d + r;

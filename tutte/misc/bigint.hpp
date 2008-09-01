@@ -20,6 +20,10 @@
 #define	INT64_MAX	0x7fffffffffffffffLL
 #endif
 
+#ifndef INT32_C
+#define INT32_C(x) ((int32_t)x)
+#endif
+
 class bigint {
 private:
   // Store integer in sign magnitude representation, using biguint.
@@ -43,9 +47,8 @@ public:
 
   bool operator==(int32_t v) const;
   bool operator==(int64_t v) const;
-  //  bool operator==(uint32_t v) const;
-  //  bool operator==(unsigned long v) const;
-  //  bool operator==(uint64_t v) const;
+  bool operator==(uint32_t v) const;
+  bool operator==(uint64_t v) const;
   bool operator==(bigint const &v) const;
   bool operator==(biguint const &v) const;
 

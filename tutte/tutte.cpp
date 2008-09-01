@@ -1105,11 +1105,11 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       } else if(mode == MODE_TUTTE) {	
 	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
       } else if(mode == MODE_FLOW) {
-	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(bigint(-1),(E-V)+C) << " * ( ";
+	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),(E-V)+C) << " * ( ";
 	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
 	TP = "FP";
       } else if(mode == MODE_CHROMATIC) {
-  	cout << "CP[" << (ngraphs_completed+1) << "] := " << pow(bigint(-1),V-C) << " * x * ( ";
+  	cout << "CP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),V-C) << " * x * ( ";
 	cout << search_replace("x","(1-x)",tuttePoly.str()) << " ) :" << endl;
 	TP = "CP";
       }
@@ -1132,19 +1132,19 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	if(mode == MODE_TUTTE) {
 	  // only print these evaluation points when in tutte mode
 	  cout << "T(1,1) = " << tuttePoly.substitute(1,1) << endl;
-	  cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(2U),E) << ")" << endl;	
+	  cout << "T(2,2) = " << tuttePoly.substitute(2,2) << " (should be " << pow(biguint(UINT32_C(2)),E) << ")" << endl;	
 	  // The tutte at T(-1,-1) should always give a (positive or
 	  // negative) power of 2. 
 	  bigint Tm1m1 = tuttePoly.substitute(-1,-1);
-	  bigint Tm1m1pow = 0;
+	  bigint Tm1m1pow = INT32_C(0);
 
-	  while((Tm1m1 % 2) == 0) {
-	    Tm1m1 = Tm1m1 / 2;
-	    Tm1m1pow = Tm1m1pow + 1;
+	  while((Tm1m1 % INT32_C(2)) == INT32_C(0)) {
+	    Tm1m1 = Tm1m1 / INT32_C(2);
+	    Tm1m1pow = Tm1m1pow + INT32_C(1);
 	  }
-	  if(Tm1m1 == -1) {
+	  if(Tm1m1 == INT32_C(-1)) {
 	    cout << "T(-1,-1) = -2^" << Tm1m1pow << endl;
-	  } else if(Tm1m1 == 1) {
+	  } else if(Tm1m1 == INT32_C(1)) {
 	    cout << "T(-1,-1) = 2^" << Tm1m1pow << endl;
 	  } else {
 	    // getting here indicates an error in the computation

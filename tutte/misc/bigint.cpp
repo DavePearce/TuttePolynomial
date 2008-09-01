@@ -101,7 +101,7 @@ void bigint::operator+=(int32_t w) {
       sign = !sign;
     } else {
       magnitude -= w_magnitude;
-      if(magnitude == 0U) { sign = false; }
+      if(magnitude == UINT32_C(0)) { sign = false; }
     }
   } else {
     // neg + neg, pos + pos.
@@ -132,7 +132,7 @@ void bigint::operator+=(bigint const &w) {
       sign = !sign;
     } else {
       magnitude -= w.magnitude;
-      if(magnitude == 0U) { sign = false; }
+      if(magnitude == UINT32_C(0)) { sign = false; }
     }
   } else {
     // neg + neg, pos + pos.
@@ -187,14 +187,13 @@ void bigint::operator-=(int32_t w) {
       sign = !sign;
     } else {
       magnitude -= w_magnitude;
-      if(magnitude == 0U) { sign = false; }
+      if(magnitude == UINT32_C(0)) { sign = false; }
     }
   } else {
     // neg - pos, pos - neg.
     magnitude += w_magnitude;
   }
 }
-
 void bigint::operator-=(uint32_t w) {
   if(!sign) {
     if(magnitude < w) {
@@ -208,7 +207,6 @@ void bigint::operator-=(uint32_t w) {
     magnitude += w;
   }
 }
-
 void bigint::operator-=(bigint const &w) {
   if(w.sign == sign) {
     // neg + pos, pos + neg
@@ -218,7 +216,7 @@ void bigint::operator-=(bigint const &w) {
       sign = !sign;
     } else {
       magnitude -= w.magnitude;
-      if(magnitude == 0U) { sign = false; }
+      if(magnitude == UINT32_C(0)) { sign = false; }
     }
   } else {
     // neg + neg, pos + pos.
@@ -245,13 +243,11 @@ bigint bigint::operator-(int32_t w) const {
   r -= w;
   return r;
 }
-
 bigint bigint::operator-(uint32_t w) const {
   bigint r(*this);
   r -= w;
   return r;
 }
-
 bigint bigint::operator-(bigint const &w) const {
   bigint r(*this);
   r -= w;
@@ -268,38 +264,36 @@ bigint bigint::operator-(biguint const &w) const {
 
 void bigint::operator*=(int32_t w) {
   magnitude *= my_abs(w);
-  if(w == 0U) { sign = false; }
+  if(w == UINT32_C(0)) { sign = false; }
   else if(sign != (w < 0)) { sign = true; }
   else if(sign) { sign=false; }
 }
 
 void bigint::operator*=(int64_t w) {
   magnitude *= my_abs(w);
-  if(w == 0U) { sign = false; }
+  if(w == UINT32_C(0)) { sign = false; }
   else if(sign != (w < 0)) { sign = true; }
   else if(sign) { sign = false; }
 }
-
 void bigint::operator*=(uint32_t w) {
   magnitude *= w;
-  if(w == 0U) { sign = false; }
+  if(w == UINT32_C(0)) { sign = false; }
 }
 
 void bigint::operator*=(uint64_t w) {
   magnitude *= w;
-  if(w == 0U) { sign = false; }
+  if(w == UINT32_C(0)) { sign = false; }
 }
-
 void bigint::operator*=(bigint const &w) {
   magnitude *= w.magnitude;
-  if(magnitude == 0U) { sign = false; }
+  if(magnitude == UINT32_C(0)) { sign = false; }
   else if(sign != w.sign) { sign = true; }
   else if(sign) { sign = false; }
 }
 
 void bigint::operator*=(biguint const &w) {
   magnitude *= w;
-  if(w == 0U) { sign = false; }
+  if(w == UINT32_C(0)) { sign = false; }
 }
 
 bigint bigint::operator*(int32_t w) const {
@@ -313,7 +307,6 @@ bigint bigint::operator*(int64_t w) const {
   r *= w;
   return r;
 }
-
 bigint bigint::operator*(uint32_t w) const {
   bigint r(*this);
   r *= w;
@@ -325,7 +318,6 @@ bigint bigint::operator*(uint64_t w) const {
   r *= w;
   return r;
 }
-
 bigint bigint::operator*(bigint const &w) const {
   bigint r(*this);
   r *= w;
@@ -342,7 +334,7 @@ bigint bigint::operator*(biguint const &w) const {
 
 void bigint::operator/=(int32_t w) {
   magnitude /= my_abs(w);
-  if(magnitude == 0U) { sign = false; }
+  if(magnitude == UINT32_C(0)) { sign = false; }
   else if(sign != (w < 0)) { sign = true; }
   else if(sign) { sign = false; }
 }
@@ -357,30 +349,26 @@ bigint bigint::operator/(int32_t w) const {
 
 void bigint::operator%=(int32_t v) {
   magnitude %= my_abs(v);
-  if(magnitude == 0U) { sign = false; }
+  if(magnitude == UINT32_C(0)) { sign = false; }
 }
-
 void bigint::operator%=(uint32_t v) {
   magnitude %= v;
-  if(magnitude == 0U) { sign = false; }
+  if(magnitude == UINT32_C(0)) { sign = false; }
 }
-
 bigint bigint::operator%(int32_t v) const {
   bigint r(*this);
   r %= v;
   return r;
 }
-
 bigint bigint::operator%(uint32_t v) const {
   bigint r(*this);
   r %= v;
   return r;
 }
-
 /* ========= OPERATOR ^ ========== */
 
 void bigint::operator^=(uint32_t v) {
-  if(v == 0U) { (*this) = 1; }
+  if(v == UINT32_C(0)) { (*this) = INT32_C(1); }
   else {
     bigint p(*this);
     
@@ -416,7 +404,7 @@ int32_t bigint::c_int32() const {
 std::ostream& operator<<(ostream &out, bigint const &val) {
   std::string r;
 
-  if(val == 0) { return out << "0"; }
+  if(val == INT32_C(0)) { return out << "0"; }
   else if(val.sign) { return out << "-" << val.magnitude; }
   else {
     return out << val.magnitude;
