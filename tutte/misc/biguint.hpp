@@ -91,10 +91,13 @@ public:
 	  uint32_t padding = p[1];	
 	  	  
 	  if(src_depth <= (depth + padding)) {
+	    padding = ((depth+padding)-src_depth);
 	    p[0] = src_depth;
-	    p[1] = (depth+padding) - src_depth;
+	    p[1] = padding;
 	    memcpy(p+2,s+2,(src_depth)*sizeof(uint32_t));
-	    memset(p+src_depth+2,0,((depth+padding)-src_depth)*sizeof(uint32_t));
+	    if(padding > 0) {
+	      memset(p+src_depth+2,0,padding*sizeof(uint32_t));
+	    }
 	  } else {	  
 	    free(BUI_UNPACK(ptr));
 	    clone(src);

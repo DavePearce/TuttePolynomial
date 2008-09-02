@@ -21,9 +21,7 @@ biguint::biguint(uint32_t v, uint32_t depth) {
   uint32_t padding = depth;
   uint32_t *p = aligned_alloc(depth+padding+2);
   p[0]=depth;
-  // PADDING FIX
-  // p[1]=padding; 
-  p[1] = 0;
+  p[1]=padding; 
 
   memset(p+2,0,(depth+padding)*sizeof(uint32_t));
   p[2] = v;
@@ -657,9 +655,7 @@ void biguint::expand(uint32_t ndepth) {
   } else {
     uint32_t *nptr = aligned_alloc((ndepth*2)+2);
     nptr[0]=ndepth;
-    // PADDING FIX
-    // nptr[1]=ndepth;
-    nptr[1]=0;
+    nptr[1]=ndepth;
 
     memset(nptr+depth+2,0,((ndepth*2)-depth)*sizeof(uint32_t));
     memcpy(nptr+2,p+2,depth*sizeof(uint32_t));
@@ -759,9 +755,7 @@ bistream &operator>>(bistream &bin, biguint &src) {
     if(((uint32_ptr_t)ptr) & 1U) { throw std::runtime_error("Allocated memory not aligned!"); }
     
     ptr[0] = depth;
-    // PADDING FIX
-    // ptr[1] = depth;
-    ptr[1] = 0;
+    ptr[1] = depth;
 
     // copy data
     for(uint32_t i=2;i<(depth+2);++i) { bin >> ptr[i]; }
