@@ -18,12 +18,12 @@ using namespace std;
 /* =============================== */
 
 biguint::biguint(uint32_t v, uint32_t depth) { 
-  uint32_t padding = depth*2;
+  uint32_t padding = depth;
   uint32_t *p = aligned_alloc(depth+padding+2);
   p[0]=depth;
   p[1]=padding;
   memset(p+2,0,(depth+padding)*sizeof(uint32_t));
-  p[2]=v;
+  p[2] = v;
   ptr = BUI_PACK(p);
 }
 
