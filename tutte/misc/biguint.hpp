@@ -31,7 +31,7 @@ typedef uint32_t uint32_ptr_t;
 
 #elif SIZEOF_UNSIGNED_INT_P==8
 typedef uint64_t uint32_ptr_t;
-#define BUI_LEFTMOST_BIT (((int64_t)1U) << 63U)
+#define BUI_LEFTMOST_BIT (((uint64_t)1U) << 63U)
 
 #else
 #error "sizeof(int*) is neither 32bit or 64bit."
