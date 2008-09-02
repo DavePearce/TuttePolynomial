@@ -531,7 +531,7 @@ biguint biguint::operator*(biguint const &src) const {
 }
 
 void biguint::operator/=(uint32_t v) {
-  if(v == 0) { throw new std::runtime_error("divide by zero"); }
+  if(v == 0) { throw std::runtime_error("divide by zero"); }
   if(ptr & BUI_LEFTMOST_BIT) {
     uint32_t *p(BUI_UNPACK(ptr));
     uint32_t remainder=0;
@@ -555,7 +555,7 @@ biguint biguint::operator/(uint32_t w) const {
 }
 
 void biguint::operator%=(uint32_t v) {
-  if(v == 0) { throw new std::runtime_error("divide by zero"); }
+  if(v == 0) { throw std::runtime_error("divide by zero"); }
   if(ptr & BUI_LEFTMOST_BIT) {
     uint32_t *p(BUI_UNPACK(ptr));
     uint32_t remainder=0;
@@ -572,7 +572,7 @@ void biguint::operator%=(uint32_t v) {
 }
 
 uint32_t biguint::operator%(uint32_t v) const {
-  if(v == 0) { throw new std::runtime_error("divide by zero"); }
+  if(v == 0) { throw std::runtime_error("divide by zero"); }
   if(ptr & BUI_LEFTMOST_BIT) {
     uint32_t *p(BUI_UNPACK(ptr));
     uint32_t remainder=0;
