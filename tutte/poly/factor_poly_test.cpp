@@ -40,12 +40,8 @@ factor_poly<biguint> random_poly(unsigned int length, unsigned int width) {
 
 void primitive_test(unsigned int count, unsigned int length, unsigned int width, aop op, bool verbose) {
   for(unsigned int i=0;i!=count;++i) {
-    factor_poly<biguint> p1(random_poly(length,width));
-    factor_poly<biguint> p2(random_poly(length,width));
-
-    if(verbose) {
-      cout << "=========== POLYNOMIAL ============" << endl << p1.str() << endl;
-    }
+    factor_poly<biguint> p1(random_poly(length,width)*random_poly(length,width)*random_poly(length,width));
+    factor_poly<biguint> p2(random_poly(length,width)*random_poly(length,width)*random_poly(length,width));
 
     if(op == ADD) {
       bigint sum1_1 = p1.substitute(1,1) + p2.substitute(1,1);
@@ -79,6 +75,9 @@ void primitive_test(unsigned int count, unsigned int length, unsigned int width,
       } else if(p1.substitute(2,2) != sum2_2) {
 	cerr << "ERROR(3.2) ********** " << endl;
       }
+    }
+    if(verbose) {
+      cout << "=========== POLYNOMIAL ============" << endl << p1.str() << endl;
     }
   }
 }
