@@ -127,17 +127,21 @@ void commutative_mul_test(uint32_t count, uint32_t length) {
 void commutative_add_test(uint32_t count, uint32_t length) {
   for(uint32_t i=0;i!=count;++i) {
     uint32_t ws[length];
+    biguint ts[length];
+
     for(uint32_t j=0;j!=length;++j) {
       ws[j] = random_word();
     }
 
     biguint v(UINT32_C(0));
     for(uint32_t j=0;j!=length;++j) {
+      ts[j] = v;
       v += ws[j];
     }
     
     // now for the commutative part
     for(uint32_t j=0;j!=length;++j) {      
+      ts[j] = v;
       v -= ws[j];
     }
     
@@ -238,8 +242,8 @@ int main(int argc, char *argv[]) {
   cout << "PRIM MUL DONE" << endl;
   primitive_test(count,DIV);
   cout << "PRIM DIV DONE" << endl;
-  commutative_mul_test(count,100);
-  cout << "COMM MUL DONE" << endl;
+  //  commutative_mul_test(count,100);
+  //  cout << "COMM MUL DONE" << endl;
   comparator_test(count,EQ);
   cout << "COMP ==, != DONE" << endl;
   comparator_test(count,LT);

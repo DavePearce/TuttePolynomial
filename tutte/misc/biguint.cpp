@@ -338,7 +338,7 @@ biguint biguint::operator+(uint32_t w) const {
 
 void biguint::operator-=(uint32_t w) {
   if(ptr & BUI_LEFTMOST_BIT) {    
-    uint32_t *p(BUI_UNPACK(ptr));
+    uint32_t *p(BUI_UNPACK(ptr));    
     uint32_t v = p[2];
     p[2] = v - w;
     if(v < w) { ripple_borrow(1); }
@@ -699,7 +699,7 @@ void biguint::ripple_borrow(uint32_t level) {
 uint32_t *biguint::aligned_alloc(uint32_t c) {
   uint32_t *p = (uint32_t*) malloc(c * sizeof(uint32_t));  
   if(p == NULL) { throw std::bad_alloc(); }
-  if(((uint32_ptr_t)p) & 1) { throw std::runtime_error("Allocated memory not aligned!"); }
+  if(((uint32_ptr_t)p) & 1U) { throw std::runtime_error("Allocated memory not aligned!"); }
   return p;
 }
 
