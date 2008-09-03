@@ -526,6 +526,7 @@ biguint biguint::operator*(biguint const &src) const {
       
       if(carry == 1) { ans.ripple_carry(t_depth+j); }     
     }
+
     return ans;
   }
 }
@@ -658,7 +659,7 @@ void biguint::expand(uint32_t ndepth) {
     nptr[1]=ndepth;
 
     memset(nptr+depth+2,0,((ndepth*2)-depth)*sizeof(uint32_t));
-    memcpy(nptr+2,p+2,depth*sizeof(uint32_t));
+    memcpy(nptr+2, p+2, depth*sizeof(uint32_t));
     free(p);
     ptr = BUI_PACK(nptr);
   }
@@ -756,14 +757,13 @@ bistream &operator>>(bistream &bin, biguint &src) {
     
     ptr[0] = depth;
     ptr[1] = depth;
-
     // copy data
     for(uint32_t i=2;i<(depth+2);++i) { bin >> ptr[i]; }
     // clear padding zeros
     memset(ptr+2+depth,0,depth*sizeof(uint32_t));
 
     biguint tmp;
-    tmp.ptr = (uint32_ptr_t) ptr;
+    tmp.ptr = BUI_PACK(ptr);
     src.swap(tmp);
   }
 

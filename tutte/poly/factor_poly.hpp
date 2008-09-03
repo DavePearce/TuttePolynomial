@@ -76,6 +76,7 @@ public:
 	  coefficients[i] = UINT32_C(0);
 	}
       }
+	
     }
     return *this;
   }

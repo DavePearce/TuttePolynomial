@@ -1051,7 +1051,6 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     num_disbicomps = 0;
     num_trees = 0;
     num_cycles = 0;
-
     unsigned int V(start_graph.num_vertices());
     unsigned int E(start_graph.num_edges());
     unsigned int C(start_graph.num_components());    

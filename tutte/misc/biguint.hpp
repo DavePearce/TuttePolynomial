@@ -108,6 +108,7 @@ public:
 	ptr = src.ptr;
       }
     }
+
     return *this;
   }
 
@@ -214,7 +215,9 @@ private:
       uint32_t depth = s[0];
       uint32_t padding = s[1];
       uint32_t *p = aligned_alloc(depth+padding+2);
-      memcpy(p,s,(padding+depth+2)*sizeof(uint32_t));
+      p[0] = depth;
+      p[1] = padding;
+      memcpy(p+2,s+2,(padding+depth)*sizeof(uint32_t));
       ptr = BUI_PACK(p);
     } else {
       ptr = src.ptr;
