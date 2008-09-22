@@ -554,6 +554,14 @@ P flow(G &graph, unsigned int mid) {
 	  // non-multi-edge then you throw away the whole graph.
 	  num_trees++; 
 	  if(write_tree) { write_tree_leaf(mid,graph,cout); }
+	  // Don't forget ... save computed polynomial!
+	  if(key != NULL) {
+	    // there is, strictly speaking, a bug with using mid
+	    // here, since the graph being stored is not the same as that
+	    // at the beginning.
+	    cache.store(key,poly,mid);
+	    delete [] key;  // free space used by key
+	  }    
 	  return P(); 
 	}
       }
@@ -675,7 +683,6 @@ P chromatic(G &graph, unsigned int mid) {
       poly *= tmp;
     }
     num_completed++;
-    return poly;
   } else {
 
     // TREE OUTPUT STUFF
@@ -710,15 +717,15 @@ P chromatic(G &graph, unsigned int mid) {
       // recursively compute the polynomial   
       poly = chromatic<G,P>(graph, lid) + chromatic<G,P>(g2, rid);
     } 
+  }
 
-    // Finally, save computed polynomial
-    if(key != NULL) {
-      // there is, strictly speaking, a bug with using mid
-      // here, since the graph being stored is not the same as that
-      // at the beginning.
-      cache.store(key,poly,mid);
-      delete [] key;  // free space used by key
-    }
+  // Finally, save computed polynomial
+  if(key != NULL) {
+    // there is, strictly speaking, a bug with using mid
+    // here, since the graph being stored is not the same as that
+    // at the beginning.
+    cache.store(key,poly,mid);
+    delete [] key;  // free space used by key
   }
 
   return poly;
