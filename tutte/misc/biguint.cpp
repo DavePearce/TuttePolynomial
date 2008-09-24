@@ -613,7 +613,7 @@ biguint biguint::operator^(uint32_t v) const {
 uint32_t biguint::c_uint32() const {
   if(ptr & BUI_LEFTMOST_BIT) {
     uint32_t *p(BUI_UNPACK(ptr));
-    if(p[0] > 1U) { throw runtime_error("biguint too large for unsigned int"); }
+    if(p[0] > 1U) { throw runtime_error("biguint too large for uint32_t"); }
     return p[2];
   } else {
     return ptr;
@@ -624,7 +624,7 @@ uint64_t biguint::c_uint64() const {
   if(ptr & BUI_LEFTMOST_BIT) {
     uint32_t *p(BUI_UNPACK(ptr));
     uint32_t depth = p[0];
-    if(depth > 2U) { throw runtime_error("biguint too large for unsigned long long"); }
+    if(depth > 2U) { throw runtime_error("biguint too large for uint64_t"); }
     uint64_t r=0;
     for(uint32_t i=depth+1;i>1;--i) {
       r <<= 32U;
