@@ -181,10 +181,10 @@ void primitive_test(uint32_t count, aop op) {
 
     if(r1 != r3) {
       // error
-      cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r1.c_uint64() << ", not " << r3 << endl;
+      cout << "ERROR(1): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r1 << ", not " << r3 << endl;
     } else if(r2 != r3) {
       // error
-      cout << "ERROR(2): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r2.c_uint64() << ", not " << r3 << endl;
+      cout << "ERROR(2): " << w1 << " " << op2str(op) << " " << w2 << " gives " << r2 << ", not " << r3 << endl;
     } 
   }
 }
@@ -242,8 +242,8 @@ int main(int argc, char *argv[]) {
   cout << "PRIM MUL DONE" << endl;
   primitive_test(count,DIV);
   cout << "PRIM DIV DONE" << endl;
-  //  commutative_mul_test(count,100);
-  //  cout << "COMM MUL DONE" << endl;
+  // commutative_mul_test(count,100);
+  // cout << "COMM MUL DONE" << endl;
   comparator_test(count,EQ);
   cout << "COMP ==, != DONE" << endl;
   comparator_test(count,LT);

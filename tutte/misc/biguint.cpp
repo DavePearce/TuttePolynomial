@@ -61,7 +61,7 @@ bool biguint::operator==(uint64_t v) const {
     if(v != 0) { return false; }
     return true;
   } else {
-    return (v <= UINT32_MAX) && ptr == v;
+    return ptr == v;
   } 
 }
 

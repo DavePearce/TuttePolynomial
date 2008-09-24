@@ -18,7 +18,7 @@
 #include "bistream.hpp"
 
 #ifndef UINT32_MAX
-#define UINT32_MAX UINT_MAX
+#define UINT32_MAX 0xffffffffU
 #endif
 
 #ifndef UINT32_C
