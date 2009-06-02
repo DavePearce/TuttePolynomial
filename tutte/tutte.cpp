@@ -100,7 +100,7 @@ static simple_cache cache(1024*1024,100);
 static vector<pair<int,int> > evalpoints;
 static vector<unsigned int> cache_hit_sizes;
 static unsigned int ngraphs_completed=0;  
-
+static unsigned int split_threshold=0;
 static bool status_flag=false;
 static bool verbose=true;
 static bool reduce_multicycles=true;
@@ -114,7 +114,7 @@ static bool write_full_tree=false;
 #define MODE_TUTTE 0
 #define MODE_CHROMATIC 1
 #define MODE_FLOW 2
-#define MODE_TUTTE_DEPTH 3
+#define MODE_TUTTE_SPLIT 3
 static int mode = MODE_TUTTE;
 
 void print_status();
@@ -492,10 +492,10 @@ P tutte(G &graph, unsigned int mid) {
 }
 
 template<class G, class P>
-void tutteSearch(G &graph, int depth, vector<G> &graphs) { 
+void tutteSearch(G &graph, vector<G> &graphs) { 
   if(status_flag) { print_status(); }
 
-  if(depth == 0) {
+  if(graph.num_vertices() < split_threshold) {
     graphs.push_back(graph);
     return;
   }
@@ -529,7 +529,7 @@ void tutteSearch(G &graph, int depth, vector<G> &graphs) {
     // now, actually do the computation
     for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
       if(!i->is_multicycle()) {
-	tutteSearch<G,P>(*i,depth-1,graphs);      
+	tutteSearch<G,P>(*i,graphs);      
       }
     }
   } else {
@@ -540,8 +540,8 @@ void tutteSearch(G &graph, int depth, vector<G> &graphs) {
     graph.remove_edge(edge);
     g2.contract_edge(edge);
 
-    tutteSearch<G,P>(graph,depth-1,graphs);
-    tutteSearch<G,P>(g2,depth-1,graphs);
+    tutteSearch<G,P>(graph,graphs);
+    tutteSearch<G,P>(g2,graphs);
   }
   
   // Finally, save computed polynomial
@@ -1230,18 +1230,14 @@ string search_replace(string from, string to, string text) {
 }
 
 template<class G, class P>
-void initialiser_cache(ifstream &input) {
-  
-}
-
-template<class G, class P>
-void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode, int depth) {
+void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode) {
   // if auto heuristic is enabled, then we calculate graph density and
   // select best heuristc based on that.
+  unsigned int index = 0;
   ngraphs_completed = 0;
   bool auto_heuristic = edge_selection_heuristic == AUTO;
 
-  while(!input.eof() && ngraphs_completed < ngraphs) {
+  while(!input.eof() && index < graphs_end) {
     string line = read_line(input);
 
     if(line == "") {
@@ -1256,6 +1252,13 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       unsigned int id = 0;
       cache.store(key,poly,id);
       delete [] key;  // free space used by key
+      continue;
+    } 
+
+    index = index + 1;
+
+    if(index < graphs_beg) {
+      // don't compute the polynomial for this graph.
       continue;
     } 
 
@@ -1300,9 +1303,9 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
       tuttePoly = flow<G,P>(perm_graph,1);        
     } else if(mode == MODE_TUTTE) {
       tuttePoly = tutte<G,P>(perm_graph,1);        
-    } else { // MODE_TUTTE_DEPTH
+    } else { // MODE_TUTTE_SPLIT
       vector<G> graphs;
-      tutteSearch<G,P>(perm_graph,depth,graphs);        
+      tutteSearch<G,P>(perm_graph,graphs);        
       for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {      	
 	cout << input_graph_str(*i) << endl;
       }
@@ -1401,9 +1404,10 @@ int main(int argc, char *argv[]) {
   #define OPT_VERSION 4
   #define OPT_SMALLGRAPHS 5
   #define OPT_NGRAPHS 6
+  #define OPT_GRAPHS 17
   #define OPT_TIMEOUT 7
   #define OPT_EVALPOINT 8
-  #define OPT_DEPTH 9
+  #define OPT_SPLIT 9
   #define OPT_CACHESIZE 10
   #define OPT_CACHEBUCKETS 11  
   #define OPT_CACHEREPLACEMENT 12
@@ -1443,7 +1447,7 @@ int main(int argc, char *argv[]) {
     {"info",no_argument,NULL,OPT_INFO},
     {"quiet",no_argument,NULL,OPT_QUIET},
     {"timeout",required_argument,NULL,OPT_TIMEOUT},
-    {"depth",required_argument,NULL,OPT_DEPTH},
+    {"split",required_argument,NULL,OPT_SPLIT},
     {"eval",required_argument,NULL,OPT_EVALPOINT},
     {"chromatic",no_argument,NULL,OPT_CHROMATIC},
     {"flow",no_argument,NULL,OPT_FLOW},
@@ -1473,6 +1477,7 @@ int main(int argc, char *argv[]) {
     {"full-tree",no_argument,NULL,OPT_FULLTREE_OUT},
     {"xml-tree",no_argument,NULL,OPT_XML_OUT},
     {"ngraphs",required_argument,NULL,OPT_NGRAPHS},
+    {"graphs",required_argument,NULL,OPT_GRAPHS},
     {"no-multicycles",no_argument,NULL,OPT_NOMULTICYCLES},
     {"no-multiedges",no_argument,NULL,OPT_NOMULTIEDGES},
     {"add-contract",no_argument,NULL,OPT_USEADDCONTRACT},
@@ -1485,9 +1490,11 @@ int main(int argc, char *argv[]) {
     " -i     --info                    output summary information regarding computation",
     " -q     --quiet                   output info summary as single line only (useful for generating data)",
     " -t     --timeout=<x>             timeout after x seconds",
+    " -s<x>  --split=<x>               split the input graph(s) into a number of smaller graphs with no more than x vertices",
     " -Tx,y  --eval=x,y                evaluate the computed polynomial at x,y",
     "        --small-graphs=size       set threshold for small graphs.  Default is 5.",
     " -n<x>  --ngraphs=<number>        number of graphs to process from input file",
+    " -g<x:y>  --graphs=<start:end>    which graphs to process from input file, e.g. 2:10 processes the 2nd to tenth inclusive",
     "        --chromatic               generate chromatic polynomial",
     "        --flow                    generate flow polynomial",
     "        --tree                    output computation tree",
@@ -1516,8 +1523,8 @@ int main(int argc, char *argv[]) {
   unsigned int cache_size(256 * 1024 * 1024); 
   unsigned int cache_buckets(1000000);     // default 1M buckets
   unsigned int poly_rep(OPT_FACTOR_POLY);
-  unsigned int ngraphs(UINT_MAX); // default is to do every graph in input file
-  int depth = -1;
+  unsigned int graphs_beg(0); 
+  unsigned int graphs_end(UINT_MAX); // default is to do every graph in input file
   bool info_mode=false;
   bool reset_mode=true;
   bool cache_stats=false;
@@ -1546,10 +1553,10 @@ int main(int argc, char *argv[]) {
     case OPT_TIMEOUT:
       timeout = atoi(optarg);
       break;
-    case 'd':
-    case OPT_DEPTH:
-      depth = atoi(optarg);
-      mode = MODE_TUTTE_DEPTH;
+    case 's':
+    case OPT_SPLIT:
+      split_threshold = atoi(optarg);
+      mode = MODE_TUTTE_SPLIT;
       break;
     case 'T':
     case OPT_EVALPOINT:
@@ -1557,8 +1564,19 @@ int main(int argc, char *argv[]) {
       break;
     case 'n':
     case OPT_NGRAPHS:
-      ngraphs = atoi(optarg);
+      graphs_beg = 0;
+      graphs_end = atoi(optarg);
       break;
+    case 'g':
+    case OPT_GRAPHS:
+      {
+	string s(optarg);
+	unsigned int pos = 0;
+	graphs_beg = parse_number(pos,s);
+	match(':',pos,s);
+	graphs_end = parse_number(pos,s);
+	break;
+      }
     case OPT_XML_OUT:
       write_tree=true;
       xml_flag=true;
@@ -1717,7 +1735,7 @@ int main(int argc, char *argv[]) {
         
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
-      run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode,reset_mode,depth);
+      run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,graphs_beg,graphs_end,vertex_ordering,info_mode,reset_mode);
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering);
     }    
