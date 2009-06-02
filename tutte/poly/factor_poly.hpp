@@ -555,7 +555,7 @@ public:
     bool first_time=true;
     for(unsigned int i=0;i<nxterms;++i) {    
       if(!xterms[i].is_empty()) {
-	if(!first_time) { r += "+"; }
+	if(!first_time) { r += " + "; }
 	first_time=false;    
 	if(i > 0) {
 	  std::stringstream ss;
@@ -586,7 +586,7 @@ public:
 	else if (i == 1) { xs = "*x"; }
 
 	for(unsigned int j=xterms[i].ymin;j<=xterms[i].ymax;++j) {
-	  if(!first_time) { r += "+"; }
+	  if(!first_time) { r += " + "; }
 	  first_time=false;    	
 	  std::string ys;
 	  if(j > 1) { ys = "*y^" + utos(j); }

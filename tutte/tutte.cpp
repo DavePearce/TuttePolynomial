@@ -806,16 +806,13 @@ string read_line(istream &in) {
   char c;
   string str;
 
-  in >> c; 
+  in.get(c); 
   while(!in.eof() && c != '\n') {
-    if(c == '\r') {
-      cout << "GPT ONE" << endl;
+    if(c != '\r') {
+      str = str + c;
     }
-    str = str + c;
-    in >> c;    
+    in.get(c);  
   }
-
-  cout << "PARSED: " << str << endl;
 
   return str;
 }
@@ -1245,8 +1242,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
   bool auto_heuristic = edge_selection_heuristic == AUTO;
 
   while(!input.eof() && ngraphs_completed < ngraphs) {
-    string line;
-    input >> line;
+    string line = read_line(input);
 
     if(line == "") {
       break;
@@ -1255,8 +1251,7 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     if(line[0] =='G') {
       // this is an initialisation graph
       G init_graph = compact_graph<G>(read_init_graph<G>(line));
-      input >> line;
-      P poly = read_polynomial<P>(line);
+      P poly = read_polynomial<P>(read_line(input));
       unsigned char *key = graph_key(init_graph); 
       unsigned int id = 0;
       cache.store(key,poly,id);
@@ -1335,8 +1330,8 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	// catch timeout case to avoid confusion.
 	cerr << "Timeout!!" << endl;
       } else if(mode == MODE_TUTTE) {	
-	cout << "G[" << (ngraphs_completed+1) << "]:={" << input_graph_str(start_graph) << "}" << endl;
-	cout << "TP[" << (ngraphs_completed+1) << "]:=" << tuttePoly.str() << ":" << endl;
+	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
+	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
       } else if(mode == MODE_FLOW) {
 	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),(E-V)+C) << " * ( ";
 	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
