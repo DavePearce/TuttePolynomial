@@ -137,6 +137,13 @@ public:
     // we could eliminate them ...    
   }
 
+  void operator*=(biguint coefficient) {
+    int len = (ymax - ymin) + 1;
+    for(unsigned int i=0;i!=len;++i) {
+      coefficients[i+fpadding] *= coefficient;
+    }
+  }
+
   void operator*=(xy_term const &p) {
     // if this poly is empty do nothing!
     if(is_empty()) { return;}
@@ -465,6 +472,10 @@ public:
     }
   }
 
+  void operator*=(biguint coefficient) {
+    for(unsigned int i=0;i<nxterms;++i) { xterms[i] *= coefficient; }
+  }  
+
   void operator*=(xy_term const &p) {
     if(p.xpower > 0) { 
       // need to shift the x's
@@ -544,7 +555,7 @@ public:
     bool first_time=true;
     for(unsigned int i=0;i<nxterms;++i) {    
       if(!xterms[i].is_empty()) {
-	if(!first_time) { r += " + "; }
+	if(!first_time) { r += "+"; }
 	first_time=false;    
 	if(i > 0) {
 	  std::stringstream ss;
@@ -575,7 +586,7 @@ public:
 	else if (i == 1) { xs = "*x"; }
 
 	for(unsigned int j=xterms[i].ymin;j<=xterms[i].ymax;++j) {
-	  if(!first_time) { r += " + "; }
+	  if(!first_time) { r += "+"; }
 	  first_time=false;    	
 	  std::string ys;
 	  if(j > 1) { ys = "*y^" + utos(j); }

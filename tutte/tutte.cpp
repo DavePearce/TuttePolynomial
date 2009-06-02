@@ -99,6 +99,8 @@ static edgesel_t edge_addition_heuristic = AUTO;
 static simple_cache cache(1024*1024,100);
 static vector<pair<int,int> > evalpoints;
 static vector<unsigned int> cache_hit_sizes;
+static unsigned int ngraphs_completed=0;  
+
 static bool status_flag=false;
 static bool verbose=true;
 static bool reduce_multicycles=true;
@@ -112,6 +114,7 @@ static bool write_full_tree=false;
 #define MODE_TUTTE 0
 #define MODE_CHROMATIC 1
 #define MODE_FLOW 2
+#define MODE_TUTTE_DEPTH 3
 static int mode = MODE_TUTTE;
 
 void print_status();
@@ -262,7 +265,7 @@ typename G::edge_t select_edge(G const &graph) {
       unsigned int tail = j->first;
       unsigned int tailc(graph.num_underlying_edges(tail));
       unsigned int count = j->second;
-      
+
       if(head < tail) { // to avoid duplicates
 	unsigned int cost;
 	switch(edge_selection_heuristic) {
@@ -486,6 +489,70 @@ P tutte(G &graph, unsigned int mid) {
   }    
 
   return poly * RF;
+}
+
+template<class G, class P>
+void tutteSearch(G &graph, int depth, vector<G> &graphs) { 
+  if(status_flag) { print_status(); }
+
+  if(depth == 0) {
+    graphs.push_back(graph);
+    return;
+  }
+
+  // === 1. APPLY SIMPLIFICATIONS ===
+
+  P RF = Y(reduce_loops(graph));
+
+  // === 2. CHECK IN CACHE ===
+
+  unsigned char *key = NULL;
+  if(graph.num_vertices() >= small_graph_threshold && !graph.is_multitree()) {      
+    key = graph_key(graph); 
+    unsigned int match_id;
+    P r; // unused
+    if(cache.lookup(key,r,match_id)) { 
+      delete [] key; // free space used by key
+      return;
+    }
+  }
+  
+  // === 3. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
+
+  if(reduce_multicycles && graph.is_multicycle()) {
+    // again, do nothing since this graph is reduced as is.
+  } else if(!graph.is_biconnected()) {
+    vector<G> biconnects;
+    graph.extract_biconnected_components(biconnects);
+    graph.remove_graphs(biconnects);
+
+    // now, actually do the computation
+    for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
+      if(!i->is_multicycle()) {
+	tutteSearch<G,P>(*i,depth-1,graphs);      
+      }
+    }
+  } else {
+    G g2(graph); 
+    edge_t edge = select_edge(graph);
+
+    // now, delete/contract on the edge's endpoints
+    graph.remove_edge(edge);
+    g2.contract_edge(edge);
+
+    tutteSearch<G,P>(graph,depth-1,graphs);
+    tutteSearch<G,P>(g2,depth-1,graphs);
+  }
+  
+  // Finally, save computed polynomial
+  if(key != NULL) {
+    // there is, strictly speaking, a bug with using mid
+    // here, since the graph being stored is not the same as that
+    // at the beginning.
+    unsigned int tmp;
+    cache.store(key,P(),tmp);
+    delete [] key;  // free space used by key
+  }    
 }
 
 // ------------------------------------------------------------------
@@ -735,6 +802,24 @@ P chromatic(G &graph, unsigned int mid) {
 // Input File Parser
 // ---------------------------------------------------------------
 
+string read_line(istream &in) {
+  char c;
+  string str;
+
+  in >> c; 
+  while(!in.eof() && c != '\n') {
+    if(c == '\r') {
+      cout << "GPT ONE" << endl;
+    }
+    str = str + c;
+    in >> c;    
+  }
+
+  cout << "PARSED: " << str << endl;
+
+  return str;
+}
+
 int parse_number(unsigned int &pos, string const &str) {
   int s = pos;
   while(pos < str.length() && isdigit(str[pos])) {
@@ -746,19 +831,38 @@ int parse_number(unsigned int &pos, string const &str) {
   return r;
 }
 
+biguint parse_bignumber(unsigned int &pos, string const &str) {
+  int s = pos;
+  while(pos < str.length() && isdigit(str[pos])) {
+    pos = pos + 1;
+  }
+  biguint r;
+  biguint ten = biguint((uint32_t)10);
+  for(unsigned int i=0;i!=(pos-s);++i) {
+    char c=str[pos-(i+1)];
+    uint32_t d = c - '0';
+    r += pow(ten,i) * biguint(d);
+  }
+  return r;
+}
+
 void match(char c, unsigned int &pos, string const &str) {
   if(pos >= str.length() || str[pos] != c) { throw runtime_error(string("syntax error -- expected '") + c + "', got '" + str[pos] + "'"); }
   ++pos;
 }
 
+void skip(unsigned int &pos, string const &in) {
+  while(pos < in.length() && (in[pos] == ' ' || in[pos]=='\t')) {
+    pos++;
+  } 
+}
+
 template<class G>
-G read_graph(std::istream &input) {
+G read_graph(string in) {
   vector<pair<unsigned int, unsigned int> > edgelist;
   unsigned int V = 0, pos = 0;
     
   bool firstTime=true;
-  string in;
-  input >> in;
 
   while(pos < in.length()) {
     if(!firstTime) { match(',',pos,in); }
@@ -781,6 +885,104 @@ G read_graph(std::istream &input) {
   }
 
   return r;
+}
+
+template<class G>
+G read_init_graph(string in) {
+  unsigned int pos = 0;
+  match('G',pos,in);
+  match('[',pos,in);
+  unsigned int id = parse_number(pos,in);
+  match(']',pos,in);
+  unsigned int s = ' ';
+  unsigned int b = in[pos];
+  skip(pos,in);
+  match(':',pos,in);
+  match('=',pos,in);
+  skip(pos,in);
+  match('{',pos,in);
+
+  vector<pair<unsigned int, unsigned int> > edgelist;
+  unsigned int V = 0;
+    
+  bool firstTime=true;
+
+  while(pos < in.length() && in[pos] != '}') {
+    if(!firstTime) { match(',',pos,in); }
+    firstTime=false;
+    // just keep on reading!
+    unsigned int tail = parse_number(pos,in);
+    match('-',pos,in); match('-',pos,in);
+    unsigned int head = parse_number(pos,in);
+    V = max(V,max(head,tail));
+    edgelist.push_back(std::make_pair(tail,head));
+  }  
+
+  match('}',pos,in);
+
+  if(V == 0) { return G(0); }
+
+  G r(V+1);
+
+  for(vector<pair<unsigned int, unsigned int> >::iterator i(edgelist.begin());
+      i!=edgelist.end();++i) {
+    r.add_edge(i->first,i->second);
+  }
+
+  return r; 
+}
+
+template<class P>
+P read_polynomial(string in) {
+  unsigned int pos = 0;
+  P poly;
+
+  match('T',pos,in);
+  match('P',pos,in);
+  match('[',pos,in);
+  unsigned int id = parse_number(pos,in);
+  match(']',pos,in);
+  skip(pos,in);
+  match(':',pos,in);
+  match('=',pos,in);
+  skip(pos,in);
+
+  while(pos < in.length() && in[pos] != ':') {
+    biguint coeff = parse_bignumber(pos,in);
+    unsigned int xpow = 0;
+    unsigned int ypow = 0;
+    match('*',pos,in);
+    if(in[pos] == 'x') {
+      match('x',pos,in);
+      if(in[pos] == '^') {
+	match('^',pos,in);
+	xpow = parse_number(pos,in);
+      } else {
+	xpow = 1;
+      }
+    } 
+    if(in[pos] == '*') {
+      match('*',pos,in);
+    }
+    if(in[pos] == 'y') {
+      match('y',pos,in);
+      if(in[pos] == '^') {
+	match('^',pos,in);
+	ypow = parse_number(pos,in);
+      } else {
+	ypow = 1;
+      }
+    }    
+
+    P term(xy_term(xpow,ypow));
+    term *= coeff;
+    poly += term;
+    while(pos < in.length() && (in[pos] == ' ' || in[pos] == '+')) {
+      pos++;
+    }
+  }
+
+  return poly;
 }
 
 template<class G, class OP>
@@ -1012,7 +1214,7 @@ void print_status() {
   double rate = (num_steps - old_num_steps);
   double cf = (100*((double)cache.size())) / cache.capacity();
   rate /= status_interval;
-  cerr << "Completed " << num_steps << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full." << endl;
+  cerr << "Completed " << ngraphs_completed << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full." << endl;
   old_num_steps = num_steps;  
 }
 
@@ -1031,24 +1233,41 @@ string search_replace(string from, string to, string text) {
 }
 
 template<class G, class P>
-void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode) {
-  unsigned int ngraphs_completed=0;  
+void initialiser_cache(ifstream &input) {
+  
+}
 
+template<class G, class P>
+void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode, int depth) {
   // if auto heuristic is enabled, then we calculate graph density and
   // select best heuristc based on that.
+  ngraphs_completed = 0;
   bool auto_heuristic = edge_selection_heuristic == AUTO;
 
   while(!input.eof() && ngraphs_completed < ngraphs) {
-    // Create graph and then permute it according to 
-    // vertex ordering strategy
-    G start_graph = compact_graph<G>(read_graph<G>(input));
-    if(start_graph.num_edges() == 0) {
-      // This can happen if the input file has extra whitespace at the
-      // end.  It also means that we can add comments into our graph
-      // files.
+    string line;
+    input >> line;
+
+    if(line == "") {
       break;
     }
-    start_graph = permute_graph<G>(start_graph,vertex_ordering);
+
+    if(line[0] =='G') {
+      // this is an initialisation graph
+      G init_graph = compact_graph<G>(read_init_graph<G>(line));
+      input >> line;
+      P poly = read_polynomial<P>(line);
+      unsigned char *key = graph_key(init_graph); 
+      unsigned int id = 0;
+      cache.store(key,poly,id);
+      delete [] key;  // free space used by key
+      continue;
+    } 
+
+    // Create graph and then permute it according to 
+    // vertex ordering strategy
+    G start_graph = compact_graph<G>(read_graph<G>(line));
+    G perm_graph = permute_graph<G>(start_graph,vertex_ordering);
     // now reset all stats information
     if(reset_mode) { cache.clear(); }
     cache.reset_stats();
@@ -1081,11 +1300,18 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
     P tuttePoly;
 
     if(mode == MODE_CHROMATIC) {
-      tuttePoly = chromatic<G,P>(start_graph,1);        
+      tuttePoly = chromatic<G,P>(perm_graph,1);        
     } else if(mode == MODE_FLOW) {
-      tuttePoly = flow<G,P>(start_graph,1);        
-    } else {
-      tuttePoly = tutte<G,P>(start_graph,1);        
+      tuttePoly = flow<G,P>(perm_graph,1);        
+    } else if(mode == MODE_TUTTE) {
+      tuttePoly = tutte<G,P>(perm_graph,1);        
+    } else { // MODE_TUTTE_DEPTH
+      vector<G> graphs;
+      tutteSearch<G,P>(perm_graph,depth,graphs);        
+      for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {      	
+	cout << input_graph_str(*i) << endl;
+      }
+      continue;
     } 
 
     if(write_tree) { write_tree_end(ngraphs_completed); }
@@ -1109,7 +1335,8 @@ void run(ifstream &input, unsigned int ngraphs, vorder_t vertex_ordering, boolea
 	// catch timeout case to avoid confusion.
 	cerr << "Timeout!!" << endl;
       } else if(mode == MODE_TUTTE) {	
-	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
+	cout << "G[" << (ngraphs_completed+1) << "]:={" << input_graph_str(start_graph) << "}" << endl;
+	cout << "TP[" << (ngraphs_completed+1) << "]:=" << tuttePoly.str() << ":" << endl;
       } else if(mode == MODE_FLOW) {
 	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),(E-V)+C) << " * ( ";
 	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
@@ -1181,6 +1408,7 @@ int main(int argc, char *argv[]) {
   #define OPT_NGRAPHS 6
   #define OPT_TIMEOUT 7
   #define OPT_EVALPOINT 8
+  #define OPT_DEPTH 9
   #define OPT_CACHESIZE 10
   #define OPT_CACHEBUCKETS 11  
   #define OPT_CACHEREPLACEMENT 12
@@ -1220,6 +1448,7 @@ int main(int argc, char *argv[]) {
     {"info",no_argument,NULL,OPT_INFO},
     {"quiet",no_argument,NULL,OPT_QUIET},
     {"timeout",required_argument,NULL,OPT_TIMEOUT},
+    {"depth",required_argument,NULL,OPT_DEPTH},
     {"eval",required_argument,NULL,OPT_EVALPOINT},
     {"chromatic",no_argument,NULL,OPT_CHROMATIC},
     {"flow",no_argument,NULL,OPT_FLOW},
@@ -1293,6 +1522,7 @@ int main(int argc, char *argv[]) {
   unsigned int cache_buckets(1000000);     // default 1M buckets
   unsigned int poly_rep(OPT_FACTOR_POLY);
   unsigned int ngraphs(UINT_MAX); // default is to do every graph in input file
+  int depth = -1;
   bool info_mode=false;
   bool reset_mode=true;
   bool cache_stats=false;
@@ -1320,6 +1550,11 @@ int main(int argc, char *argv[]) {
     case 't':
     case OPT_TIMEOUT:
       timeout = atoi(optarg);
+      break;
+    case 'd':
+    case OPT_DEPTH:
+      depth = atoi(optarg);
+      mode = MODE_TUTTE_DEPTH;
       break;
     case 'T':
     case OPT_EVALPOINT:
@@ -1487,7 +1722,7 @@ int main(int argc, char *argv[]) {
         
     ifstream input(argv[optind]);    
     if(poly_rep == OPT_FACTOR_POLY) {
-	run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode,reset_mode);
+      run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,ngraphs,vertex_ordering,info_mode,reset_mode,depth);
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering);
     }    

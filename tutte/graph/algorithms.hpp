@@ -40,6 +40,27 @@ std::string graph_str(T const &graph) {
   return out.str();
 }
 
+template<class T>
+std::string input_graph_str(T const &graph) {
+  std::ostringstream out;
+  bool first=true;
+  for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename T::edge_iterator j(graph.begin_edges(*i));j!=graph.end_edges(*i);++j) {
+      if(*i <= j->first) {
+	for(unsigned int k=0;k!=j->second;++k){
+	  if(!first) {
+	    out << ",";
+	  }
+	  first=false;
+	  out << *i << "--" << j->first;
+	}
+      } 
+    }
+  }
+  return out.str();
+}
+
+
 // ----------------------------------
 // METHODS FOR INTERFACING WITH NAUTY
 // ----------------------------------
