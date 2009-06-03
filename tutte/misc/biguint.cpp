@@ -281,6 +281,8 @@ void biguint::operator+=(uint32_t w) {
       ptr = BUI_PACK(p);
     } else if(ptr & BUI_LEFTMOST_BIT) {
       clone(ptr);
+    } else if(ptr > UINT32_MAX) {
+      cout << "GOT HERE" << endl;
     }
   }
 }
@@ -736,6 +738,9 @@ bstreambuf &operator<<(bstreambuf &bout, biguint const &src) {
     bout << depth;
     for(uint32_t i=2;i<(depth+2);++i) { bout << s[i]; }
   } else {
+    // IS THIS THE PROBLEM RIGHT HERE?
+    //
+    // the problem could be overflowing to 64bit?
     bout << 1U << (uint32_t) src.ptr;
   }
 }

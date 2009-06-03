@@ -495,11 +495,6 @@ template<class G, class P>
 void tutteSearch(G &graph, vector<G> &graphs) { 
   if(status_flag) { print_status(); }
 
-  if(graph.num_vertices() < split_threshold) {
-    graphs.push_back(graph);
-    return;
-  }
-
   // === 1. APPLY SIMPLIFICATIONS ===
 
   P RF = Y(reduce_loops(graph));
@@ -533,6 +528,12 @@ void tutteSearch(G &graph, vector<G> &graphs) {
       }
     }
   } else {
+
+    if(graph.num_vertices() < split_threshold) {
+      graphs.push_back(graph);
+      return;
+    }
+
     G g2(graph); 
     edge_t edge = select_edge(graph);
 
@@ -1277,6 +1278,7 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
     num_cycles = 0;
     unsigned int V(start_graph.num_vertices());
     unsigned int E(start_graph.num_edges());
+    unsigned int EP(start_graph.num_underlying_edges());
     unsigned int C(start_graph.num_components());    
     cache_hit_sizes.resize(V,0);
 
@@ -1321,7 +1323,7 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
       cout << endl;
 	
       if(info_mode) {
-	cout << V << "\t" << E;    
+	cout << V << "\t" << E << "\t" << EP;    
 	cout << "\t" << setprecision(3) << global_timer.elapsed() << "\t" << num_steps << "\t" << num_bicomps << "\t" << num_disbicomps << "\t" << num_cycles << "\t" << num_trees;
 	if(mode == MODE_TUTTE) {
 	  cout << "\t" << tuttePoly.substitute(1,1) << "\t" << tuttePoly.substitute(2,2);
@@ -1414,7 +1416,7 @@ int main(int argc, char *argv[]) {
   #define OPT_CACHERANDOM 13
   #define OPT_CACHESTATS 14
   #define OPT_NOCACHE 15
-  #define OPT_NOCACHERESET 16
+  #define OPT_CACHERESET 16
   #define OPT_GMP 20
   #define OPT_CHROMATIC 21
   #define OPT_FLOW 22
@@ -1456,8 +1458,8 @@ int main(int argc, char *argv[]) {
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
     {"cache-random",no_argument,NULL,OPT_CACHERANDOM}, 
     {"cache-stats",optional_argument,NULL,OPT_CACHESTATS},   
+    {"cache-reset",no_argument,NULL,OPT_CACHERESET},
     {"no-caching",no_argument,NULL,OPT_NOCACHE},
-    {"no-reset",no_argument,NULL,OPT_NOCACHERESET},
     {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
     {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
     {"sparse", no_argument,NULL,OPT_MINSDEGREE},
@@ -1526,7 +1528,7 @@ int main(int argc, char *argv[]) {
   unsigned int graphs_beg(0); 
   unsigned int graphs_end(UINT_MAX); // default is to do every graph in input file
   bool info_mode=false;
-  bool reset_mode=true;
+  bool reset_mode=false;
   bool cache_stats=false;
   vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
   string cache_stats_file("");
@@ -1622,8 +1624,8 @@ int main(int argc, char *argv[]) {
     case OPT_NOCACHE:
       small_graph_threshold = 10000;
       break;
-    case OPT_NOCACHERESET:
-      reset_mode = false;
+    case OPT_CACHERESET:
+      reset_mode = true;
       break;
     // --- POLY OPTIONS ---
     case OPT_SIMPLE_POLY:
