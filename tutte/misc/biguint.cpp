@@ -736,9 +736,6 @@ bstreambuf &operator<<(bstreambuf &bout, biguint const &src) {
     bout << depth;
     for(uint32_t i=2;i<(depth+2);++i) { bout << s[i]; }
   } else {
-    // IS THIS THE PROBLEM RIGHT HERE?
-    //
-    // the problem could be overflowing to 64bit?
     bout << 1U << (uint32_t) src.ptr;
   }
 }
