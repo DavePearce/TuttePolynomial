@@ -25,6 +25,8 @@
 #define UINT32_C(x) ((uint32_t)x)
 #endif
 
+#define BUI_LEFTMOST_32BIT (1U << 31U)
+
 #if SIZEOF_UNSIGNED_INT_P==4
 #define BUI_LEFTMOST_BIT (1U << 31U)
 typedef uint32_t uint32_ptr_t;
@@ -185,7 +187,7 @@ public:
   
 private:
   inline void clone(uint32_t v) {
-    if(v & BUI_LEFTMOST_BIT) {
+    if(v >= BUI_LEFTMOST_32BIT) {
       uint32_t *p = aligned_alloc(3);
       ptr = BUI_PACK(p);
       p[0] = 1;
@@ -197,7 +199,7 @@ private:
   }
 
   inline void clone(uint64_t v) {
-    if(v >= BUI_LEFTMOST_BIT) {
+    if(v >= BUI_LEFTMOST_32BIT) {
       uint32_t *p = aligned_alloc(4);
       ptr = BUI_PACK(p);
       p[0] = 2;

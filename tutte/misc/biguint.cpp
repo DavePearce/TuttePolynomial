@@ -279,11 +279,9 @@ void biguint::operator+=(uint32_t w) {
       p[2] = ptr;
       p[3] = 1U;
       ptr = BUI_PACK(p);
-    } else if(ptr & BUI_LEFTMOST_BIT) {
+    } else if(ptr >= BUI_LEFTMOST_32BIT) {
       clone(ptr);
-    } else if(ptr > UINT32_MAX) {
-      cout << "GOT HERE" << endl;
-    }
+    } 
   }
 }
 
@@ -427,7 +425,7 @@ void biguint::operator*=(uint32_t v) {
   } else {    
     // easier case!
     uint64_t w = ((uint64_t)ptr) * v;
-    if(w >= BUI_LEFTMOST_BIT) { 
+    if(w >= BUI_LEFTMOST_32BIT) { 
       // build new object
       uint32_t *p = aligned_alloc(4);
       ptr = BUI_PACK(p);
