@@ -86,7 +86,7 @@ private:
   unsigned int nbuckets;         // number of buckets
   unsigned char *start_p;        // buffer start ptr
   unsigned char *next_p;         // buffer next ptr
-  unsigned int bufsize;
+  uint64_t bufsize;
   float replacement;
   bool random_replacement;
 public:
@@ -119,7 +119,7 @@ public:
   // get space used by cache in bytes
   unsigned int size() {  return next_p - start_p; }
   // get available space in bytes
-  unsigned int capacity() { return bufsize; }
+  uint64_t capacity() { return bufsize; }
 
   unsigned int min_bucket_size() {
     unsigned int r = UINT_MAX;
@@ -186,8 +186,8 @@ public:
     random_replacement=true;
   }
 
-  void resize(size_t max_size) {
-    unsigned int old_size = next_p - start_p;
+  void resize(uint64_t max_size) {
+    uint64_t old_size = next_p - start_p;
     unsigned char *ostart_p = start_p;
     if(old_size > max_size) {
       throw std::runtime_error("cache contains to much data to to be resized!");
@@ -196,7 +196,7 @@ public:
     start_p = new unsigned char[max_size];
 
     // update simple pointers
-    unsigned int diff = start_p - ostart_p;   
+    uint64_t diff = start_p - ostart_p;   
     next_p = next_p + diff;
 
     // first, copy old data into new location
@@ -318,7 +318,7 @@ private:
   simple_cache(simple_cache const &src) {
   }  
 
-  inline unsigned char *alloc_node(size_t size) {
+  inline unsigned char *alloc_node(uint64_t size) {
     // cannot ask for more than the buffer can contain
     if(size >= bufsize) { throw std::bad_alloc();  }
     // if there's not enough space left, free up some!

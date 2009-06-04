@@ -1099,7 +1099,7 @@ pair<int,int> parse_evalpoint(char *str) {
   return make_pair(a,b);
 }
 
-unsigned int parse_amount(char *str) {
+uint64_t parse_amount(char *str) {
   char *endp=NULL;
   long r = strtol(str,&endp,10);
   if(*endp != '\0') {
@@ -1272,6 +1272,7 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
     cache.reset_stats();
     cache_hit_sizes.clear();
     num_steps = 0;
+    old_num_steps = 0;
     num_bicomps = 0;
     num_disbicomps = 0;
     num_trees = 0;
@@ -1522,7 +1523,7 @@ int main(int argc, char *argv[]) {
   };
 
   unsigned int v;
-  unsigned int cache_size(256 * 1024 * 1024); 
+  uint64_t cache_size(256 * 1024 * 1024); 
   unsigned int cache_buckets(1000000);     // default 1M buckets
   unsigned int poly_rep(OPT_FACTOR_POLY);
   unsigned int graphs_beg(0); 
