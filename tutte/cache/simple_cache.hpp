@@ -115,7 +115,7 @@ public:
   int num_buckets() { return nbuckets; }
 
   // get space used by cache in bytes
-  unsigned int size() {  return next_p - start_p; }
+  uint64_t size() {  return next_p - start_p; }
   // get available space in bytes
   uint64_t capacity() { return bufsize; }
 
