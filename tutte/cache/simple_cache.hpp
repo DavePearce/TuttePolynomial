@@ -318,6 +318,7 @@ private:
   inline unsigned char *alloc_node(uint64_t size) {
     // cannot ask for more than the buffer can contain
     if(size >= bufsize) { throw std::bad_alloc();  }
+
     // if there's not enough space left, free up some!
     while(((next_p-start_p)+size) >= bufsize) { 
       if(random_replacement) {
@@ -386,7 +387,7 @@ private:
 
   // compact buffer which pushes all free space to end
   void pack_buffer() {
-    unsigned int diff = 0;
+    uint64_t diff = 0;
     struct cache_node *ptr = (struct cache_node *) start_p;
     struct cache_node *pend = (struct cache_node *) next_p;
 
