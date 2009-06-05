@@ -10,6 +10,7 @@
 #include <iomanip>
 #include <fstream>
 #include <stack>
+#include <list>
 #include <stdexcept>
 #include <algorithm>
 #include <climits>
@@ -115,6 +116,7 @@ static bool write_full_tree=false;
 #define MODE_CHROMATIC 1
 #define MODE_FLOW 2
 #define MODE_TUTTE_SPLIT 3
+#define MODE_TUTTEX 4
 static int mode = MODE_TUTTE;
 
 void print_status();
@@ -799,6 +801,84 @@ P chromatic(G &graph, unsigned int mid) {
   return poly;
 }
 
+// ------------------------------------------------------------------
+// Experimental Tutte Polynomial
+// ------------------------------------------------------------------
+template<class G, class P>
+P tuttex(G &rootgraph) { 
+  static std::list<G> graphs;
+
+  graphs.push_back(rootgraph);
+  P poly(Y(0));
+
+  while(graphs.size() != 0) {
+    //    cache.clear();
+    // First, prune out any isomorphic graphs
+
+    for(typename std::list<G>::iterator i(graphs.begin());i!=graphs.end();++i) {
+      if(status_flag) { print_status(); }
+      G &graph = *i;
+      P RF = Y(reduce_loops(graph));
+
+      unsigned char *key = NULL;   
+      if(graph.num_vertices() >= small_graph_threshold && !graph.is_multitree()) {      
+	key = graph_key(graph); 
+	unsigned int match_id;
+	P r; // unused
+	if(cache.lookup(key,r,match_id)) { 
+	  cache_hit_sizes[graph.num_vertices()]++;
+	  i = graphs.erase(i);
+	} else {
+	  unsigned int tmp;
+	  cache.store(key,r,tmp);	  
+	}
+
+	delete [] key;
+      }            
+    }
+
+    // Second, perform any delete contract operations.
+
+    int gsize = graphs.size();
+    typename std::list<G>::iterator iter(graphs.begin());
+    for(int i=0;i<gsize;++i) {
+      if(status_flag) { print_status(); }
+      num_steps++;
+      G &graph = *iter;
+
+      if(reduce_multicycles && graph.is_multicycle()) {
+	num_cycles++;
+	//	poly += reduce_cycle<G,P>(X(1),graph);
+	iter = graphs.erase(iter);	
+      } else if(!graph.is_biconnected()) {
+	vector<G> biconnects;
+	graph.extract_biconnected_components(biconnects);
+
+	graph.remove_graphs(biconnects);
+	if(graph.is_multitree()) { num_trees++; }
+	if(biconnects.size() > 1) { num_disbicomps++; }
+	//	poly += reduce_tree<G,P>(X(1),graph);
+
+	graphs.insert(graphs.end(),biconnects.begin(),biconnects.end());
+	iter = graphs.erase(iter);
+      } else {
+	G g2(graph); 
+	edge_t edge = select_edge(graph);
+	
+	// now, delete/contract on the edge's endpoints
+	graph.remove_edge(edge);
+	g2.contract_edge(edge);
+	
+	graphs.push_back(g2);
+		
+	++iter;
+      }
+    }
+  }
+
+  return poly;
+}
+
 // ---------------------------------------------------------------
 // Input File Parser
 // ---------------------------------------------------------------
@@ -1306,6 +1386,8 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
       tuttePoly = flow<G,P>(perm_graph,1);        
     } else if(mode == MODE_TUTTE) {
       tuttePoly = tutte<G,P>(perm_graph,1);        
+    } else if(mode == MODE_TUTTEX) {
+      tuttePoly = tuttex<G,P>(perm_graph);        
     } else { // MODE_TUTTE_SPLIT
       vector<G> graphs;
       tutteSearch<G,P>(perm_graph,graphs);        
@@ -1421,6 +1503,7 @@ int main(int argc, char *argv[]) {
   #define OPT_GMP 20
   #define OPT_CHROMATIC 21
   #define OPT_FLOW 22
+  #define OPT_TUTTEX 23
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
   #define OPT_XML_OUT 32
@@ -1454,6 +1537,7 @@ int main(int argc, char *argv[]) {
     {"eval",required_argument,NULL,OPT_EVALPOINT},
     {"chromatic",no_argument,NULL,OPT_CHROMATIC},
     {"flow",no_argument,NULL,OPT_FLOW},
+    {"tuttex",no_argument,NULL,OPT_TUTTEX},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
@@ -1500,6 +1584,7 @@ int main(int argc, char *argv[]) {
     " -g<x:y>  --graphs=<start:end>    which graphs to process from input file, e.g. 2:10 processes the 2nd to tenth inclusive",
     "        --chromatic               generate chromatic polynomial",
     "        --flow                    generate flow polynomial",
+    "        --tuttex                  experimental tutte computation",
     "        --tree                    output computation tree",
     "        --full-tree               output full computation tree",
     "        --xml-tree                output computation tree as XML",
@@ -1560,6 +1645,9 @@ int main(int argc, char *argv[]) {
     case OPT_SPLIT:
       split_threshold = atoi(optarg);
       mode = MODE_TUTTE_SPLIT;
+      break;
+    case OPT_TUTTEX:
+      mode = MODE_TUTTEX;
       break;
     case 'T':
     case OPT_EVALPOINT:
