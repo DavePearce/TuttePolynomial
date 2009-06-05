@@ -80,8 +80,7 @@ private:
   unsigned int hits;
   unsigned int misses;
   unsigned int collisions;
-  unsigned int dealloced;  // for computing fragmentation
-  unsigned int numentries; 
+  uint64_t numentries; 
   struct cache_node* buckets;    // start of bucket array
   unsigned int nbuckets;         // number of buckets
   unsigned char *start_p;        // buffer start ptr
@@ -91,11 +90,10 @@ private:
   bool random_replacement;
 public:
   // max_size in bytes
-  simple_cache(size_t max_size, size_t nbs = 10000) {
+  simple_cache(uint64_t max_size, size_t nbs = 10000) {
     hits = 0;
     misses = 0;
     collisions = 0;
-    dealloced = 0;
     bufsize = max_size;
     nbuckets = nbs;
     buckets = create_bucket_array(nbs);
@@ -157,7 +155,7 @@ public:
   }
 
   double density() {
-    size_t used = next_p - start_p;
+    uint64_t used = next_p - start_p;
     return ((double)numentries) / used;
   }
 
@@ -206,7 +204,6 @@ public:
       if(buckets[i].next != NULL) {
 	buckets[i].next += diff;
 	struct cache_node *ptr = buckets[i].next;
-	int len=0;
 	while(ptr != NULL) {
 	  unsigned char *p = (unsigned char *) ptr->next;
 	  p += diff;
@@ -347,7 +344,7 @@ private:
 
   // randomly remove nodes with a probability of p
   void randomly_remove_nodes(double p) {
-    int count=0;
+    uint64_t count=0;
     for(int i=0;i!=nbuckets;++i) {
       struct cache_node *ptr = buckets[i].next;
       while(ptr != NULL) {
@@ -366,7 +363,7 @@ private:
   // remove unused nodes to reduce cache by p % 
   void remove_unused_nodes(double p) {
     unsigned int hc = 0;    
-    unsigned orig_size = (next_p-start_p);
+    uint64_t orig_size = (next_p-start_p);
     double amount=0;
     do {
       hc = hc + 1;
