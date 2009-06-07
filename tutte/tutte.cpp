@@ -1317,6 +1317,7 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
   unsigned int index = 0;
   ngraphs_completed = 0;
   bool auto_heuristic = edge_selection_heuristic == AUTO;
+  bool cache_auto_replace_size = cache.replace_size() == UINT_MAX;
 
   while(!input.eof() && index < graphs_end) {
     string line = read_line(input);
@@ -1377,6 +1378,12 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
 
     global_timer = my_timer(false);
     if(write_tree) { write_tree_start(ngraphs_completed); }    
+
+    // now set the cache replacment size
+    if(cache_auto_replace_size) {
+      unsigned int size = (unsigned int) (((float)V)*0.75);
+      cache.set_replace_size(size);
+    }
 
     P tuttePoly;
 
@@ -1489,7 +1496,7 @@ int main(int argc, char *argv[]) {
   #define OPT_VERSION 4
   #define OPT_SMALLGRAPHS 5
   #define OPT_NGRAPHS 6
-  #define OPT_GRAPHS 17
+  #define OPT_GRAPHS 19
   #define OPT_TIMEOUT 7
   #define OPT_EVALPOINT 8
   #define OPT_SPLIT 9
@@ -1500,6 +1507,7 @@ int main(int argc, char *argv[]) {
   #define OPT_CACHESTATS 14
   #define OPT_NOCACHE 15
   #define OPT_CACHERESET 16
+  #define OPT_CACHEREPLACESIZE 17
   #define OPT_GMP 20
   #define OPT_CHROMATIC 21
   #define OPT_FLOW 22
@@ -1544,6 +1552,7 @@ int main(int argc, char *argv[]) {
     {"cache-random",no_argument,NULL,OPT_CACHERANDOM}, 
     {"cache-stats",optional_argument,NULL,OPT_CACHESTATS},   
     {"cache-reset",no_argument,NULL,OPT_CACHERESET},
+    {"cache-replace-size",no_argument,NULL,OPT_CACHERESET},
     {"no-caching",no_argument,NULL,OPT_NOCACHE},
     {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
     {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
@@ -1593,6 +1602,7 @@ int main(int argc, char *argv[]) {
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     "        --cache-random            set random replacement policy",
     "        --cache-replacement=<amount> set ratio (between 0 .. 1) of cache to displace when full",
+    "        --cache-replace-size=<number> graphs of the given number of vertices will never be displaced from cache",
     "        --cache-stats[=<file>]    print cache stats summary, or write detailed stats to file.",
     "        --no-caching              disable caching",
     "        --no-reset                prevent the cache from being reset between graphs in a batch",
@@ -1699,6 +1709,9 @@ int main(int argc, char *argv[]) {
       break;
     case OPT_CACHEREPLACEMENT:
       cache.set_replacement(strtof(optarg,NULL));
+      break;
+    case OPT_CACHEREPLACESIZE:
+      cache.set_replace_size(atoi(optarg));
       break;
     case OPT_CACHERANDOM:
       cache.set_random_replacement();

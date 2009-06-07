@@ -87,6 +87,7 @@ private:
   unsigned char *next_p;         // buffer next ptr
   uint64_t bufsize;
   float replacement;
+  unsigned int min_replace_size; // don't replace graphs with at least this number of vertices
   bool random_replacement;
 public:
   // max_size in bytes
@@ -101,6 +102,7 @@ public:
     next_p = start_p;
     random_replacement=false;
     replacement=0.3;
+    min_replace_size = UINT_MAX; // by default, all graphs are replaceable
   }
   
   ~simple_cache() { 
@@ -183,6 +185,15 @@ public:
   void set_random_replacement() {
     random_replacement=true;
   }
+
+  void set_replace_size(unsigned int minsize) {
+    min_replace_size = minsize;
+  }
+
+  unsigned int replace_size() {
+    return min_replace_size;
+  }
+
 
   void resize(uint64_t max_size) {
     uint64_t old_size = next_p - start_p;
@@ -351,10 +362,17 @@ private:
       while(ptr != NULL) {
 	struct cache_node *optr=ptr;
 	ptr = ptr->next;
-	double f = ((double)rand())/RAND_MAX;
-	if(f < p) { 
-	  count++; 
-	  remove_node(optr); 
+
+	unsigned char *key_p = (unsigned char *) optr;
+	key_p += sizeof(struct cache_node);
+	int N = graph_size<int>(key_p);
+	if(N < min_replace_size) {
+	  // only replace graphs which are small than the given size.
+	  double f = ((double)rand())/RAND_MAX;
+	  if(f < p) { 
+	    count++; 
+	    remove_node(optr); 
+	  }
 	}
       }
     }
@@ -374,7 +392,10 @@ private:
 	while(ptr != NULL) {
 	  struct cache_node *optr=ptr;
 	  ptr = ptr->next;
-	  if(optr->hit_count < hc) { 
+	  unsigned char *key_p = (unsigned char *) optr;
+	  key_p += sizeof(struct cache_node);
+	  int N = graph_size<int>(key_p);
+	  if(optr->hit_count < hc && N < min_replace_size) { 
 	    count++; 
 	    amount += optr->size;
 	    remove_node(optr); 

@@ -193,6 +193,14 @@ unsigned char *graph_key(T const &graph) {
 }
 
 template<class T>
+int graph_size(unsigned char *key) {
+  setword *p = (setword*) key;  
+  setword N = p[0];
+  setword REAL_N = p[1];
+  return REAL_N;
+}
+
+template<class T>
 T graph_from_key(unsigned char *key) {
   setword *p = (setword*) key;  
   setword N = p[0];
