@@ -1552,7 +1552,7 @@ int main(int argc, char *argv[]) {
     {"cache-random",no_argument,NULL,OPT_CACHERANDOM}, 
     {"cache-stats",optional_argument,NULL,OPT_CACHESTATS},   
     {"cache-reset",no_argument,NULL,OPT_CACHERESET},
-    {"cache-replace-size",no_argument,NULL,OPT_CACHERESET},
+    {"cache-replace-size",required_argument,NULL,OPT_CACHEREPLACESIZE},
     {"no-caching",no_argument,NULL,OPT_NOCACHE},
     {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
     {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
