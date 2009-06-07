@@ -261,9 +261,10 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
- // -------------------------------------------------
+  // -------------------------------------------------
   // Initialise Cache 
   // -------------------------------------------------
+
   try {
     cache.resize(cache_size);
     cache.rebucket(cache_buckets);
@@ -288,7 +289,7 @@ int main(int argc, char *argv[]) {
     ifstream inputfile(argv[optind]);    
     vector<nauty_graph> graphs = read_file<nauty_graph>(inputfile);
 
-    cout << "Read " << graphs.size() << "." << endl;
+    cout << "Read " << graphs.size() << " graph." << endl;
   } catch(std::runtime_error &e) {
     cerr << "error: " << e.what() << endl;  
   } catch(std::bad_alloc &e) {
