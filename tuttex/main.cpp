@@ -114,6 +114,86 @@ void print_status() {
   old_num_steps = num_steps;  
 }
 
+// ------------------------------------------------------------------
+// Tutte Polynomial
+// ------------------------------------------------------------------
+
+void tutte(nauty_graph &rootgraph, vector<pair<unsigned int, unsigned int>> edges) { 
+  static std::list<G> graphs;
+  graphs.push_back(rootgraph);
+  int level=0;
+  bool growth = true;
+
+  while(edges.size() > 0 && graphs.size() != 0 && growth) {
+    cout << "LEVEL " << level++ << ": " << graphs.size() << endl;
+
+    growth = false;
+    int gsize = graphs.size();
+    pair<unsigned int, unsigned int> edge = edges.pop_back();
+
+    typename std::list<G>::iterator iter(graphs.begin());
+    for(int i=0;i<gsize;++i) {
+      if(status_flag) { print_status(); }
+      num_steps++;
+      G &graph = *iter;
+      
+      if(graph.num_edges() == 0) {
+	iter = graphs.erase(iter);	
+      } else if(graph.num_vertices() < cutoff_threshold) {
+	iter = graphs.erase(iter);	
+      } else {      	
+	unsigned char *key = graph_key(graph); 
+	unsigned int match_id;
+	int r; // unused
+
+	if(cache.lookup(key,r,match_id)) { 
+	  cache_hit_sizes[graph.num_vertices()]++;
+	  iter = graphs.erase(iter);
+	  delete [] key;
+	  continue; // don't do anything else for this round
+	} else {
+	  unsigned int tmp;
+	  cache.store(key,r,tmp);	  
+	  delete [] key;
+	}	
+
+	growth = true;
+
+	graphs.push_back(graph);
+	// now, delete/contract on the edge's endpoints
+	graph.remove_edge(edge.first,edge.second);
+	graphs.back().contract_edge(edge.first,edge.second);
+	
+	++iter;
+      } 
+    }
+  }
+}
+
+// ---------------------------------------------------------------
+// Run Method
+// ---------------------------------------------------------------
+
+void reset_stats() {
+  cache_hit_sizes.resize(V,0);
+  cache.reset_stats();
+  cache_hit_sizes.clear();
+  num_steps = 0;
+  old_num_steps = 0;
+  num_bicomps = 0;
+  num_disbicomps = 0;
+  num_trees = 0;
+  num_cycles = 0;    
+}
+
+void run(vector<nauty_graph> const &graphs, unsigned int beg, unsigned int end, bool quiet) {
+  for(unsigned int i(beg);i<end;++i) {
+    reset_stats();
+    global_timer = my_timer(false);
+    tutte(graphs[i]);
+  }
+}
+
 // ---------------------------------------------------------------
 // Misc Helpers Functions
 // ---------------------------------------------------------------
@@ -190,8 +270,8 @@ int main(int argc, char *argv[]) {
 
   uint64_t cache_size(256 * 1024 * 1024);   
   unsigned int cache_buckets;
-  unsigned int graphs_beg = 0;
-  unsigned int graphs_end = UINT_MAX;
+  unsigned int beg = 0;
+  unsigned int end = UINT_MAX;
   unsigned int v;
   bool quiet = false;
   bool info_mode = false;
@@ -227,9 +307,9 @@ int main(int argc, char *argv[]) {
       {
 	string s(optarg);
 	unsigned int pos = 0;
-	graphs_beg = parse_number(pos,s);
+	beg = parse_number(pos,s);
 	match(':',pos,s);
-	graphs_end = parse_number(pos,s);
+	end = parse_number(pos,s);
 	break;
       }
     case 'i':
@@ -288,6 +368,8 @@ int main(int argc, char *argv[]) {
 
     ifstream inputfile(argv[optind]);    
     vector<nauty_graph> graphs = read_file<nauty_graph>(inputfile);
+
+    run(graphs,beg,std::min(graphs.size(),end+1),quiet);
 
     cout << "Read " << graphs.size() << " graph." << endl;
   } catch(std::runtime_error &e) {
