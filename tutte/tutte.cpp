@@ -807,37 +807,15 @@ P chromatic(G &graph, unsigned int mid) {
 template<class G, class P>
 P tuttex(G &rootgraph) { 
   static std::list<G> graphs;
-
   graphs.push_back(rootgraph);
   P poly(Y(0));
+  int level=0;
 
   while(graphs.size() != 0) {
     //    cache.clear();
     // First, prune out any isomorphic graphs
 
-    for(typename std::list<G>::iterator i(graphs.begin());i!=graphs.end();++i) {
-      if(status_flag) { print_status(); }
-      G &graph = *i;
-      P RF = Y(reduce_loops(graph));
-
-      unsigned char *key = NULL;   
-      if(graph.num_vertices() >= small_graph_threshold && !graph.is_multitree()) {      
-	key = graph_key(graph); 
-	unsigned int match_id;
-	P r; // unused
-	if(cache.lookup(key,r,match_id)) { 
-	  cache_hit_sizes[graph.num_vertices()]++;
-	  i = graphs.erase(i);
-	} else {
-	  unsigned int tmp;
-	  cache.store(key,r,tmp);	  
-	}
-
-	delete [] key;
-      }            
-    }
-
-    // Second, perform any delete contract operations.
+    cout << "LEVEL " << level++ << ": " << graphs.size() << endl;
 
     int gsize = graphs.size();
     typename std::list<G>::iterator iter(graphs.begin());
@@ -846,6 +824,25 @@ P tuttex(G &rootgraph) {
       num_steps++;
       G &graph = *iter;
 
+      P RF = Y(reduce_loops(graph));
+      
+      unsigned char *key = NULL;   
+      if(graph.num_vertices() >= small_graph_threshold && !graph.is_multitree()) {      
+	key = graph_key(graph); 
+	unsigned int match_id;
+	P r; // unused
+	if(cache.lookup(key,r,match_id)) { 
+	  cache_hit_sizes[graph.num_vertices()]++;
+	  iter = graphs.erase(iter);
+	  delete [] key;
+	  continue; // don't do anything else for this round
+	} else {
+	  unsigned int tmp;
+	  cache.store(key,r,tmp);	  
+	}	
+	delete [] key;
+      } 
+
       if(reduce_multicycles && graph.is_multicycle()) {
 	num_cycles++;
 	//	poly += reduce_cycle<G,P>(X(1),graph);
@@ -853,7 +850,7 @@ P tuttex(G &rootgraph) {
       } else if(!graph.is_biconnected()) {
 	vector<G> biconnects;
 	graph.extract_biconnected_components(biconnects);
-
+	
 	graph.remove_graphs(biconnects);
 	if(graph.is_multitree()) { num_trees++; }
 	if(biconnects.size() > 1) { num_disbicomps++; }
