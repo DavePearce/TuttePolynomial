@@ -9,6 +9,7 @@
 #include <iostream>
 #include <iomanip>
 #include <fstream>
+#include <sstream>
 #include <stack>
 #include <list>
 #include <stdexcept>
@@ -419,8 +420,12 @@ P tutte(G &graph, unsigned int mid) {
       delete [] key; // free space used by key
       cache_hit_sizes[graph.num_vertices()]++;
       return r * RF;
+    } else {
+      //cout << "*** FAILED MATCHING GRAPH OF SIZE " << graph.num_vertices() << endl;
     }
   }
+
+  //  cout << "*** COMPUTING TUTTE FOR GRAPH OF SIZE " << graph.num_vertices() << endl;
   
   P poly;
 
@@ -922,7 +927,11 @@ biguint parse_bignumber(unsigned int &pos, string const &str) {
 }
 
 void match(char c, unsigned int &pos, string const &str) {
-  if(pos >= str.length() || str[pos] != c) { throw runtime_error(string("syntax error -- expected '") + c + "', got '" + str[pos] + "'"); }
+  if(pos >= str.length() || str[pos] != c) { 
+    std::ostringstream out;
+    out << "syntax error -- expected '" << c << "', got '" << str[pos] << "'";
+    throw runtime_error(out.str()); 
+  }
   ++pos;
 }
 
@@ -1312,12 +1321,14 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
   // if auto heuristic is enabled, then we calculate graph density and
   // select best heuristc based on that.
   unsigned int index = 0;
+  unsigned int lineno = 0;
   ngraphs_completed = 0;
   bool auto_heuristic = edge_selection_heuristic == AUTO;
   bool cache_auto_replace_size = cache.replace_size() == UINT_MAX;
 
   while(!input.eof() && index < graphs_end) {
     string line = read_line(input);
+    lineno++;
 
     if(line == "") {
       break;
@@ -1327,9 +1338,12 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
       // this is an initialisation graph
       G init_graph = compact_graph<G>(read_init_graph<G>(line));
       P poly = read_polynomial<P>(read_line(input));
+      P p2;
       unsigned char *key = graph_key(init_graph); 
       unsigned int id = 0;
-      cache.store(key,poly,id);
+      if(!cache.lookup(key,p2,id)) {
+	cache.store(key,poly,id);
+      }
       delete [] key;  // free space used by key
       continue;
     } 
