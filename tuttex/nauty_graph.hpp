@@ -178,14 +178,14 @@ public:
     return nauty_graph_size(buffer);
   }
 
-  inline bool add(unsigned int from, unsigned int to) {
+  inline bool add_edge(unsigned int from, unsigned int to) {
     nauty_graph_add(buffer,from,to);
   }
-
-  inline void delete(unsigned int from, unsigned int to) {
+  
+  inline void delete_edge(unsigned int from, unsigned int to) {
     nauty_graph_delete(buffer,from,to);
   }
-
+  
   inline nauty_graph &operator=(nauty_graph const &ng);
 
   inline bool operator==(nauty_graph const &ng) const {

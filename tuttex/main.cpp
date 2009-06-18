@@ -23,8 +23,9 @@
 
 #include "../config.h"
 #include "file_io.hpp"
+#include "adjacency_list.hpp"
 #include "nauty_graph.hpp"
-#include "cache.hpp"
+#include "computation.hpp"
 
 using namespace std;
 
@@ -64,6 +65,8 @@ public:
   }  
 };
 
+typedef adjacency_list<> graph_t;
+
 // ---------------------------------------------------------------
 // Global Variables
 // ---------------------------------------------------------------
@@ -81,13 +84,12 @@ unsigned long old_num_steps = 0;
 // facility.
 static long timeout = 15768000; // one years worth of timeout (in s)
 static my_timer global_timer(false);
-static cache cache(1024*1024,100);
 static vector<pair<int,int> > evalpoints;
-static vector<unsigned int> cache_hit_sizes;
 static unsigned int ngraphs_completed=0;  
 static unsigned int cutoff_threshold=0;
+static bool quiet_flag=false;
 static bool status_flag=false;
-static bool verbose=false;
+static bool verbose_flag=false;
 
 // ---------------------------------------------------------------
 // Signal Handlers
@@ -101,74 +103,27 @@ static bool verbose=false;
 static int status_interval = 5; // in seconds
 
 void timer_handler(int signum) {
-  if(verbose) { status_flag=true; }
+  if(verbose_flag) { status_flag=true; }
   alarm(status_interval);
 }
 
 void print_status() {
+  /*
   status_flag=false;
   double rate = (num_steps - old_num_steps);
   double cf = (100*((double)cache.size())) / cache.capacity();
   rate /= status_interval;
   cerr << "Completed " << ngraphs_completed << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full." << endl;
   old_num_steps = num_steps;  
+  */
 }
 
 // ------------------------------------------------------------------
 // Tutte Polynomial
 // ------------------------------------------------------------------
 
-void tutte(nauty_graph const &rootgraph, vector<pair<unsigned int, unsigned int> > edges) { 
-  static std::list<nauty_graph> graphs;
-  graphs.push_back(rootgraph);
-  int level=0;
-  bool growth = true;
-
-  while(edges.size() > 0 && graphs.size() != 0 && growth) {
-    cout << "LEVEL " << level++ << ": " << graphs.size() << endl;
-
-    growth = false;
-    int gsize = graphs.size();
-    pair<unsigned int, unsigned int> edge = edges.back();
-    edges.pop();
-
-    std::list<nauty_graph>::iterator iter(graphs.begin());
-    for(int i=0;i<gsize;++i) {
-      if(status_flag) { print_status(); }
-      num_steps++;
-      nauty_graph &graph = *iter;
-      
-      if(graph.num_edges() == 0) {
-	iter = graphs.erase(iter);	
-      } else if(graph.num_vertices() < cutoff_threshold) {
-	iter = graphs.erase(iter);	
-      } else {      	
-	unsigned char *key = graph_key(graph); 
-	unsigned int match_id;
-	int r; // unused
-
-	if(cache.lookup(key,r,match_id)) { 
-	  cache_hit_sizes[graph.num_vertices()]++;
-	  iter = graphs.erase(iter);
-	  delete [] key;
-	  continue; // don't do anything else for this round
-	} else {
-	  unsigned int tmp;
-	  cache.store(key,r,tmp);	  
-	  delete [] key;
-	}	
-
-	growth = true;
-
-	graphs.push_back(graph);
-	// now, delete/contract on the edge's endpoints
-	graph.remove_edge(edge.first,edge.second);
-	graphs.back().contract_edge(edge.first,edge.second);
-	
-	++iter;
-      } 
-    }
-  }
+void tutte(graph_t const &rootgraph, computation &comp) { 
+  
 }
 
 // ---------------------------------------------------------------
@@ -176,6 +131,7 @@ void tutte(nauty_graph const &rootgraph, vector<pair<unsigned int, unsigned int>
 // ---------------------------------------------------------------
 
 void reset_stats(unsigned int V) {
+  /*
   cache_hit_sizes.resize(V,0);
   cache.reset_stats();
   cache_hit_sizes.clear();
@@ -185,13 +141,16 @@ void reset_stats(unsigned int V) {
   num_disbicomps = 0;
   num_trees = 0;
   num_cycles = 0;    
+  */
 }
 
-void run(vector<nauty_graph> const &graphs, unsigned int beg, unsigned int end, bool quiet) {
+void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint64_t cache_size, unsigned int cache_buckets) {
+  computation comp(cache_size,cache_buckets);
   for(unsigned int i(beg);i<end;++i) {
+    comp.clear();
     reset_stats(graphs[i].num_vertices());
     global_timer = my_timer(false);
-    tutte(graphs[i]);
+    tutte(graphs[i],comp);
   }
 }
 
@@ -274,7 +233,6 @@ int main(int argc, char *argv[]) {
   unsigned int beg = 0;
   unsigned int end = UINT_MAX;
   unsigned int v;
-  bool quiet = false;
   bool info_mode = false;
 
   while((v=getopt_long(argc,argv,"qic:g:s:",long_options,NULL)) != -1) {
@@ -293,7 +251,7 @@ int main(int argc, char *argv[]) {
       break;
     case 'q':
     case OPT_QUIET:      
-      quiet = true;
+      quiet_flag = true;
       break;
     case 't':
     case OPT_TIMEOUT:
@@ -347,14 +305,11 @@ int main(int argc, char *argv[]) {
   // -------------------------------------------------
 
   try {
-    cache.resize(cache_size);
-    cache.rebucket(cache_buckets);
+    // -------------------------------------------------
+    // Register alarm signal for printing status updates
+    // -------------------------------------------------
     
-  // -------------------------------------------------
-  // Register alarm signal for printing status updates
-  // -------------------------------------------------
-    
-    if(!quiet) {
+    if(!quiet_flag) {
       // Only use the timer handler in verbose mode.
       struct sigaction sa;
       memset(&sa,0,sizeof(sa));
@@ -368,9 +323,9 @@ int main(int argc, char *argv[]) {
     // -----------------------------------
 
     ifstream inputfile(argv[optind]);    
-    vector<nauty_graph> graphs = read_file<nauty_graph>(inputfile);
+    vector<graph_t> graphs = read_file<graph_t>(inputfile);
 
-    run(graphs,beg,std::min(graphs.size(),end+1),quiet);
+    run(graphs,beg,std::min(graphs.size(),end+1),cache_size,cache_buckets);
 
     cout << "Read " << graphs.size() << " graph." << endl;
   } catch(std::runtime_error &e) {
