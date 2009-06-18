@@ -14,7 +14,7 @@
 // the following is needed for Nauty and determines
 // the maximum graph size
 #define MAXN 0
-#define NAUTY_HEADER_SIZE 2
+#define NAUTY_HEADER_SIZE 3
 #include "nauty.h"
 
 // ----------------------------------
@@ -35,6 +35,8 @@ inline size_t nauty_graph_size(unsigned int NN) {
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
   return (NN*M)+NAUTY_HEADER_SIZE;
 }
+
+size_t nauty_graph_numedges(unsigned char *graph);
 
 // add an edge to a nauty graph.
 bool nauty_graph_add(unsigned char *graph, unsigned int from, unsigned int to);

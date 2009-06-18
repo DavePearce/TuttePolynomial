@@ -29,12 +29,14 @@ bool nauty_graph_add(unsigned char *k1, unsigned int from, unsigned to) {
   mask = (((setword)1U) << (WORDSIZE-wo-1));
   buffer[(from*M)+wb] |= mask;
 
+  p[2]++;
+
   return true;
 }
 
 // delete an edge from the nauty_graph.  note that this method doesn't
 // delete any multiple edges, if they exist.
-void nauty_graph_delete(unsigned char *k1, unsigned int from, unsigned to) {
+bool nauty_graph_delete(unsigned char *k1, unsigned int from, unsigned to) {
   setword *p = (setword*) k1;  
   setword N = p[0];
   setword NN = p[1];
@@ -42,14 +44,18 @@ void nauty_graph_delete(unsigned char *k1, unsigned int from, unsigned to) {
   unsigned int wb = (from / WORDSIZE);      
   unsigned int wo = from - (wb*WORDSIZE); 
   
-  setword mask = ~(((setword)1U) << (WORDSIZE-wo-1));
+  setword mask = (((setword)1U) << (WORDSIZE-wo-1));
   setword *buffer = p + NAUTY_HEADER_SIZE;
+  if(buffer[(to*M)+wb] & mask) { return false; }
   buffer[(to*M)+wb] &= mask; 	  
   
   wb = (to / WORDSIZE);       
   wo = to - (wb*WORDSIZE);  
-  mask = (((setword)1U) << (WORDSIZE-wo-1));
+  mask = ~(((setword)1U) << (WORDSIZE-wo-1));
   buffer[(from*M)+wb] &= mask;  
+
+  p[2]++;
+  return true;
 }
 
 // determine whether two nauty graphs are equal
@@ -61,8 +67,10 @@ bool nauty_graph_equals(unsigned char const *_k1, unsigned char const *_k2) {
   setword N2 = k2[0];
   setword REAL_N1 = k1[1];
   setword REAL_N2 = k2[1];
+  setword E1 = k1[2];
+  setword E2 = k2[2];
 
-  if(N1 != N2 || REAL_N1 != REAL_N2) { return false; }
+  if(N1 != N2 || REAL_N1 != REAL_N2 || E1 != E2) { return false; }
   else {
     k1=k1+NAUTY_HEADER_SIZE;
     k2=k2+NAUTY_HEADER_SIZE;
@@ -109,6 +117,7 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
   setword *p = (setword*) key;  
   setword N = p[0];
   setword NN = p[1];
+  setword E = p[2];
   setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
 
   // allocate a clear space for graph
@@ -162,6 +171,13 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
   
   output[0] = NN; 
   output[1] = N;
+  output[2] = E;
+}
+
+
+size_t nauty_graph_numedges(unsigned char *graph) {
+  setword *p = (setword*) graph;
+  return graph[2];
 }
 
 // The purpose of the following method is to optimise the process of

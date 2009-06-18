@@ -122,8 +122,25 @@ void print_status() {
 // Tutte Polynomial
 // ------------------------------------------------------------------
 
-void tutte(graph_t const &rootgraph, computation &comp) { 
+void tutte(computation &comp) { 
   
+  while(comp.frontier_size() != 0) {
+    unsigned int size = comp.frontier_size();
+    cout << "Graphs: " << size << endl;
+
+    for(unsigned int i=0;i!=size;++i) {
+      unsigned int gindex = comp.frontier_get(i);
+      unsigned char *nauty_graph = comp.graph_ptr(gindex);
+
+      if(nauty_graph_numedges(nauty_graph) == 0) {
+	comp.frontier_terminate(i);
+	--i;
+      } else {
+	edge_t edge = select_edge(nauty_graph);
+	comp.frontier_delcontract(i,edge.first,edge.second);
+      }
+    }
+  }  
 }
 
 // ---------------------------------------------------------------
@@ -148,9 +165,10 @@ void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint
   computation comp(cache_size,cache_buckets);
   for(unsigned int i(beg);i<end;++i) {
     comp.clear();
+    comp.initialise(graphs[i]);
     reset_stats(graphs[i].num_vertices());
     global_timer = my_timer(false);
-    tutte(graphs[i],comp);
+    tutte(comp);
   }
 }
 
