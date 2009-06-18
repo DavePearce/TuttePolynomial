@@ -30,6 +30,12 @@ unsigned int nauty_graph_hashcode(unsigned char const *graph);
 // determine size of nauty graph.
 size_t nauty_graph_size(unsigned char const *graph);
 
+// determine size of nauty graph.
+inline size_t nauty_graph_size(unsigned int NN) {
+  setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
+  return (NN*M)+NAUTY_HEADER_SIZE;
+}
+
 // add an edge to a nauty graph.
 bool nauty_graph_add(unsigned char *graph, unsigned int from, unsigned int to);
 
@@ -52,7 +58,7 @@ void canong_contract(unsigned char const *graph, unsigned char *output, unsigned
 // Construct a nauty graph from a general graph, such as adjlist.
 template<class T>
 unsigned char *nauty_graph_build(T const &graph) {
-setword N = graph.num_vertices();
+  setword N = graph.num_vertices();
   setword NN = N + graph.num_multiedges();
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
 
@@ -172,11 +178,11 @@ public:
     return nauty_graph_size(buffer);
   }
 
-  inline bool add_edge(unsigned int from, unsigned int to) {
+  inline bool add(unsigned int from, unsigned int to) {
     nauty_graph_add(buffer,from,to);
   }
 
-  inline void delete_edge(unsigned int from, unsigned int to) {
+  inline void delete(unsigned int from, unsigned int to) {
     nauty_graph_delete(buffer,from,to);
   }
 
