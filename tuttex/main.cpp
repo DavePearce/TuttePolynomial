@@ -118,8 +118,8 @@ void print_status() {
 // Tutte Polynomial
 // ------------------------------------------------------------------
 
-void tutte(nauty_graph &rootgraph, vector<pair<unsigned int, unsigned int>> edges) { 
-  static std::list<G> graphs;
+void tutte(nauty_graph const &rootgraph, vector<pair<unsigned int, unsigned int> > edges) { 
+  static std::list<nauty_graph> graphs;
   graphs.push_back(rootgraph);
   int level=0;
   bool growth = true;
@@ -129,13 +129,14 @@ void tutte(nauty_graph &rootgraph, vector<pair<unsigned int, unsigned int>> edge
 
     growth = false;
     int gsize = graphs.size();
-    pair<unsigned int, unsigned int> edge = edges.pop_back();
+    pair<unsigned int, unsigned int> edge = edges.back();
+    edges.pop();
 
-    typename std::list<G>::iterator iter(graphs.begin());
+    std::list<nauty_graph>::iterator iter(graphs.begin());
     for(int i=0;i<gsize;++i) {
       if(status_flag) { print_status(); }
       num_steps++;
-      G &graph = *iter;
+      nauty_graph &graph = *iter;
       
       if(graph.num_edges() == 0) {
 	iter = graphs.erase(iter);	
@@ -174,7 +175,7 @@ void tutte(nauty_graph &rootgraph, vector<pair<unsigned int, unsigned int>> edge
 // Run Method
 // ---------------------------------------------------------------
 
-void reset_stats() {
+void reset_stats(unsigned int V) {
   cache_hit_sizes.resize(V,0);
   cache.reset_stats();
   cache_hit_sizes.clear();
@@ -188,7 +189,7 @@ void reset_stats() {
 
 void run(vector<nauty_graph> const &graphs, unsigned int beg, unsigned int end, bool quiet) {
   for(unsigned int i(beg);i<end;++i) {
-    reset_stats();
+    reset_stats(graphs[i].num_vertices());
     global_timer = my_timer(false);
     tutte(graphs[i]);
   }

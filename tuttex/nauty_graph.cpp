@@ -1,81 +1,26 @@
 #include "nauty_graph.hpp"
 
 extern "C" {
-uint32_t hashlittle( const void *key, size_t length, uint32_t initval);
+  uint32_t hashlittle( const void *key, size_t length, uint32_t initval);
 }
 
-nauty_graph::nauty_graph(unsigned int nverts) {
-  buffer = new unsigned char[nverts*nverts];
-  ptn = new unsigned int[nverts];
-  labs = new unsigned int[nverts];
+setword *nauty_graph_buf = NULL;
+setword *nauty_workspace = NULL;
+size_t nauty_graph_buf_size=0;
+size_t nauty_workspace_size = 0;
 
-  for(unsigned int i=0;i!=nverts;++i) {
-    labs[i]=i;
-    ptn[i]=1;
-  }
-
-  N = nverts;
-  NN = nverts;
-  E = 0;
-}
-
-nauty_graph::nauty_graph(nauty_graph const &graph) {
-  N = graph.N;
-  NN = graph.NN;
-  E = graph.E;
-
-  buffer = new unsigned char[N*N];
-  ptn = new unsigned int[N];
-  labs = new unsigned int[N];
-
-  for(unsigned int i=0;i!=N;++i) {
-    labs[i]=graph.labs[i];
-    ptn[i]=graph.ptn[i];
-  }
-}
-
-nauty_graph::~nauty_graph() {
-  delete buffer;
-  delete ptn;
-  delete labs;
-} 
-
-nauty_graph &nauty_graph::operator=(nauty_graph const &graph) {
-  if(this != &graph) {
-    delete buffer;
-    delete labs;
-    delete ptn;
-    
-    N = graph.N;
-    NN = graph.NN;
-    E = graph.E;
-    
-    buffer = new unsigned char[N*N];
-    ptn = new unsigned int[N];
-    labs = new unsigned int[N];
-    
-    for(unsigned int i=0;i!=N;++i) {
-      labs[i]=graph.labs[i];
-      ptn[i]=graph.ptn[i];
-    }
-  }
-  return *this;
-}
-
-int nauty_graph::num_vertices() const {
-  return N;
-}
-
-int nauty_graph::num_edges() const {
-  return E;
-}
-
-bool nauty_graph::add_edge(unsigned int from, unsigned to) {
+// add an edge to a nauty graph.  if the edge already exists, then it
+// returns false.
+bool nauty_graph_add(unsigned char *k1, unsigned int from, unsigned to) {
+  setword *p = (setword*) k1;  
+  setword N = p[0];
+  setword NN = p[1];
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;  
   unsigned int wb = (from / WORDSIZE);      
   unsigned int wo = from - (wb*WORDSIZE); 
   
   setword mask = (((setword)1U) << (WORDSIZE-wo-1));
+  setword *buffer = p + NAUTY_HEADER_SIZE;
   if(buffer[(to*M)+wb] & mask) { return false; }
   buffer[(to*M)+wb] |= mask; 	  
   
@@ -87,12 +32,18 @@ bool nauty_graph::add_edge(unsigned int from, unsigned to) {
   return true;
 }
 
-void nauty_graph::remove_edge(unsigned int from, unsigned to) {
+// delete an edge from the nauty_graph.  note that this method doesn't
+// delete any multiple edges, if they exist.
+void nauty_graph_delete(unsigned char *k1, unsigned int from, unsigned to) {
+  setword *p = (setword*) k1;  
+  setword N = p[0];
+  setword NN = p[1];
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;  
   unsigned int wb = (from / WORDSIZE);      
   unsigned int wo = from - (wb*WORDSIZE); 
   
   setword mask = ~(((setword)1U) << (WORDSIZE-wo-1));
+  setword *buffer = p + NAUTY_HEADER_SIZE;
   buffer[(to*M)+wb] &= mask; 	  
   
   wb = (to / WORDSIZE);       
@@ -101,28 +52,8 @@ void nauty_graph::remove_edge(unsigned int from, unsigned to) {
   buffer[(from*M)+wb] &= mask;  
 }
 
-void nauty_graph::contract_edge(unsigned int from, unsigned to) {
-  // it's here that we must essentially "union-find" the vertices in 
-}
-
-bool nauty_graph::operator==(nauty_graph const &graph) const {
-  if(graph.NN != graph.NN || graph.E != graph.E) { return false; }
-  else {
-    setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
-    unsigned char const *k1 = buffer;
-    unsigned char const *k2 = graph.buffer;
-    for(int i=0;i!=(NN*M);++i,++k1,++k2) {
-      if(*k1 != *k2) { 	return false; }
-    }
-  }
-  return true;
-}
-
-// ----------------------------------
-// METHODS FOR INTERFACING WITH NAUTY
-// ----------------------------------
-
-bool compare_graph_keys(unsigned char const *_k1, unsigned char const *_k2) {
+// determine whether two nauty graphs are equal
+bool nauty_graph_equals(unsigned char const *_k1, unsigned char const *_k2) {
   setword *k1 = (setword*) _k1;
   setword *k2 = (setword*) _k2;
   
@@ -144,25 +75,105 @@ bool compare_graph_keys(unsigned char const *_k1, unsigned char const *_k2) {
   return true;
 }
 
-// returns the sizeof the graph key in bytes
-size_t sizeof_graph_key(unsigned char const *key) {
+// make an exact copy of a nauty graph.
+void nauty_graph_clone(unsigned char const *graph, unsigned char *output) {
+  setword const *p = (setword const *) graph;
+  
+  setword N = p[0];
+  setword NN = p[1];  
+  setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+  
+  memcpy(output,graph,((N*M)+NAUTY_HEADER_SIZE) * sizeof(setword));
+}
+
+// returns the sizeof the nauty graph in bytes
+size_t nauty_graph_size(unsigned char const *key) {
   setword *k1 = (setword*) key;  
   setword N = k1[0];
   setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   return ((N*M)+NAUTY_HEADER_SIZE) * sizeof(setword);
 }
 
-// generate a hash code from a graph key
-unsigned int hash_graph_key(unsigned char const *key) {
+// generate a hash code from a nauty graph
+unsigned int nauty_graph_hashcode(unsigned char const *key) {
   setword *p = (setword*) key;  
   setword N = p[0];
   setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   return hashlittle(key,sizeof(setword)*((N*M)+NAUTY_HEADER_SIZE),0);
 }
 
-size_t graph_size(unsigned char *key) {
+// This method simply accepts a nauty graph and computes a canonical
+// graph, placing it in the output array.  The output array must be of
+// the right size, as determined by nauty_graph_size().
+void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
   setword *p = (setword*) key;  
   setword N = p[0];
-  setword REAL_N = p[1];
-  return REAL_N;
+  setword NN = p[1];
+  setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+
+  // allocate a clear space for graph
+  if((NN*M) >= nauty_graph_buf_size) {
+    // need to increase size of temporary buffer!
+    delete [] nauty_graph_buf;
+    nauty_graph_buf = new setword[NN*M];  
+    nauty_graph_buf_size = NN*M;
+    delete [] nauty_workspace;
+    nauty_workspace = new setword[100 * M];
+    nauty_workspace_size = 100 * M;
+  }
+  
+  // At this stage, we have constructed a nauty graph representing our
+  // original graph.  We now need to run nauty to generate the
+  // canonical graph which essentially corresponds to our "graph key"
+
+  statsblk stats;
+  DEFAULTOPTIONS(opts); 
+  opts.getcanon = TRUE;
+  opts.defaultptn = FALSE;
+  opts.writemarkers = FALSE;
+
+  // could optimise this further by making lab and ptn static
+  int lab[NN];
+  int ptn[NN];    
+  nvector orbits[NN]; // unused.
+
+  for(int i=0;i!=NN;++i) { 
+    lab[i] = i; 
+    ptn[i] = 1;
+  }
+
+  ptn[NN-1] = 0;
+  ptn[N-1] = 0;
+
+   // call nauty
+  nauty((setword*) key + NAUTY_HEADER_SIZE,
+	lab,
+	ptn,
+	NULL,
+	orbits,
+	&opts,
+	&stats,
+	nauty_workspace,
+	nauty_workspace_size,
+	M,
+	NN, // true graph size, since includes vertices added for multi edges.
+	(setword*) output+NAUTY_HEADER_SIZE  // add two for header
+	);
+  
+  output[0] = NN; 
+  output[1] = N;
+}
+
+// The purpose of the following method is to optimise the process of
+// deleting an edge and then computing the canonical graph from it.
+// The method assumes that *all* multiple edges must be deleted.
+void nauty_graph_canong_delete(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to) {
+  
+}
+
+// The purpose of the following method is to optimise the process of
+// contracting an edge, and then computing the canonical graph from
+// it.
+void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to) {
+  
 }

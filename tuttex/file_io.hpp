@@ -90,7 +90,7 @@ std::vector<G> read_file(std::istream &input) {
   std::vector<G> graphs;
   while(!input.eof()) {
     std::string line = read_line(input);
-    
+
     if(line == "") {
       continue;
     }
