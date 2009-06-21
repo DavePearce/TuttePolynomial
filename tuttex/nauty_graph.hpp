@@ -9,6 +9,7 @@
 #ifndef NAUTY_GRAPH_HPP
 #define NAUTY_GRAPH_HPP
 
+#include <string>
 #include <vector>
 
 // the following is needed for Nauty and determines
@@ -79,6 +80,8 @@ void nauty_graph_canong_delete(unsigned char const *graph, unsigned char *output
 
 // not sure about the following method.
 void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to);
+
+std::string nauty_graph_str(unsigned char const *graph);
 
 // Construct a nauty graph from a general graph, such as adjlist.
 template<class T>

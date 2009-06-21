@@ -268,7 +268,7 @@ int main(int argc, char *argv[]) {
   uint64_t cache_size(256 * 1024 * 1024);   
   unsigned int cache_buckets;
   unsigned int beg = 0;
-  unsigned int end = UINT_MAX;
+  unsigned int end = UINT_MAX-1;
   unsigned int v;
   bool info_mode = false;
 
@@ -364,7 +364,7 @@ int main(int argc, char *argv[]) {
 
     run(graphs,beg,std::min(graphs.size(),end+1),cache_size,cache_buckets);
 
-    cout << "Read " << graphs.size() << " graph." << endl;
+    cout << "Read " << graphs.size() << " graph(s)." << endl;
   } catch(std::runtime_error &e) {
     cerr << "error: " << e.what() << endl;  
   } catch(std::bad_alloc &e) {

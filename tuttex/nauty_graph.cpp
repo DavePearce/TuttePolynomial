@@ -1,4 +1,7 @@
+#include <sstream>
 #include "nauty_graph.hpp"
+
+using namespace std;
 
 extern "C" {
   uint32_t hashlittle( const void *key, size_t length, uint32_t initval);
@@ -267,4 +270,32 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
   
   // finally, compute canonical labelling
   nauty_graph_canon((unsigned char const *)nauty_graph_buf,output);
+}
+
+string nauty_graph_str(unsigned char const *graph) {
+  setword *p = (setword *) graph;
+  setword N = p[0];
+  setword NN = p[1];
+  setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;  
+  setword *buffer = p + NAUTY_HEADER_SIZE;    
+
+  std::ostringstream out;
+  out << "[N=" << N << ",NN=" << NN << ",M=" << N << "]{";
+  
+  bool firstTime = true;
+  for(unsigned int i=0;i!=NN;++i) {
+    for(unsigned int j=(i+1);j<NN;++j) {
+      if(nauty_graph_is_edge(graph,i,j)) {
+	if(!firstTime) {
+	  out << ",";
+	}
+	firstTime=false;
+	out << i << "--" << j;
+      }
+    }    
+  }
+
+  out << "}" << endl;
+
+  return out.str();
 }
