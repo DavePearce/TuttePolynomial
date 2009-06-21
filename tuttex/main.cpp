@@ -66,6 +66,7 @@ public:
 };
 
 typedef adjacency_list<> graph_t;
+typedef pair<unsigned int, unsigned int> edge_t;
 
 // ---------------------------------------------------------------
 // Global Variables
@@ -116,6 +117,24 @@ void print_status() {
   cerr << "Completed " << ngraphs_completed << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full." << endl;
   old_num_steps = num_steps;  
   */
+}
+
+// ------------------------------------------------------------------
+// Edge Selection
+// ------------------------------------------------------------------
+
+edge_t select_edge(unsigned char const *nauty_graph) {
+  unsigned int N = nauty_graph_numverts(nauty_graph);
+
+  for(unsigned int i=0;i!=N;++i) {
+    for(unsigned int j=0;j!=N;++j) {
+      if(nauty_graph_is_edge(nauty_graph,i,j)) {
+	return edge_t(i,j);
+      }
+    }
+  }
+  
+  throw std::runtime_error("internal failure (select_edge)");
 }
 
 // ------------------------------------------------------------------

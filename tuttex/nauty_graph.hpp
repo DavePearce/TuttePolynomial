@@ -27,8 +27,7 @@ bool nauty_graph_equals(unsigned char const *g1, unsigned char const *g2);
 // determine hash code for nauty graph.
 unsigned int nauty_graph_hashcode(unsigned char const *graph);
 
-// determine size of nauty graph.
-size_t nauty_graph_size(unsigned char const *graph);
+size_t nauty_graph_size(unsigned char const *key);
 
 // determine size of nauty graph.
 inline size_t nauty_graph_size(unsigned int NN) {
@@ -36,13 +35,37 @@ inline size_t nauty_graph_size(unsigned int NN) {
   return (NN*M)+NAUTY_HEADER_SIZE;
 }
 
-size_t nauty_graph_numedges(unsigned char *graph);
+inline size_t nauty_graph_numverts(unsigned char const *graph) {
+  setword *p = (setword*) graph;
+  return graph[1];
+}
+
+inline size_t nauty_graph_numedges(unsigned char const *graph) {
+  setword *p = (setword*) graph;
+  return graph[2];
+}
+
+inline bool nauty_graph_is_edge(unsigned char const *graph, unsigned int from, unsigned int to) {
+  setword *p = (setword*) graph;  
+  setword NN = p[1];
+  setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;  
+  unsigned int wb = (from / WORDSIZE);      
+  unsigned int wo = from - (wb*WORDSIZE); 
+  
+  setword mask = (((setword)1U) << (WORDSIZE-wo-1));
+  setword *buffer = p + NAUTY_HEADER_SIZE;
+  if(buffer[(to*M)+wb] & mask) { return true; }
+  return false;
+}
 
 // add an edge to a nauty graph.
 bool nauty_graph_add(unsigned char *graph, unsigned int from, unsigned int to);
 
 // delete an edge from a nauty graph.
-void nauty_graph_delete(unsigned char *graph, unsigned int from, unsigned int to);
+bool nauty_graph_delete(unsigned char *graph, unsigned int from, unsigned int to);
+
+// delete a vertex from a nauty graph.
+void nauty_graph_delvert(unsigned char const *input, unsigned char *output, unsigned int vertex);
 
 // make an exact copy of a nauty graph.
 void nauty_graph_clone(unsigned char const *graph, unsigned char *output);
@@ -52,10 +75,10 @@ void nauty_graph_clone(unsigned char const *graph, unsigned char *output);
 void nauty_graph_canon(unsigned char const *key, unsigned char *output);
 
 // the following method can be implemented without copying.
-void canong_delete(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to, unsigned int count);
+void nauty_graph_canong_delete(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to);
 
 // not sure about the following method.
-void canong_contract(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to, unsigned int count);
+void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to);
 
 // Construct a nauty graph from a general graph, such as adjlist.
 template<class T>

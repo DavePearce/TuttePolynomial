@@ -58,6 +58,64 @@ bool nauty_graph_delete(unsigned char *k1, unsigned int from, unsigned to) {
   return true;
 }
 
+// delete a vertex from the nauty_graph.
+void nauty_graph_delvert(unsigned char const *input, unsigned char *output, unsigned int vertex) {
+  setword *p_in = (setword*) input;  
+  setword *p_out = (setword*) output;  
+
+  setword N_IN = p_in[0];
+  setword NN_IN = p_in[1];
+  setword M_IN = ((NN_IN % WORDSIZE) > 0) ? (NN_IN / WORDSIZE)+1 : NN_IN / WORDSIZE;  
+
+  setword NN_OUT = NN_OUT-1;
+  setword M_OUT = ((NN_OUT % WORDSIZE) > 0) ? (NN_OUT / WORDSIZE)+1 : NN_OUT / WORDSIZE;  
+
+  p_out[0] = N_IN - 1;
+  p_out[1] = NN_OUT;
+
+  setword *inbuffer = p_in + NAUTY_HEADER_SIZE;  
+  setword *outbuffer = p_out + NAUTY_HEADER_SIZE;    
+
+  unsigned int oi = 0;
+  for(unsigned int i=0;i!=NN_IN;++i) {
+    if(i == vertex) { continue; }
+
+    // the following loop could certainly be made more efficient.
+    unsigned int oj = 0;
+    for(unsigned int j=0;j!=NN_IN;++j) {
+      if(j == vertex) { continue; }
+
+      unsigned int wb = (j / WORDSIZE);      
+      unsigned int wo = j - (wb*WORDSIZE);  
+      setword mask = (((setword)1U) << (WORDSIZE-wo-1));
+
+      if(inbuffer[(i*M_IN)+wb] & mask) { 
+	// edge found, therefore add it!
+	wb = (oj / WORDSIZE);      
+	wo = oj - (wb*WORDSIZE);  
+	mask = (((setword)1U) << (WORDSIZE-wo-1));	
+	outbuffer[(oi*M_OUT)+wb] |= mask;
+      }
+      
+      oj++;
+    }
+
+    oi++;
+  }
+
+  // finally, count the number of edges which have been deleted.
+  unsigned int deledges = 0;
+  for(unsigned int i=0;i!=M_IN;++i) {
+    setword tmp = inbuffer[(vertex*M_IN) + i];
+    while(tmp != 0) {
+      if(tmp & 1U) { deledges++; }
+      tmp = tmp >> 1U;
+    }
+  }
+  
+  p_out[2] = p_in[2] - deledges;
+}
+
 // determine whether two nauty graphs are equal
 bool nauty_graph_equals(unsigned char const *_k1, unsigned char const *_k2) {
   setword *k1 = (setword*) _k1;
@@ -120,17 +178,6 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
   setword E = p[2];
   setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
 
-  // allocate a clear space for graph
-  if((NN*M) >= nauty_graph_buf_size) {
-    // need to increase size of temporary buffer!
-    delete [] nauty_graph_buf;
-    nauty_graph_buf = new setword[NN*M];  
-    nauty_graph_buf_size = NN*M;
-    delete [] nauty_workspace;
-    nauty_workspace = new setword[100 * M];
-    nauty_workspace_size = 100 * M;
-  }
-  
   // At this stage, we have constructed a nauty graph representing our
   // original graph.  We now need to run nauty to generate the
   // canonical graph which essentially corresponds to our "graph key"
@@ -175,21 +222,49 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
 }
 
 
-size_t nauty_graph_numedges(unsigned char *graph) {
-  setword *p = (setword*) graph;
-  return graph[2];
-}
-
 // The purpose of the following method is to optimise the process of
 // deleting an edge and then computing the canonical graph from it.
 // The method assumes that *all* multiple edges must be deleted.
 void nauty_graph_canong_delete(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to) {
-  
+  unsigned char *tgraph = (unsigned char *) graph;
+  // To avoid creating a second copy of graph, I actually delete the
+  // edge from it temporarily.  Then I add it back so it seems as
+  // though nothing has changed.
+  nauty_graph_delete(tgraph,from,to);
+  nauty_graph_canon(tgraph,output);
+  nauty_graph_add(tgraph,from,to);
 }
 
 // The purpose of the following method is to optimise the process of
-// contracting an edge, and then computing the canonical graph from
-// it.
+// contracting two vertices together.  The new vertex retains the
+// smaller of the two labels.
 void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to) {
+  if(from > to) { std::swap(from,to); }
+
+  // determine dimensions of output graph based on input graph.
+  setword *p = (setword *) graph;
+  setword NN = p[1] - 1U; // account for deleted vertex
+  setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;  
+
+  // allocate a clear space for graph
+  if(((NN*M)+NAUTY_HEADER_SIZE) >= nauty_graph_buf_size) {
+    // need to increase size of temporary buffer!
+    delete [] nauty_graph_buf;
+    nauty_graph_buf = new setword[(NN*M) + NAUTY_HEADER_SIZE];  
+    nauty_graph_buf_size = (NN*M) + NAUTY_HEADER_SIZE;    
+  }
+
+  // clear the temporary buffer.
+  memset(nauty_graph_buf,(NN*M) + NAUTY_HEADER_SIZE,0);
+
+  // construct new graph with given vertex deleted.
+  nauty_graph_delvert(graph,(unsigned char*)nauty_graph_buf,to);
+
+  // add all edges from the deleted vertex to the remaining
+  // vertex
   
+  // TO DO!!!
+  
+  // finally, compute canonical labelling
+  nauty_graph_canon((unsigned char const *)nauty_graph_buf,output);
 }
