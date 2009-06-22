@@ -151,6 +151,8 @@ void tutte(computation &comp) {
       unsigned int gindex = comp.frontier_get(i);
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
+      std::cout << "PROCESSING: " << nauty_graph_str(nauty_graph) << std::endl;
+
       if(nauty_graph_numedges(nauty_graph) == 0) {
 	comp.frontier_terminate(i);
 	--i;

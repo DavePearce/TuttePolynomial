@@ -51,11 +51,11 @@ inline bool nauty_graph_is_edge(unsigned char const *graph, unsigned int from, u
   setword *p = (setword*) graph;  
   setword NN = p[1];
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;  
-  unsigned int wb = (from / WORDSIZE);      
-  unsigned int wo = from - (wb*WORDSIZE); 
-  
-  setword mask = (((setword)1U) << (WORDSIZE-wo-1));
   setword *buffer = p + NAUTY_HEADER_SIZE;
+
+  unsigned int wb = (from / WORDSIZE);      
+  unsigned int wo = from - (wb*WORDSIZE);   
+  setword mask = (((setword)1U) << (WORDSIZE-wo-1));
   if(buffer[(to*M)+wb] & mask) { return true; }
   return false;
 }
@@ -97,7 +97,7 @@ unsigned char *nauty_graph_build(T const &graph) {
 
   nauty_graph_buf[0] = N;
   nauty_graph_buf[1] = NN;
-  nauty_graph_buf[2] = graph.num_edges();
+  nauty_graph_buf[2] = 0;
 
   // build map from graph vertex space to nauty vertex space
   unsigned int vtxmap[graph.domain_size()];

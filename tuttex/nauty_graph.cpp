@@ -14,16 +14,16 @@ size_t nauty_workspace_size = 0;
 
 // add an edge to a nauty graph.  if the edge already exists, then it
 // returns false.
-bool nauty_graph_add(unsigned char *k1, unsigned int from, unsigned to) {
-  setword *p = (setword*) k1;  
+bool nauty_graph_add(unsigned char *graph, unsigned int from, unsigned to) {
+  setword *p = (setword*) graph;  
   setword N = p[0];
   setword NN = p[1];
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;  
-  unsigned int wb = (from / WORDSIZE);      
-  unsigned int wo = from - (wb*WORDSIZE); 
-  
-  setword mask = (((setword)1U) << (WORDSIZE-wo-1));
   setword *buffer = p + NAUTY_HEADER_SIZE;
+
+  unsigned int wb = (from / WORDSIZE);      
+  unsigned int wo = from - (wb*WORDSIZE);   
+  setword mask = (((setword)1U) << (WORDSIZE-wo-1));
   if(buffer[(to*M)+wb] & mask) { return false; }
   buffer[(to*M)+wb] |= mask; 	  
   
@@ -39,25 +39,25 @@ bool nauty_graph_add(unsigned char *k1, unsigned int from, unsigned to) {
 
 // delete an edge from the nauty_graph.  note that this method doesn't
 // delete any multiple edges, if they exist.
-bool nauty_graph_delete(unsigned char *k1, unsigned int from, unsigned to) {
-  setword *p = (setword*) k1;  
+bool nauty_graph_delete(unsigned char *graph, unsigned int from, unsigned to) {
+  setword *p = (setword*) graph;  
   setword N = p[0];
   setword NN = p[1];
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;  
+  setword *buffer = p + NAUTY_HEADER_SIZE;
+
   unsigned int wb = (from / WORDSIZE);      
   unsigned int wo = from - (wb*WORDSIZE); 
-  
   setword mask = (((setword)1U) << (WORDSIZE-wo-1));
-  setword *buffer = p + NAUTY_HEADER_SIZE;
-  if(buffer[(to*M)+wb] & mask) { return false; }
-  buffer[(to*M)+wb] &= mask; 	  
+  if(!(buffer[(to*M)+wb] & mask)) { return false; }
+  buffer[(to*M)+wb] &= ~mask; 	  
   
   wb = (to / WORDSIZE);       
   wo = to - (wb*WORDSIZE);  
-  mask = ~(((setword)1U) << (WORDSIZE-wo-1));
-  buffer[(from*M)+wb] &= mask;  
+  mask = ((setword)1U) << (WORDSIZE-wo-1);
+  buffer[(from*M)+wb] &= ~mask;  
 
-  p[2]++;
+  p[2]--;
   return true;
 }
 
@@ -150,7 +150,7 @@ void nauty_graph_clone(unsigned char const *graph, unsigned char *output) {
   
   setword N = p[0];
   setword NN = p[1];  
-  setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+  setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
   
   memcpy(output,graph,((N*M)+NAUTY_HEADER_SIZE) * sizeof(setword));
 }
@@ -158,17 +158,17 @@ void nauty_graph_clone(unsigned char const *graph, unsigned char *output) {
 // returns the sizeof the nauty graph in bytes
 size_t nauty_graph_size(unsigned char const *key) {
   setword *k1 = (setword*) key;  
-  setword N = k1[0];
-  setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
-  return ((N*M)+NAUTY_HEADER_SIZE) * sizeof(setword);
+  setword NN = k1[1];
+  setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
+  return ((NN*M)+NAUTY_HEADER_SIZE) * sizeof(setword);
 }
 
 // generate a hash code from a nauty graph
 unsigned int nauty_graph_hashcode(unsigned char const *key) {
   setword *p = (setword*) key;  
-  setword N = p[0];
-  setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
-  return hashlittle(key,sizeof(setword)*((N*M)+NAUTY_HEADER_SIZE),0);
+  setword NN = p[1];
+  setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
+  return hashlittle(key,sizeof(setword)*((NN*M)+NAUTY_HEADER_SIZE),0);
 }
 
 // This method simply accepts a nauty graph and computes a canonical
@@ -180,7 +180,7 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
   setword N = p[0];
   setword NN = p[1];
   setword E = p[2];
-  setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
+  setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
 
   // At this stage, we have constructed a nauty graph representing our
   // original graph.  We now need to run nauty to generate the
@@ -220,8 +220,8 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
 	(setword*) output+NAUTY_HEADER_SIZE  // add two for header
 	);
   
-  op[0] = NN; 
-  op[1] = N;
+  op[0] = N; 
+  op[1] = NN;
   op[2] = E;
 }
 
@@ -282,7 +282,7 @@ string nauty_graph_str(unsigned char const *graph) {
   setword *buffer = p + NAUTY_HEADER_SIZE;    
 
   std::ostringstream out;
-  out << "[N=" << N << ",NN=" << NN << ",M=" << N << "]{";
+  out << "[N=" << N << ",NN=" << NN << ",E=" << p[2] << "]{";
   
   bool firstTime = true;
   for(unsigned int i=0;i!=NN;++i) {
@@ -297,7 +297,7 @@ string nauty_graph_str(unsigned char const *graph) {
     }    
   }
 
-  out << "}" << endl;
+  out << "}";
 
   return out.str();
 }
