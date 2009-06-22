@@ -70,20 +70,20 @@ void nauty_graph_delvert(unsigned char const *input, unsigned char *output, unsi
   setword NN_IN = p_in[1];
   setword M_IN = ((NN_IN % WORDSIZE) > 0) ? (NN_IN / WORDSIZE)+1 : NN_IN / WORDSIZE;  
 
-  setword NN_OUT = NN_OUT-1;
+  setword NN_OUT = NN_IN - 1U;
   setword M_OUT = ((NN_OUT % WORDSIZE) > 0) ? (NN_OUT / WORDSIZE)+1 : NN_OUT / WORDSIZE;  
 
-  p_out[0] = N_IN - 1;
+  p_out[0] = N_IN - 1U;
   p_out[1] = NN_OUT;
 
   setword *inbuffer = p_in + NAUTY_HEADER_SIZE;  
   setword *outbuffer = p_out + NAUTY_HEADER_SIZE;    
 
+  // the following loop could certainly be made more efficient.
   unsigned int oi = 0;
   for(unsigned int i=0;i!=NN_IN;++i) {
     if(i == vertex) { continue; }
 
-    // the following loop could certainly be made more efficient.
     unsigned int oj = 0;
     for(unsigned int j=0;j!=NN_IN;++j) {
       if(j == vertex) { continue; }
@@ -92,7 +92,7 @@ void nauty_graph_delvert(unsigned char const *input, unsigned char *output, unsi
       unsigned int wo = j - (wb*WORDSIZE);  
       setword mask = (((setword)1U) << (WORDSIZE-wo-1));
 
-      if(inbuffer[(i*M_IN)+wb] & mask) { 
+      if(inbuffer[(i*M_IN)+wb] & mask) {
 	// edge found, therefore add it!
 	wb = (oj / WORDSIZE);      
 	wo = oj - (wb*WORDSIZE);  
@@ -110,12 +110,12 @@ void nauty_graph_delvert(unsigned char const *input, unsigned char *output, unsi
   unsigned int deledges = 0;
   for(unsigned int i=0;i!=M_IN;++i) {
     setword tmp = inbuffer[(vertex*M_IN) + i];
-    while(tmp != 0) {
+    while(tmp != 0U) {
       if(tmp & 1U) { deledges++; }
       tmp = tmp >> 1U;
     }
   }
-  
+
   p_out[2] = p_in[2] - deledges;
 }
 
@@ -259,7 +259,7 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
   }
 
   // clear the temporary buffer.
-  memset(nauty_graph_buf,(NN*M) + NAUTY_HEADER_SIZE,0);
+  memset(nauty_graph_buf,0,((NN*M) + NAUTY_HEADER_SIZE)*sizeof(setword));
 
   // construct new graph with given vertex deleted.
   nauty_graph_delvert(graph,(unsigned char*)nauty_graph_buf,to);
@@ -286,7 +286,7 @@ string nauty_graph_str(unsigned char const *graph) {
   
   bool firstTime = true;
   for(unsigned int i=0;i!=NN;++i) {
-    for(unsigned int j=(i+1);j<NN;++j) {
+    for(unsigned int j=0;j<NN;++j) {
       if(nauty_graph_is_edge(graph,i,j)) {
 	if(!firstTime) {
 	  out << ",";
