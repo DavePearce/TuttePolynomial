@@ -176,6 +176,7 @@ unsigned int nauty_graph_hashcode(unsigned char const *key) {
 // the right size, as determined by nauty_graph_size().
 void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
   setword *p = (setword*) key;  
+  setword *op = (setword*) output;  
   setword N = p[0];
   setword NN = p[1];
   setword E = p[2];
@@ -219,9 +220,9 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
 	(setword*) output+NAUTY_HEADER_SIZE  // add two for header
 	);
   
-  output[0] = NN; 
-  output[1] = N;
-  output[2] = E;
+  op[0] = NN; 
+  op[1] = N;
+  op[2] = E;
 }
 
 
@@ -272,6 +273,7 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
   nauty_graph_canon((unsigned char const *)nauty_graph_buf,output);
 }
 
+// Generate a human readable string representing the nauty graph.
 string nauty_graph_str(unsigned char const *graph) {
   setword *p = (setword *) graph;
   setword N = p[0];

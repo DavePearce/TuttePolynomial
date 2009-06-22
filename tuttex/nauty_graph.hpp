@@ -9,6 +9,7 @@
 #ifndef NAUTY_GRAPH_HPP
 #define NAUTY_GRAPH_HPP
 
+#include <iostream>
 #include <string>
 #include <vector>
 
@@ -38,12 +39,12 @@ inline size_t nauty_graph_size(unsigned int NN) {
 
 inline size_t nauty_graph_numverts(unsigned char const *graph) {
   setword *p = (setword*) graph;
-  return graph[1];
+  return p[1];
 }
 
 inline size_t nauty_graph_numedges(unsigned char const *graph) {
   setword *p = (setword*) graph;
-  return graph[2];
+  return p[2];
 }
 
 inline bool nauty_graph_is_edge(unsigned char const *graph, unsigned int from, unsigned int to) {
@@ -96,6 +97,7 @@ unsigned char *nauty_graph_build(T const &graph) {
 
   nauty_graph_buf[0] = N;
   nauty_graph_buf[1] = NN;
+  nauty_graph_buf[2] = graph.num_edges();
 
   // build map from graph vertex space to nauty vertex space
   unsigned int vtxmap[graph.domain_size()];
