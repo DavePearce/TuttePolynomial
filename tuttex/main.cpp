@@ -144,19 +144,18 @@ edge_t select_edge(unsigned char const *nauty_graph) {
 void tutte(computation &comp) { 
   
   while(comp.frontier_size() != 0) {
-    unsigned int size = comp.frontier_size();
-    cout << "Graphs: " << size << endl;
+    cout << "Graphs: " << comp.frontier_size() << endl;
 
-    for(unsigned int i=0;i!=size;++i) {
+    for(unsigned int i=0;i!=comp.frontier_size();++i) {
       unsigned int gindex = comp.frontier_get(i);
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
-      std::cout << "PROCESSING: " << nauty_graph_str(nauty_graph) << std::endl;
-
       if(nauty_graph_numedges(nauty_graph) == 0) {
+	std::cout << "TERMINATED: " << nauty_graph_str(nauty_graph) << std::endl;
 	comp.frontier_terminate(i);
 	--i;
       } else {
+	std::cout << "DELCONTRACT: " << nauty_graph_str(nauty_graph) << std::endl;
 	edge_t edge = select_edge(nauty_graph);
 	comp.frontier_delcontract(i,edge.first,edge.second);
       }
