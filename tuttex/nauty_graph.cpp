@@ -168,6 +168,7 @@ unsigned int nauty_graph_hashcode(unsigned char const *key) {
   setword *p = (setword*) key;  
   setword NN = p[1];
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
+
   return hashlittle(key,sizeof(setword)*((NN*M)+NAUTY_HEADER_SIZE),0);
 }
 
@@ -243,8 +244,12 @@ void nauty_graph_canong_delete(unsigned char const *graph, unsigned char *output
 // contracting two vertices together.  The new vertex retains the
 // smaller of the two labels.
 void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to) {
+  unsigned char *tgraph = (unsigned char *) graph;
+  // To avoid creating a second copy of graph, I actually delete the
+  // edge from it temporarily.  Then I add it back so it seems as
+  // though nothing has changed.
+  nauty_graph_delete(tgraph,from,to);
   if(from > to) { std::swap(from,to); }
-
   // determine dimensions of output graph based on input graph.
   setword *p = (setword *) graph;
   setword NN = p[1] - 1U; // account for deleted vertex
@@ -271,6 +276,7 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
   
   // finally, compute canonical labelling
   nauty_graph_canon((unsigned char const *)nauty_graph_buf,output);
+  nauty_graph_add(tgraph,from,to);
 }
 
 // Generate a human readable string representing the nauty graph.
@@ -286,7 +292,7 @@ string nauty_graph_str(unsigned char const *graph) {
   
   bool firstTime = true;
   for(unsigned int i=0;i!=NN;++i) {
-    for(unsigned int j=0;j<NN;++j) {
+    for(unsigned int j=(i+1);j<NN;++j) {
       if(nauty_graph_is_edge(graph,i,j)) {
 	if(!firstTime) {
 	  out << ",";

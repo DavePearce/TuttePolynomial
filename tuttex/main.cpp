@@ -144,17 +144,14 @@ edge_t select_edge(unsigned char const *nauty_graph) {
 void tutte(computation &comp) { 
   
   while(comp.frontier_size() != 0) {
-    cout << "Graphs: " << comp.frontier_size() << endl;
-
+    cout << "GRAPHS: " << comp.frontier_size() << endl;
     for(unsigned int i=0;i!=comp.frontier_size();) {
       unsigned int gindex = comp.frontier_get(i);
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
       if(nauty_graph_numedges(nauty_graph) == 0) {
-	std::cout << "TERMINATED: " << nauty_graph_str(nauty_graph) << std::endl;
 	comp.frontier_terminate(i);
       } else {
-	std::cout << "DELCONTRACT: " << nauty_graph_str(nauty_graph) << std::endl;
 	edge_t edge = select_edge(nauty_graph);
 	i += comp.frontier_delcontract(i,edge.first,edge.second);
       }
@@ -182,6 +179,7 @@ void reset_stats(unsigned int V) {
 
 void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint64_t cache_size, unsigned int cache_buckets) {
   computation comp(cache_size,cache_buckets);
+
   for(unsigned int i(beg);i<end;++i) {
     comp.clear();
     comp.initialise(graphs[i]);
@@ -266,7 +264,7 @@ int main(int argc, char *argv[]) {
   };
 
   uint64_t cache_size(256 * 1024 * 1024);   
-  unsigned int cache_buckets;
+  unsigned int cache_buckets = 100000;
   unsigned int beg = 0;
   unsigned int end = UINT_MAX-1;
   unsigned int v;
