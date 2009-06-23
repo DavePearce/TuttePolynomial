@@ -109,6 +109,8 @@ public:
     struct graph_node *gnode = gindex[id];
     struct tree_node *tnode = tindex[id];
 
+    tnode->type = TREE_SUM;
+
     // First, compute delete graph.
     struct graph_node *gdel = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gnode)));
     nauty_graph_canong_delete(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gdel),from,to);
