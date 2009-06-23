@@ -26,6 +26,7 @@
 #include "adjacency_list.hpp"
 #include "nauty_graph.hpp"
 #include "computation.hpp"
+#include "factor_poly.hpp"
 
 using namespace std;
 
@@ -65,6 +66,7 @@ public:
   }  
 };
 
+typedef factor_poly poly_t;
 typedef adjacency_list<> graph_t;
 typedef pair<unsigned int, unsigned int> edge_t;
 
@@ -138,12 +140,13 @@ edge_t select_edge(unsigned char const *nauty_graph) {
 }
 
 // ------------------------------------------------------------------
-// Tutte Polynomial
+// Build Computation Tree
 // ------------------------------------------------------------------
 
-void tutte(computation &comp) { 
-  
+void build(computation &comp) { 
+  unsigned int size = 0;
   while(comp.frontier_size() != 0) {
+    size += comp.frontier_size();
     cout << "GRAPHS: " << comp.frontier_size() << endl;
     for(unsigned int i=0;i!=comp.frontier_size();) {
       unsigned int gindex = comp.frontier_get(i);
@@ -156,7 +159,16 @@ void tutte(computation &comp) {
 	i += comp.frontier_delcontract(i,edge.first,edge.second);
       }
     }
-  }  
+  }
+  cout << "Computation Tree: " << size << endl;
+}
+
+// ------------------------------------------------------------------
+// Evaluate Computation Tree
+// ------------------------------------------------------------------
+
+poly_t evaluate(computation &comp) { 
+  
 }
 
 // ---------------------------------------------------------------
@@ -185,7 +197,9 @@ void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint
     comp.initialise(graphs[i]);
     reset_stats(graphs[i].num_vertices());
     global_timer = my_timer(false);
-    tutte(comp);
+    build(comp);
+    poly_r poly = evaluate(comp);
+    cout << "Polynomial: " << poly.str() << endl;
   }
 }
 
