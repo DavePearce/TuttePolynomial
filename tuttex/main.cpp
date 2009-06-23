@@ -146,18 +146,17 @@ void tutte(computation &comp) {
   while(comp.frontier_size() != 0) {
     cout << "Graphs: " << comp.frontier_size() << endl;
 
-    for(unsigned int i=0;i!=comp.frontier_size();++i) {
+    for(unsigned int i=0;i!=comp.frontier_size();) {
       unsigned int gindex = comp.frontier_get(i);
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
       if(nauty_graph_numedges(nauty_graph) == 0) {
 	std::cout << "TERMINATED: " << nauty_graph_str(nauty_graph) << std::endl;
 	comp.frontier_terminate(i);
-	--i;
       } else {
 	std::cout << "DELCONTRACT: " << nauty_graph_str(nauty_graph) << std::endl;
 	edge_t edge = select_edge(nauty_graph);
-	comp.frontier_delcontract(i,edge.first,edge.second);
+	i += comp.frontier_delcontract(i,edge.first,edge.second);
       }
     }
   }  
