@@ -271,8 +271,30 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
 
   // add all edges from the deleted vertex to the remaining
   // vertex
-  
-  // TO DO!!!
+  setword NN_IN = NN+1;
+  setword M_IN = ((NN_IN % WORDSIZE) > 0) ? (NN_IN / WORDSIZE)+1 : NN_IN / WORDSIZE;  
+  setword *inbuffer = ((setword*)graph)+NAUTY_HEADER_SIZE;
+  setword *outbuffer = p+NAUTY_HEADER_SIZE;
+  inbuffer += to*M_IN;
+  for(unsigned int i=0;i!=NN;++i) {
+    unsigned int wb = (i / WORDSIZE);      
+    unsigned int wo = i - (wb*WORDSIZE);  
+    setword mask = (((setword)1U) << (WORDSIZE-wo-1));
+    
+    if(inbuffer[wb] & mask) {
+      wb = (i / WORDSIZE);      
+      wo = i - (wb*WORDSIZE);   
+      mask = (((setword)1U) << (WORDSIZE-wo-1));
+      if(!(outbuffer[(from*M)+wb] & mask)) { 
+	outbuffer[(from*M)+wb] |= mask; 	  	
+	wb = (from / WORDSIZE);       
+	wo = from - (wb*WORDSIZE);  
+	mask = (((setword)1U) << (WORDSIZE-wo-1));
+	outbuffer[(i*M)+wb] |= mask;	
+	p[2]++;
+      }
+    } 
+  }
   
   // finally, compute canonical labelling
   nauty_graph_canon((unsigned char const *)nauty_graph_buf,output);
