@@ -33,6 +33,7 @@ struct graph_node {
 
 struct tree_node {
   unsigned char type;
+  unsigned int refcount;
   unsigned int lhs;
   unsigned int rhs;
 };
@@ -117,6 +118,7 @@ public:
     if(lhs_match) {
       // this branch is now terminated.
       tnode->lhs = isoid;
+      tindex[isoid]->refcount++;
       graph_p -= gdel->size; // free space!
     } else {
       store(gdel); // add to isomorph cache
@@ -135,6 +137,7 @@ public:
     if(rhs_match) {
       // this branch is now terminated.
       tnode->rhs = isoid;
+      tindex[isoid]->refcount++;
       graph_p -= gcontract->size; // free space!
     } else {
       store(gcontract); // add to isomorph cache
@@ -202,10 +205,12 @@ private:
 
     if((tree_p - sizeof(tree_node)) <= graph_p) {
       throw std::bad_alloc(); // temporary for now
-    }
-    
+    }    
+
     tree_p -= sizeof(tree_node);
-    return (tree_node*) tree_p;
+    tree_node* tp = (tree_node*) tree_p;
+    tp->refcount = 1;
+    return tp;
   }
 
   bool lookup(unsigned char const *key, unsigned int &id) {

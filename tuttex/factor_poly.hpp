@@ -14,10 +14,10 @@
 #include <utility>
 
 #include "xy_term.hpp"
-#include "../misc/bistream.hpp"
-#include "../misc/bstreambuf.hpp"
-#include "../misc/biguint.hpp"
-#include "../misc/bigint.hpp"
+#include "bistream.hpp"
+#include "bstreambuf.hpp"
+#include "biguint.hpp"
+#include "bigint.hpp"
 
 #define FPOLY_PADDING_FACTOR 1
 
