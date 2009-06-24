@@ -157,6 +157,7 @@ public:
   
   void reset(unsigned int v) {
     vindex=0;
+    cstack.clear(); // make sure it's empty.
     visited.resize(v);
     lowlink.resize(v);
     dfsnum.resize(v);
@@ -164,9 +165,25 @@ public:
   }
 };
 
-void cc_visit(unsigned int u, unsigned int v, 
-	      unsigned char const *graph,
-	      bc_dat &data) {    
+// extract the biconncted component on the stack, and return the
+// number of vertices involved.
+unsigned int cc_extract(pair<unsigned int, unsigned int> e, vector<bool> &bicomp, bc_dat &data) {
+  pair<unsigned int, unsigned int> c(0,0);
+  unsigned int count = 0;
+  do {
+    c = data.cstack.back();
+    bicomp[c.first] = true;
+    data.cstack.pop_back();
+    count++;
+  } while(c != e);
+
+  return count-1; // -1 for the duplicate entry
+}
+
+unsigned int cc_visit(unsigned int u, unsigned int v, 
+		      unsigned char const *graph,
+		      vector<bool> &bicomp,
+		      bc_dat &data) {    
   // traverse edge tail->head
   data.dfsnum[v] = data.vindex;
   data.visited[v] = true;
@@ -178,12 +195,16 @@ void cc_visit(unsigned int u, unsigned int v,
     if(nauty_graph_is_edge(graph,v,i)) {
       if(!data.visited[i]) { 
 	data.cstack.push_back(std::make_pair(v,i));
-	extract_biconnects(v,i,data); 
+
+	unsigned int bc = cc_visit(v,i,graph,bicomp,data); 
+	// check if we've already extracted a bicomp.
+	if(bc > 0) { return bc; }
+	// if not, continue.
 	data.lowlink[v] = std::min(data.lowlink[v],data.lowlink[i]);
 	if(data.lowlink[i] == data.dfsnum[v]) {
 	  // v is an articulation point separating
 	  // the component containing w from others.
-	  //	  bcs.push_back(extract_biconnect(v,i,data));
+	  return cc_extract(make_pair(v,i),bicomp,data);
 	} else if(data.lowlink[i] > data.dfsnum[v]) { 
 	  // v is not in a biconnected component with w
 	  data.cstack.pop_back(); 
@@ -196,6 +217,8 @@ void cc_visit(unsigned int u, unsigned int v,
       }
     }
   }
+  
+  return 0;
 }
 
 // The following method traverses the input graph and attempts to
@@ -210,22 +233,19 @@ unsigned int check_connectivity(unsigned char const *graph, vector<bool> &comp) 
 
   bc_data.reset(N);
 
-  int ncomponents = 0;
   for(unsigned int i=0;i!=N;++i) {
     if(!bc_data.visited[i]) { 
-      ncomponents++;
-      // dfs search to identify component roots
-      cc_visit(i,i,graph,bc_data);
+      unsigned int bc = cc_visit(i,i,graph,comp,bc_data);
+      if(bc == N) {
+	return CC_BICONNECTED;
+      } else if(bc > 0) {
+	// this means a bicomp was extracted.
+	return CC_CONNECTED;
+      }
     }
   }
 
-  if((N - ncomponents) == E) {
-    return CC_FOREST;
-  } else if(bc_data.cstack.size() != 1) {    
-    return CC_CONNECTED;
-  } else {
-    return CC_BICONNECTED;
-  }
+  return CC_FOREST;
 }
 
 // ------------------------------------------------------------------
