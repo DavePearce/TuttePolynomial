@@ -47,7 +47,7 @@ binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
 am_tutte_OBJECTS = main.$(OBJEXT) file_io.$(OBJEXT) \
 	nauty_graph.$(OBJEXT) bistream.$(OBJEXT) bstreambuf.$(OBJEXT) \
-	hash.$(OBJEXT)
+	hash.$(OBJEXT) bigint.$(OBJEXT) biguint.$(OBJEXT)
 tutte_OBJECTS = $(am_tutte_OBJECTS)
 tutte_DEPENDENCIES = ../nauty/libnauty.a
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)
@@ -169,7 +169,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir)/nauty
-tutte_SOURCES = main.cpp file_io.cpp nauty_graph.cpp bistream.cpp bstreambuf.cpp hash.c
+tutte_SOURCES = main.cpp file_io.cpp nauty_graph.cpp bistream.cpp bstreambuf.cpp hash.c bigint.cpp biguint.cpp
 include_HEADERS = file_io.hpp nauty_graph.hpp bistream.hpp bstreambuf.hpp cache.hpp
 tutte_LDADD = ../nauty/libnauty.a
 all: all-am
@@ -238,6 +238,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bigint.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/biguint.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bistream.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bstreambuf.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/file_io.Po@am__quote@

@@ -226,7 +226,7 @@ unsigned int cc_visit(unsigned int u, unsigned int v,
 // biconnected, then it determines whether or not it's actually a
 // tree.  If it's not a tree, then it identifies the first biconnected
 // component and extracts its vertices to bicomp.
-unsigned int check_connectivity(unsigned char const *graph, vector<bool> &comp) {
+unsigned int check_connectivity(unsigned char const *graph, vector<bool> &comp, unsigned int &bcw) {
   static bc_dat bc_data;
   unsigned int N = nauty_graph_numverts(graph);
   unsigned int E = nauty_graph_numedges(graph);
@@ -239,6 +239,7 @@ unsigned int check_connectivity(unsigned char const *graph, vector<bool> &comp) 
       if(bc == N) {
 	return CC_BICONNECTED;
       } else if(bc > 0) {
+	bcw = bc;
 	// this means a bicomp was extracted.
 	return CC_CONNECTED;
       }
@@ -257,7 +258,7 @@ void build(computation &comp) {
 
   // the following temporary vector is used for extracting biconnected
   // components.
-  vector<bool> tmp(nauty_graph_numverts(comp.graph_ptr(comp.frontier_get(0))));
+  vector<bool> bicomp(nauty_graph_numverts(comp.graph_ptr(comp.frontier_get(0))));
 
   while(comp.frontier_size() != 0) {
     size += comp.frontier_size();
@@ -266,7 +267,8 @@ void build(computation &comp) {
       unsigned int gindex = comp.frontier_get(i);
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
-      unsigned int cinfo = check_connectivity(nauty_graph,tmp);
+      unsigned int bc = 0;
+      unsigned int cinfo = check_connectivity(nauty_graph,bicomp,bc);
 
       if(cinfo == CC_FOREST) {
 	// This indicates that the graph is actually a tree.
@@ -276,7 +278,7 @@ void build(computation &comp) {
 	// This indicates that the original graph was not biconnected,
 	// and that a biconnected component has been extracted (into
 	// tmp).  Therefore, we split on this biconnected component.
-	i += comp.frontier_split(i,tmp);
+	i += comp.frontier_split(i,bc,bicomp);
       } else {
 	edge_t edge = select_edge(nauty_graph);
 	i += comp.frontier_delcontract(i,edge.first,edge.second);
