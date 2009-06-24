@@ -172,12 +172,14 @@ unsigned int cc_extract(pair<unsigned int, unsigned int> e, vector<bool> &bicomp
   unsigned int count = 0;
   do {
     c = data.cstack.back();
-    bicomp[c.first] = true;
+    if(!bicomp[c.first]) {
+      bicomp[c.first] = true;
+      count++;
+    }
     data.cstack.pop_back();
-    count++;
   } while(c != e);
 
-  return count-1; // -1 for the duplicate entry
+  return count;  
 }
 
 unsigned int cc_visit(unsigned int u, unsigned int v, 
@@ -235,7 +237,9 @@ unsigned int check_connectivity(unsigned char const *graph, vector<bool> &comp, 
 
   for(unsigned int i=0;i!=N;++i) {
     if(!bc_data.visited[i]) { 
+
       unsigned int bc = cc_visit(i,i,graph,comp,bc_data);
+	cout << "GOT BICOMP WITH " << bc << " NODES" << endl;
       if(bc == N) {
 	return CC_BICONNECTED;
       } else if(bc > 0) {
@@ -268,9 +272,12 @@ void build(computation &comp) {
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
       unsigned int bc = 0;
+      cout << "GOING IN" << endl;
       unsigned int cinfo = check_connectivity(nauty_graph,bicomp,bc);
+      cout << "DONE" << endl;
 
       if(cinfo == CC_FOREST) {
+	cout << "GOT FOREST" << endl;
 	// This indicates that the graph is actually a tree.
 	// Therefore, we can terminate immediately.
 	comp.frontier_terminate(i);
@@ -323,8 +330,8 @@ void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint
     reset_stats(graphs[i].num_vertices());
     global_timer = my_timer(false);
     build(comp);
-    poly_t poly = evaluate(comp);
-    cout << "Polynomial: " << poly.str() << endl;
+    //    poly_t poly = evaluate(comp);
+    //    cout << "Polynomial: " << poly.str() << endl;
   }
 }
 

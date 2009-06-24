@@ -114,9 +114,19 @@ public:
     struct tree_node *tnode = tindex[id];
     tnode->type = TREE_PRODUCT;
     
-    // First, compute biconnected component graph.
-    struct graph_node *gbicomp = graph_node_alloc(N);
-    unsigned char *splitg = NAUTY_GRAPH(gbicomp);
+    // First, compute residue graph
+    struct graph_node *gresidue = graph_node_alloc(N);
+    unsigned char *residueg = NAUTY_GRAPH(gresidue);
+    nauty_graph_clone(graph,residueg);
+    unsigned int gresidueid = gindex.size();
+    tnode->lhs = gresidueid;
+    gindex.push_back(gresidue);
+    tindex.push_back(tree_node_alloc());
+    frontier[index] = gresidueid;
+
+    // Second, compute split graph
+    struct graph_node *gsplit = graph_node_alloc(N);
+    unsigned char *splitg = NAUTY_GRAPH(gsplit);
     static std::vector<unsigned int> mapping;
     mapping.resize(N);
     
@@ -132,14 +142,20 @@ public:
       for(unsigned int j=i;j!=N;++j) {
 	unsigned int mi = mapping[i];
 	unsigned int mj = mapping[j];
-	if(nauty_graph_is_edge(graph,mi,mj)) {
+	if(nauty_graph_is_edge(residueg,mi,mj)) {
 	  nauty_graph_add(splitg,i,j);
-	  nauty_graph_delete(graph,mi,mj);
+	  nauty_graph_delete(residueg,mi,mj);
 	}
       }
     }
 
-    // At this point, we should probably convert the graphs into canonical form...
+    unsigned int gsplitid = gindex.size();
+    gsplit->gindex = gsplitid;
+    tnode->rhs = gsplitid;
+    gindex.push_back(gsplit);
+    tindex.push_back(tree_node_alloc());
+    frontier.push_back(gsplitid);
+
     return 1;
   }
 
