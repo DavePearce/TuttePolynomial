@@ -172,6 +172,7 @@ unsigned int cc_extract(pair<unsigned int, unsigned int> e, vector<bool> &bicomp
   unsigned int count = 0;
   do {
     c = data.cstack.back();
+
     if(!bicomp[c.first]) {
       bicomp[c.first] = true;
       count++;
@@ -239,7 +240,6 @@ unsigned int check_connectivity(unsigned char const *graph, vector<bool> &comp, 
     if(!bc_data.visited[i]) { 
 
       unsigned int bc = cc_visit(i,i,graph,comp,bc_data);
-	cout << "GOT BICOMP WITH " << bc << " NODES" << endl;
       if(bc == N) {
 	return CC_BICONNECTED;
       } else if(bc > 0) {
@@ -271,13 +271,11 @@ void build(computation &comp) {
       unsigned int gindex = comp.frontier_get(i);
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
+      fill(bicomp.begin(),bicomp.end(),false);
       unsigned int bc = 0;
-      cout << "GOING IN" << endl;
       unsigned int cinfo = check_connectivity(nauty_graph,bicomp,bc);
-      cout << "DONE" << endl;
 
       if(cinfo == CC_FOREST) {
-	cout << "GOT FOREST" << endl;
 	// This indicates that the graph is actually a tree.
 	// Therefore, we can terminate immediately.
 	comp.frontier_terminate(i);
