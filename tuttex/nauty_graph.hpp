@@ -80,7 +80,7 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output);
 void nauty_graph_canong_delete(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to);
 
 // not sure about the following method.
-void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to);
+void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to, bool loops=true);
 
 std::string nauty_graph_str(unsigned char const *graph);
 

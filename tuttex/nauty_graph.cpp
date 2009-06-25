@@ -243,7 +243,7 @@ void nauty_graph_canong_delete(unsigned char const *graph, unsigned char *output
 // The purpose of the following method is to optimise the process of
 // contracting two vertices together.  The new vertex retains the
 // smaller of the two labels.
-void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to) {
+void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to, bool loops) {
   unsigned char *tgraph = (unsigned char *) graph;
   // To avoid creating a second copy of graph, I actually delete the
   // edge from it temporarily.  Then I add it back so it seems as
@@ -281,10 +281,11 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
     unsigned int wo = i - (wb*WORDSIZE);  
     setword mask = (((setword)1U) << (WORDSIZE-wo-1));
     
-    if(inbuffer[wb] & mask) {
+    if((inbuffer[wb] & mask) && (loops || (i != to && i != from))) {
       unsigned int w = i;
-      if(i == to) { w = from;} 
-      else if(i > to) { w--; }
+      if(i == to) { 
+	w = from;
+      } else if(i > to) { w--; }
       
       wb = (w / WORDSIZE);      
       wo = w - (wb*WORDSIZE);   

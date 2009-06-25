@@ -188,7 +188,7 @@ public:
 
     // Second, compute contract graph.
     struct graph_node *gcontract = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gdel)));
-    nauty_graph_canong_contract(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gcontract),from,to);
+    nauty_graph_canong_contract(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gcontract),from,to,false); // ignore loops for now!
 
     bool rhs_match = lookup(NAUTY_GRAPH(gcontract),isoid);
     if(rhs_match) {
