@@ -115,54 +115,30 @@ public:
   // This method splits the frontier node on a biconnected component.
   // That is, it splits out the biconnected component and all edges it
   // contains into a separate graph, leaving what's left as is.
-  unsigned int frontier_split(unsigned int index, unsigned int N, std::vector<bool> const &bicomp) { 
+  unsigned int frontier_split(unsigned int index, std::vector<unsigned int> const &components, std::vector<unsigned int> const &ends) { 
     unsigned int id = frontier[index];
     struct graph_node *gnode = gindex[id];
     unsigned char *graph = NAUTY_GRAPH(gnode);
     struct tree_node *tnode = tindex[id];
     tnode->type = TREE_PRODUCT;
     
-    // First, compute residue graph
-    struct graph_node *gresidue = graph_node_alloc(N);
-    unsigned char *residueg = NAUTY_GRAPH(gresidue);
-    nauty_graph_clone(graph,residueg);
-    unsigned int gresidueid = gindex.size();
-    tnode->lhs = gresidueid;
-    gindex.push_back(gresidue);
-    tindex.push_back(tree_node_alloc());
-    frontier[index] = gresidueid;
-
-    // Second, compute split graph
-    struct graph_node *gsplit = graph_node_alloc(N);
-    unsigned char *splitg = NAUTY_GRAPH(gsplit);
-    static std::vector<unsigned int> mapping;
-    mapping.resize(N);
-    
-    unsigned int i1=0,i2=0;
-    for(std::vector<bool>::const_iterator i(bicomp.begin());i!=bicomp.end();++i) {
-      if(*i) {
-	mapping[i1++] = i2;
-      }
-      i2++;
+    // Now, iterate each component in turn extracting it.
+    unsigned int start = 0;
+    for(unsigned int c = 0;c!=ends.size();++c) {
+      // First, create the graph node
+      unsigned int C_N = ends[c] - start;
+      struct graph_node *gsplit = graph_node_alloc(C_N);
+      unsigned char *splitg = NAUTY_GRAPH(gsplit);
+      nauty_graph_extract(graph,splitg,&components.front()+start,C_N);
+      start = ends[c];
+      // Second, create the tree node
+      unsigned int gsplitid = gindex.size();
+      gsplit->gindex = gsplitid;      
+      gindex.push_back(gsplit);
+      tindex.push_back(tree_node_alloc());
+      // hmmm, what about the existing frontier node ?
+      frontier.push_back(gsplitid);
     }
-
-    for(unsigned int i=0;i!=N;++i) {
-      for(unsigned int j=i;j!=N;++j) {
-	unsigned int mi = mapping[i];
-	unsigned int mj = mapping[j];
-	if(nauty_graph_is_edge(residueg,mi,mj)) {
-	  nauty_graph_add(splitg,i,j);
-	  nauty_graph_delete(residueg,mi,mj);
-	}
-      }
-    }
-
-    unsigned int gsplitid = gindex.size();
-    gsplit->gindex = gsplitid;
-    tnode->rhs = gsplitid;
-    gindex.push_back(gsplit);
-    tindex.push_back(tree_node_alloc());
-    frontier.push_back(gsplitid);
 
     return 1;
   }

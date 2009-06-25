@@ -119,6 +119,21 @@ void nauty_graph_delvert(unsigned char const *input, unsigned char *output, unsi
   p_out[2] = p_in[2] - deledges;
 }
 
+// Extract a subgraph from the input graph.  The subgraph is
+// determined by the vertices in the component list.
+void nauty_graph_extract(unsigned char const *graph, unsigned char *output, unsigned int const *component, unsigned int N) {
+  // this loop could be optimised somewhat to avoid recalculating M etc for each edge addition.
+  for(unsigned int i=0;i<N;++i) {
+    for(unsigned int j=(i+1);j<N;++j) {
+      unsigned int mi = component[i];
+      unsigned int mj = component[j];
+      if(nauty_graph_is_edge(graph,mi,mj)) {
+	nauty_graph_add(output,i,j);
+      }
+    }
+  }
+}
+
 // determine whether two nauty graphs are equal
 bool nauty_graph_equals(unsigned char const *_k1, unsigned char const *_k2) {
   setword *k1 = (setword*) _k1;

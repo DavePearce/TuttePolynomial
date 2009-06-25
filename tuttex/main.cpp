@@ -147,13 +147,13 @@ edge_t select_edge(unsigned char const *nauty_graph) {
 #define CC_CONNECTED 2
 #define CC_BICONNECTED 3
 
-class bc_dat {
+class cc_dat {
 public:
   unsigned int vindex;
   std::vector<bool> visited;
   std::vector<unsigned int> lowlink;
   std::vector<unsigned int> dfsnum;
-  std::vector<pair<unsigned int, unsigned int> > cstack;
+  std::vector<unsigned int> cstack;
   
   void reset(unsigned int v) {
     vindex=0;
@@ -165,63 +165,57 @@ public:
   }
 };
 
+static cc_dat cc_data;
+static vector<unsigned int> components;
+static vector<unsigned int> component_ends;
+static vector<edge_t> tree_edges;
+
 // extract the biconncted component on the stack, and return the
 // number of vertices involved.
-unsigned int cc_extract(pair<unsigned int, unsigned int> e, vector<bool> &bicomp, bc_dat &data) {
-  pair<unsigned int, unsigned int> c(0,0);
-  unsigned int count = 0;
-  do {
-    c = data.cstack.back();
+void cc_extract(unsigned int v) {
+  unsigned int w = cc_data.cstack.back();
 
-    if(!bicomp[c.first]) {
-      bicomp[c.first] = true;
-      count++;
-    }
-    data.cstack.pop_back();
-  } while(c != e);
+  while(cc_data.cstack.size() > 0 && w != v) {
+    components.push_back(w);
+    cc_data.cstack.pop_back();
+    w = cc_data.cstack.back();
+  }
 
-  return count;  
+  components.push_back(v);
+  component_ends.push_back(components.size());
 }
 
 unsigned int cc_visit(unsigned int u, unsigned int v, 
-		      unsigned char const *graph,
-		      vector<bool> &bicomp,
-		      bc_dat &data) {    
+		      unsigned char const *graph) {    
   // traverse edge tail->head
-  data.dfsnum[v] = data.vindex;
-  data.visited[v] = true;
-  data.lowlink[v] = data.vindex++;
+  cc_data.dfsnum[v] = cc_data.vindex;
+  cc_data.visited[v] = true;
+  cc_data.lowlink[v] = cc_data.vindex++;
+  cc_data.cstack.push_back(v);
 
   // now, consider edges 
   unsigned int N = nauty_graph_numverts(graph);
   for(unsigned int i=0;i!=N;++i) {
     if(nauty_graph_is_edge(graph,v,i)) {
-      if(!data.visited[i]) { 
-	data.cstack.push_back(std::make_pair(v,i));
+      if(!cc_data.visited[i]) { 
 
-	unsigned int bc = cc_visit(v,i,graph,bicomp,data); 
-	// check if we've already extracted a bicomp.
-	if(bc > 0) { return bc; }
-	// if not, continue.
-	data.lowlink[v] = std::min(data.lowlink[v],data.lowlink[i]);
-	if(data.lowlink[i] == data.dfsnum[v]) {
+	cc_visit(v,i,graph); 	
+	cc_data.lowlink[v] = std::min(cc_data.lowlink[v],cc_data.lowlink[i]);
+	if(cc_data.lowlink[i] == cc_data.dfsnum[v]) {
 	  // v is an articulation point separating
 	  // the component containing w from others.
-	  return cc_extract(make_pair(v,i),bicomp,data);
-	} else if(data.lowlink[i] > data.dfsnum[v]) { 
+	  cc_extract(v);
+	} else if(cc_data.lowlink[i] > cc_data.dfsnum[v]) { 
 	  // v is not in a biconnected component with w
-	  data.cstack.pop_back(); 
+	  tree_edges.push_back(edge_t(v,i));
+	  cc_data.cstack.pop_back(); 
 	}
-      } else if(i != u && data.dfsnum[v] > data.dfsnum[i]) {	
+      } else if(i != u && cc_data.dfsnum[v] > cc_data.dfsnum[i]) {	
 	// this is a back edge ...
-	data.lowlink[v] = std::min(data.lowlink[v],data.dfsnum[i]);
-	// which means we're in a biconnected component ...
-	data.cstack.push_back(std::make_pair(v,i)); 
+	cc_data.lowlink[v] = std::min(cc_data.lowlink[v],cc_data.dfsnum[i]);
       }
     }
   }
-  
-  return 0;
 }
 
 // The following method traverses the input graph and attempts to
@@ -229,28 +223,20 @@ unsigned int cc_visit(unsigned int u, unsigned int v,
 // biconnected, then it determines whether or not it's actually a
 // tree.  If it's not a tree, then it identifies the first biconnected
 // component and extracts its vertices to bicomp.
-unsigned int check_connectivity(unsigned char const *graph, vector<bool> &comp, unsigned int &bcw) {
-  static bc_dat bc_data;
+void check_connectivity(unsigned char const *graph) {
   unsigned int N = nauty_graph_numverts(graph);
   unsigned int E = nauty_graph_numedges(graph);
 
-  bc_data.reset(N);
+  cc_data.reset(N);
+  components.clear();
+  component_ends.clear();
+  tree_edges.clear();
 
   for(unsigned int i=0;i!=N;++i) {
-    if(!bc_data.visited[i]) { 
-
-      unsigned int bc = cc_visit(i,i,graph,comp,bc_data);
-      if(bc == N) {
-	return CC_BICONNECTED;
-      } else if(bc > 0) {
-	bcw = bc;
-	// this means a bicomp was extracted.
-	return CC_CONNECTED;
-      }
+    if(!cc_data.visited[i]) { 
+      cc_visit(i,i,graph);
     }
   }
-
-  return CC_FOREST;
 }
 
 // ------------------------------------------------------------------
@@ -260,10 +246,6 @@ unsigned int check_connectivity(unsigned char const *graph, vector<bool> &comp, 
 void build(computation &comp) { 
   unsigned int size = 0;
 
-  // the following temporary vector is used for extracting biconnected
-  // components.
-  vector<bool> bicomp(nauty_graph_numverts(comp.graph_ptr(comp.frontier_get(0))));
-
   while(comp.frontier_size() != 0) {
     size += comp.frontier_size();
     cout << "GRAPHS: " << comp.frontier_size() << endl;
@@ -271,20 +253,26 @@ void build(computation &comp) {
       unsigned int gindex = comp.frontier_get(i);
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
-      fill(bicomp.begin(),bicomp.end(),false);
-      unsigned int bc = 0;
-      unsigned int cinfo = check_connectivity(nauty_graph,bicomp,bc);
+      check_connectivity(nauty_graph);
 
-      if(cinfo == CC_FOREST) {
-	// This indicates that the graph is actually a tree.
+      if(component_ends.size() == 0) {
+	// This indicates that the graph is actually a forest.
 	// Therefore, we can terminate immediately.
 	comp.frontier_terminate(i);
-      } else if(cinfo == CC_CONNECTED) {
+      } else if(component_ends.size() > 1 || tree_edges.size() > 0) {
 	// This indicates that the original graph was not biconnected,
-	// and that a biconnected component has been extracted (into
-	// tmp).  Therefore, we split on this biconnected component.
-	i += comp.frontier_split(i,bc,bicomp);
+	// and that one or more biconnected components have been
+	// extracted.  Therefore, we split on this biconnected
+	// component.
+	if(tree_edges.size() > 0) {
+	  std::cout << "************* PROBLEM MISSING X FACTOR" << std::endl;
+	  // comp.frontier_factor(i,tree_edges.size());
+	}
+	i += comp.frontier_split(i,components,component_ends);
       } else {
+	// This indicates that the whole graph was biconnected.
+	// Therefore, we have no choice but to perform a
+	// delete-contract.
 	edge_t edge = select_edge(nauty_graph);
 	i += comp.frontier_delcontract(i,edge.first,edge.second);
       }
@@ -309,6 +297,7 @@ poly_t evaluate(computation &comp) {
 	unsigned int nedges = nauty_graph_numedges(comp.graph_ptr(i));	
 	cout << "P[" << i << "] = " << "x^" << nedges << endl;
 	polys[i] = X(nedges);
+	cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
 	break;
       }
     case TREE_FACTOR:
@@ -317,10 +306,12 @@ poly_t evaluate(computation &comp) {
     case TREE_SUM:
       polys[i] = polys[tnode->lhs] + polys[tnode->rhs];
       cout << "P[" << i << "] = " << "P[" << tnode->lhs << "] + P[" << tnode->rhs << "] = " << polys[i].str() << endl;
+      cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
       break;
     case TREE_PRODUCT:
       polys[i] = polys[tnode->lhs] * polys[tnode->rhs];
       cout << "P[" << i << "] = " << "P[" << tnode->lhs << "] * P[" << tnode->rhs << "] = " << polys[i].str()  << endl;
+      cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
       break;
 
     }
