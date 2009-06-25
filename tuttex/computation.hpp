@@ -96,6 +96,14 @@ public:
     tindex.push_back(tnode);
   }
 
+  unsigned int size() {
+    return tindex.size();
+  }
+
+  tree_node *get(unsigned int index) {
+    return tindex[index];
+  }
+
   unsigned int frontier_size() { 
     return frontier.size();
   }
@@ -170,6 +178,8 @@ public:
     struct graph_node *gdel = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gnode)));
     nauty_graph_canong_delete(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gdel),from,to);
     
+    //    std::cout << "GDEL: " << nauty_graph_str(NAUTY_GRAPH(gdel)) << std::endl;
+    
     unsigned int isoid;
     bool lhs_match = lookup(NAUTY_GRAPH(gdel),isoid);
     if(lhs_match) {
@@ -189,6 +199,8 @@ public:
     // Second, compute contract graph.
     struct graph_node *gcontract = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gdel)));
     nauty_graph_canong_contract(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gcontract),from,to,false); // ignore loops for now!
+
+    //    std::cout << "GCONTRACT: " << nauty_graph_str(NAUTY_GRAPH(gcontract)) << std::endl;
 
     bool rhs_match = lookup(NAUTY_GRAPH(gcontract),isoid);
     if(rhs_match) {

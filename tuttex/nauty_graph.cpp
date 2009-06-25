@@ -296,7 +296,7 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
 	wo = from - (wb*WORDSIZE);  
 	mask = (((setword)1U) << (WORDSIZE-wo-1));
 	outbuffer[(w*M)+wb] |= mask;	
-	p[2]++;
+	nauty_graph_buf[2]++;
       }
     } 
   }

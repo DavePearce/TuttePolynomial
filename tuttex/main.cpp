@@ -298,7 +298,35 @@ void build(computation &comp) {
 // ------------------------------------------------------------------
 
 poly_t evaluate(computation &comp) { 
+  vector<poly_t> polys(comp.size());
   
+  for(int i=(comp.size()-1);i>=0;--i) {
+    tree_node *tnode = comp.get(i);
+
+    switch(tnode->type) {
+    case TREE_CONSTANT:
+      {	
+	unsigned int nedges = nauty_graph_numedges(comp.graph_ptr(i));	
+	cout << "P[" << i << "] = " << "x^" << nedges << endl;
+	polys[i] = X(nedges);
+	break;
+      }
+    case TREE_FACTOR:
+      cout << "GOT TREE FACTOR" << endl;
+      break;
+    case TREE_SUM:
+      polys[i] = polys[tnode->lhs] + polys[tnode->rhs];
+      cout << "P[" << i << "] = " << "P[" << tnode->lhs << "] + P[" << tnode->rhs << "] = " << polys[i].str() << endl;
+      break;
+    case TREE_PRODUCT:
+      polys[i] = polys[tnode->lhs] * polys[tnode->rhs];
+      cout << "P[" << i << "] = " << "P[" << tnode->lhs << "] * P[" << tnode->rhs << "] = " << polys[i].str()  << endl;
+      break;
+
+    }
+  }
+
+  return polys[0];
 }
 
 // ---------------------------------------------------------------
@@ -328,8 +356,8 @@ void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint
     reset_stats(graphs[i].num_vertices());
     global_timer = my_timer(false);
     build(comp);
-    //    poly_t poly = evaluate(comp);
-    //    cout << "Polynomial: " << poly.str() << endl;
+    poly_t poly = evaluate(comp);
+    cout << "Polynomial: " << poly.str() << endl;
   }
 }
 
