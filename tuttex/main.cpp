@@ -97,11 +97,14 @@ static bool verbose_flag=false;
 
 edge_t select_edge(unsigned char const *nauty_graph) {
   unsigned int N = nauty_graph_numverts(nauty_graph);
+  unsigned int *cmap = nauty_graph_canong_map(nauty_graph);
 
   for(unsigned int i=0;i!=N;++i) {
     for(unsigned int j=0;j!=N;++j) {
-      if(nauty_graph_is_edge(nauty_graph,i,j)) {
-	return edge_t(i,j);
+      unsigned int ci = cmap[i];
+      unsigned int cj = cmap[j];
+      if(nauty_graph_is_edge(nauty_graph,ci,cj)) {
+	return edge_t(ci,cj);
       }
     }
   }

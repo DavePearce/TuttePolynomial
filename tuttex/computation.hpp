@@ -224,7 +224,7 @@ public:
 private:
   inline graph_node *graph_node_alloc(unsigned int NN) {
     setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
-    unsigned int size = (((NN*M)+NAUTY_HEADER_SIZE)*sizeof(setword))+sizeof(graph_node);
+    unsigned int size = (((NN*M)+NN+NAUTY_HEADER_SIZE)*sizeof(setword))+sizeof(graph_node);
     
     if((graph_p+size) >= tree_p) { 
       std::cout << "BAD ALLOC IN GRAPH NODE ALLOC" << std::endl;

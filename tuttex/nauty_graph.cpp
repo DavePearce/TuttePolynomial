@@ -174,7 +174,7 @@ void nauty_graph_clone(unsigned char const *graph, unsigned char *output) {
   setword NN = p[1];  
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
   
-  memcpy(output,graph,((N*M)+NAUTY_HEADER_SIZE) * sizeof(setword));
+  memcpy(output,graph,((N*M)+N+NAUTY_HEADER_SIZE) * sizeof(setword));
 }
 
 // returns the sizeof the nauty graph in bytes
@@ -216,7 +216,7 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
   opts.writemarkers = FALSE;
 
   // could optimise this further by making lab and ptn static
-  int lab[NN];
+  int *lab = (int*) op + NAUTY_HEADER_SIZE + (NN*M);
   int ptn[NN];    
   nvector orbits[NN]; // unused.
 
@@ -240,7 +240,7 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
 	nauty_workspace_size,
 	M,
 	NN, // true graph size, since includes vertices added for multi edges.
-	(setword*) output+NAUTY_HEADER_SIZE  // add two for header
+	op+NAUTY_HEADER_SIZE  // add two for header
 	);
   
   op[0] = N; 

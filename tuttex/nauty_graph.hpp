@@ -34,7 +34,7 @@ size_t nauty_graph_size(unsigned char const *key);
 // determine size of nauty graph.
 inline size_t nauty_graph_size(unsigned int NN) {
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
-  return (NN*M)+NAUTY_HEADER_SIZE;
+  return (NN*M)+NN+NAUTY_HEADER_SIZE;
 }
 
 inline size_t nauty_graph_numverts(unsigned char const *graph) {
@@ -79,6 +79,14 @@ void nauty_graph_clone(unsigned char const *graph, unsigned char *output);
 // create a canonical labelling of the nauty graph, writing it into
 // output.
 void nauty_graph_canon(unsigned char const *key, unsigned char *output);
+
+inline unsigned int *nauty_graph_canong_map(unsigned char const *graph) {
+  setword *p = (setword*) graph;  
+  setword NN = p[1];
+  setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;  
+
+  return p + NAUTY_HEADER_SIZE + (NN*M);
+}
 
 // the following method can be implemented without copying.
 void nauty_graph_canong_delete(unsigned char const *graph, unsigned char *output, unsigned int from, unsigned int to);
