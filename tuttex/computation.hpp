@@ -220,7 +220,7 @@ public:
     frontier[index] = frontier.back();
     frontier.pop_back();
     tree_node *tnode = tree_node_alloc(TREE_CONSTANT,0);
-    gindex[index].second = tnode;
+    gindex[id].second = tnode;
   }  
 
 private:
