@@ -115,7 +115,7 @@ unsigned char *nauty_graph_build(T const &graph) {
   int mes = N; // multi-edge start
   for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     unsigned int _v = *i;
-    for(typename T::edge_iterator j(graph.begin_edges(_v));j!=graph.end_edges(_v);++j) {	
+    for(typename T::edge_iterator j(graph.begin_edges(_v));j!=graph.end_edges(_v);++j) {       
       unsigned int _w = j->first;
       
       // convert vertices into nauty graph vertex space

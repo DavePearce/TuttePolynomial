@@ -36,4 +36,26 @@ G compact_graph(G const &graph) {
   return r;  
 }
 
+template<class G>
+void topological_sort(G const &graph, std::vector<unsigned int> &rpo) {
+  std::vector<bool> visited(graph.num_vertices(),false);
+  
+  for(int i=0;i!=graph.num_vertices();--i) {
+    if(!visited[i]) {
+      topological_visit(i,graph,rpo,visited);
+    }
+  }  
+}
+
+template<class G>
+void topological_visit(unsigned int v, G const &graph, std::vector<unsigned int> &rpo, std::vector<bool> &visited) {
+  visited[v] = true;
+  for(typename G::edge_iterator j(graph.begin_edges(v));j!=graph.end_edges(v);++j) {	
+    if(!visited[j->first]) {
+      topological_visit(j->first,graph,rpo,visited);
+    }
+  }
+  rpo.push_back(v);
+}
+
 #endif
