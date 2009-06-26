@@ -121,14 +121,16 @@ void nauty_graph_delvert(unsigned char const *input, unsigned char *output, unsi
 
 // Extract a subgraph from the input graph.  The subgraph is
 // determined by the vertices in the component list.
-void nauty_graph_extract(unsigned char const *graph, unsigned char *output, unsigned int const *component, unsigned int N) {
-  // this loop could be optimised somewhat to avoid recalculating M etc for each edge addition.
+void nauty_graph_extract(unsigned char *graph, unsigned char *output, unsigned int const *component, unsigned int N) {
+  // this loop could be optimised somewhat to avoid recalculating M
+  // etc for each edge addition.
   for(unsigned int i=0;i<N;++i) {
     for(unsigned int j=(i+1);j<N;++j) {
       unsigned int mi = component[i];
       unsigned int mj = component[j];
       if(nauty_graph_is_edge(graph,mi,mj)) {
 	nauty_graph_add(output,i,j);
+	nauty_graph_delete(graph,mi,mj);
       }
     }
   }

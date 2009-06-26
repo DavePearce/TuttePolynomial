@@ -168,7 +168,6 @@ public:
 static cc_dat cc_data;
 static vector<unsigned int> components;
 static vector<unsigned int> component_ends;
-static vector<edge_t> tree_edges;
 
 // extract the biconncted component on the stack, and return the
 // number of vertices involved.
@@ -207,7 +206,6 @@ unsigned int cc_visit(unsigned int u, unsigned int v,
 	  cc_extract(v);
 	} else if(cc_data.lowlink[i] > cc_data.dfsnum[v]) { 
 	  // v is not in a biconnected component with w
-	  tree_edges.push_back(edge_t(v,i));
 	  cc_data.cstack.pop_back(); 
 	}
       } else if(i != u && cc_data.dfsnum[v] > cc_data.dfsnum[i]) {	
@@ -223,19 +221,26 @@ unsigned int cc_visit(unsigned int u, unsigned int v,
 // biconnected, then it determines whether or not it's actually a
 // tree.  If it's not a tree, then it identifies the first biconnected
 // component and extracts its vertices to bicomp.
-void check_connectivity(unsigned char const *graph) {
+unsigned int check_connectivity(unsigned char const *graph) {
   unsigned int N = nauty_graph_numverts(graph);
   unsigned int E = nauty_graph_numedges(graph);
 
   cc_data.reset(N);
   components.clear();
   component_ends.clear();
-  tree_edges.clear();
 
   for(unsigned int i=0;i!=N;++i) {
     if(!cc_data.visited[i]) { 
       cc_visit(i,i,graph);
     }
+  }
+
+  if(component_ends.size() == 0) {
+    return CC_FOREST;
+  } else if(component_ends.size() == 1 && component_ends[0] == N) {
+    return CC_BICONNECTED;
+  } else {
+    return CC_CONNECTED;
   }
 }
 
@@ -253,28 +258,28 @@ void build(computation &comp) {
       unsigned int gindex = comp.frontier_get(i);
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
-      check_connectivity(nauty_graph);
+      unsigned int cinfo = check_connectivity(nauty_graph);
 
-      if(component_ends.size() == 0) {
+      switch(cinfo) {
+      case CC_FOREST:
 	// This indicates that the graph is actually a forest.
 	// Therefore, we can terminate immediately.
 	comp.frontier_terminate(i);
-      } else if(component_ends.size() > 1 || tree_edges.size() > 0) {
+	break;
+      case CC_CONNECTED:
 	// This indicates that the original graph was not biconnected,
 	// and that one or more biconnected components have been
 	// extracted.  Therefore, we split on this biconnected
 	// component.
-	if(tree_edges.size() > 0) {
-	  std::cout << "************* PROBLEM MISSING X FACTOR" << std::endl;
-	  // comp.frontier_factor(i,tree_edges.size());
-	}
 	i += comp.frontier_split(i,components,component_ends);
-      } else {
+	break;
+      case CC_BICONNECTED:
 	// This indicates that the whole graph was biconnected.
 	// Therefore, we have no choice but to perform a
 	// delete-contract.
 	edge_t edge = select_edge(nauty_graph);
-	i += comp.frontier_delcontract(i,edge.first,edge.second);
+	i += comp.frontier_delcontract(i,edge.first,edge.second);	
+	break;
       }
     }
   }
@@ -291,7 +296,7 @@ poly_t evaluate(computation &comp) {
   for(int i=(comp.size()-1);i>=0;--i) {
     tree_node *tnode = comp.get(i);
 
-    switch(tnode->type) {
+    switch(TREE_TYPE(tnode)) {
     case TREE_CONSTANT:
       {	
 	unsigned int nedges = nauty_graph_numedges(comp.graph_ptr(i));	
@@ -304,13 +309,22 @@ poly_t evaluate(computation &comp) {
       cout << "GOT TREE FACTOR" << endl;
       break;
     case TREE_SUM:
-      polys[i] = polys[tnode->lhs] + polys[tnode->rhs];
-      cout << "P[" << i << "] = " << "P[" << tnode->lhs << "] + P[" << tnode->rhs << "] = " << polys[i].str() << endl;
+      polys[i] = polys[TREE_CHILD(tnode,0)] + polys[TREE_CHILD(tnode,1)];
+      cout << "P[" << i << "] = " << "P[" << TREE_CHILD(tnode,0) << "] + P[" << TREE_CHILD(tnode,1) << "] = " << polys[i].str() << endl;
       cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
       break;
     case TREE_PRODUCT:
-      polys[i] = polys[tnode->lhs] * polys[tnode->rhs];
-      cout << "P[" << i << "] = " << "P[" << tnode->lhs << "] * P[" << tnode->rhs << "] = " << polys[i].str()  << endl;
+      cout << "P[" << i << "] = ";
+      for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
+	if(j == 0) {
+	  polys[i] = polys[TREE_CHILD(tnode,j)];
+	} else {
+	  cout << "* ";
+	  polys[i] *= polys[TREE_CHILD(tnode,j)];
+	}
+	cout << "P[" << TREE_CHILD(tnode,j) << "] ";
+      }
+      cout << "= " << polys[i].str()  << endl;
       cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
       break;
 

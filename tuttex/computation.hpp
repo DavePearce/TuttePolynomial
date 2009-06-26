@@ -31,18 +31,18 @@ struct graph_node {
 #define TREE_FACTOR 3
 #define TREE_CONSTANT 4
 
-struct tree_node {
-  unsigned char type;
-  unsigned int refcount;
-  unsigned int lhs;
-  unsigned int rhs;
-};
+#define TREE_HEADER_SIZE 3
+
+#define TREE_TYPE(x) (x[0])
+#define TREE_NCHILDREN(x) (x[2])
+#define TREE_CHILD(x,y) (x[y+TREE_HEADER_SIZE])
+
+typedef unsigned int tree_node;
 
 class computation {
 private:
-  std::vector<graph_node *> gindex;     // map tree numbers to graph locations
   std::vector<graph_node> buckets;      // bucket array  
-  std::vector<tree_node *> tindex;     // map tree numbers to tree location
+  std::vector<std::pair<graph_node*,tree_node*> > gindex;     // map graph numbers to graph locations
   std::vector<unsigned int> frontier;  // graphs on BFS frontier
   uint64_t bufsize;            
   unsigned char *start_p;        // buffer start ptr
@@ -88,20 +88,21 @@ public:
     nauty_graph_canon(ng,NAUTY_GRAPH(gnode));
 
     delete [] ng;    
-    // third, create a tree node.
-    struct tree_node *tnode = tree_node_alloc();
     // now, add it to the frontier and give it an index.
     frontier.push_back(gindex.size());
-    gindex.push_back(gnode);
-    tindex.push_back(tnode);
+    gindex.push_back(std::make_pair<graph_node*,tree_node*>(gnode,NULL));
   }
 
   unsigned int size() {
-    return tindex.size();
+    return gindex.size();
   }
 
   tree_node *get(unsigned int index) {
-    return tindex[index];
+    return gindex[index].second;
+  }
+
+  unsigned char *graph_ptr(unsigned int gidx) {
+    return NAUTY_GRAPH(gindex[gidx].first);
   }
 
   unsigned int frontier_size() { 
@@ -117,25 +118,30 @@ public:
   // contains into a separate graph, leaving what's left as is.
   unsigned int frontier_split(unsigned int index, std::vector<unsigned int> const &components, std::vector<unsigned int> const &ends) { 
     unsigned int id = frontier[index];
-    struct graph_node *gnode = gindex[id];
-    unsigned char *graph = NAUTY_GRAPH(gnode);
-    struct tree_node *tnode = tindex[id];
-    tnode->type = TREE_PRODUCT;
-    
+    graph_node *gnode = gindex[id].first;
+    tree_node *tnode = tree_node_alloc(TREE_PRODUCT,components.size() + 1);
+    gindex[id].second = tnode; // update node info
+
+    graph_node *gresidue = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gnode)));
+    nauty_graph_clone(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gresidue));
+    unsigned int gresidueid = gindex.size();
+    gindex.push_back(std::make_pair<graph_node*,tree_node*>(gresidue,NULL));
+    frontier[index] = gresidueid;
+    TREE_CHILD(tnode,0) = gresidueid;
+
     // Now, iterate each component in turn extracting it.
     unsigned int start = 0;
     for(unsigned int c = 0;c!=ends.size();++c) {
       // First, create the graph node
       unsigned int C_N = ends[c] - start;
-      struct graph_node *gsplit = graph_node_alloc(C_N);
-      unsigned char *splitg = NAUTY_GRAPH(gsplit);
-      nauty_graph_extract(graph,splitg,&components.front()+start,C_N);
+      graph_node *gsplit = graph_node_alloc(C_N);
+      nauty_graph_extract(NAUTY_GRAPH(gresidue),NAUTY_GRAPH(gsplit),&components.front()+start,C_N);
       start = ends[c];
       // Second, create the tree node
       unsigned int gsplitid = gindex.size();
       gsplit->gindex = gsplitid;      
-      gindex.push_back(gsplit);
-      tindex.push_back(tree_node_alloc());
+      gindex.push_back(std::make_pair<graph_node*,tree_node*>(gsplit,NULL));
+      TREE_CHILD(tnode,c+1) = gsplitid;
       // hmmm, what about the existing frontier node ?
       frontier.push_back(gsplitid);
     }
@@ -145,13 +151,12 @@ public:
 
   unsigned int frontier_delcontract(unsigned int index, unsigned int from, unsigned int to) {
     unsigned int id = frontier[index];
-    struct graph_node *gnode = gindex[id];
-    struct tree_node *tnode = tindex[id];
-
-    tnode->type = TREE_SUM;
+    graph_node *gnode = gindex[id].first;
+    tree_node *tnode = tree_node_alloc(TREE_SUM,2);
+    gindex[id].second = tnode; // update node info
 
     // First, compute delete graph.
-    struct graph_node *gdel = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gnode)));
+    graph_node *gdel = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gnode)));
     nauty_graph_canong_delete(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gdel),from,to);
     
     //    std::cout << "GDEL: " << nauty_graph_str(NAUTY_GRAPH(gdel)) << std::endl;
@@ -160,20 +165,19 @@ public:
     bool lhs_match = lookup(NAUTY_GRAPH(gdel),isoid);
     if(lhs_match) {
       // this branch is now terminated.
-      tnode->lhs = isoid;
-      tindex[isoid]->refcount++;
+      TREE_CHILD(tnode,0) = isoid;
+      gindex[isoid].second[1]++; // increment refcount
       graph_p -= gdel->size; // free space!
     } else {
       store(gdel); // add to isomorph cache
       unsigned int gdelid = gindex.size();
       gdel->gindex = gdelid;
-      tnode->lhs = gdelid;
-      gindex.push_back(gdel);
-      tindex.push_back(tree_node_alloc());
+      TREE_CHILD(tnode,0) = gdelid;
+      gindex.push_back(std::make_pair<graph_node*,tree_node*>(gdel,NULL));
     }
 
     // Second, compute contract graph.
-    struct graph_node *gcontract = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gdel)));
+    graph_node *gcontract = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gdel)));
     nauty_graph_canong_contract(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gcontract),from,to,false); // ignore loops for now!
 
     //    std::cout << "GCONTRACT: " << nauty_graph_str(NAUTY_GRAPH(gcontract)) << std::endl;
@@ -181,16 +185,15 @@ public:
     bool rhs_match = lookup(NAUTY_GRAPH(gcontract),isoid);
     if(rhs_match) {
       // this branch is now terminated.
-      tnode->rhs = isoid;
-      tindex[isoid]->refcount++;
+      TREE_CHILD(tnode,1) = isoid;
+      gindex[isoid].second[1]++; // inc ref count
       graph_p -= gcontract->size; // free space!
     } else {
       store(gcontract); // add to isomorph cache
       unsigned int gconid = gindex.size();
       gcontract->gindex = gconid;
-      tnode->rhs = gconid;
-      gindex.push_back(gcontract);
-      tindex.push_back(tree_node_alloc());
+      TREE_CHILD(tnode,1) = gconid;
+      gindex.push_back(std::make_pair<graph_node*,tree_node*>(gcontract,NULL));
     }
 
     // At this point, we now have to figure out what's left on the
@@ -201,12 +204,12 @@ public:
       frontier.pop_back();
       return 0;
     } else if(rhs_match) {
-      frontier[index] = tnode->lhs;
+      frontier[index] = TREE_CHILD(tnode,0);
     } else if(lhs_match) {
-      frontier[index] = tnode->rhs;
+      frontier[index] = TREE_CHILD(tnode,1);
     } else {
-      frontier[index] = tnode->lhs;
-      frontier.push_back(tnode->rhs);
+      frontier[index] = TREE_CHILD(tnode,0);
+      frontier.push_back(TREE_CHILD(tnode,1));
     }
 
     return 1;
@@ -216,13 +219,9 @@ public:
     unsigned int id = frontier[index];
     frontier[index] = frontier.back();
     frontier.pop_back();
-    tree_node *tnode = tindex[id];
-    tnode->type = TREE_CONSTANT;
+    tree_node *tnode = tree_node_alloc(TREE_CONSTANT,0);
+    gindex[index].second = tnode;
   }  
-
-  unsigned char *graph_ptr(unsigned int gidx) {
-    return NAUTY_GRAPH(gindex[gidx]);
-  }
 
 private:
   inline graph_node *graph_node_alloc(unsigned int NN) {
@@ -234,7 +233,7 @@ private:
       throw std::bad_alloc(); // temporary for now
     }
 
-    struct graph_node *r = (struct graph_node *) graph_p;
+    graph_node *r = (graph_node *) graph_p;
     memset(graph_p,0,size);
     graph_p += size;
 
@@ -245,28 +244,31 @@ private:
     return r;
   }
   
-  inline tree_node *tree_node_alloc() {
-    unsigned char *r = tree_p - sizeof(tree_node);
+  inline tree_node *tree_node_alloc(unsigned int type, unsigned int nchildren) {
+    unsigned int size = (nchildren + 3) * sizeof(unsigned int);
+    unsigned char *r = tree_p - size;
 
-    if((tree_p - sizeof(tree_node)) <= graph_p) {
+    if((tree_p - size) <= graph_p) {
       throw std::bad_alloc(); // temporary for now
     }    
 
-    tree_p -= sizeof(tree_node);
+    tree_p -= size;
     tree_node* tp = (tree_node*) tree_p;
-    tp->refcount = 1;
+    tp[0] = type;
+    tp[1] = 1; // refcount
+    tp[2] = nchildren; // nchilden
     return tp;
   }
 
   bool lookup(unsigned char const *key, unsigned int &id) {
     // identify containing bucket
     unsigned int bucket = nauty_graph_hashcode(key) % buckets.size();
-    struct graph_node *node_p = buckets[bucket].next;
+    graph_node *node_p = buckets[bucket].next;
 
     // traverse bucket looking for match
     while(node_p != NULL) {
       unsigned char *key_p = (unsigned char *) node_p;
-      key_p += sizeof(struct graph_node);
+      key_p += sizeof(graph_node);
       if(nauty_graph_equals(key,key_p)) {
 	// match made
 	// set id
@@ -292,20 +294,20 @@ private:
     insert_node_after(gnode,&buckets[bucket]);
   }  
 
-  struct graph_node *next_node(struct graph_node *ptr) {
+  graph_node *next_node(graph_node *ptr) {
     unsigned char *p = (unsigned char *) ptr;
     p += ptr->size;
-    return (struct graph_node *) p;
+    return (graph_node *) p;
   }
 
-  void insert_node_after(struct graph_node *new_node, struct graph_node *pos) {
+  void insert_node_after(graph_node *new_node, graph_node *pos) {
     new_node->next = pos->next;
     new_node->prev = pos;
     pos->next = new_node;
     if(new_node->next != NULL) { new_node->next->prev = new_node; }
   }
   
-  void remove_node(struct graph_node *node) {
+  void remove_node(graph_node *node) {
     node->prev->next = node->next;
     if(node->next != NULL) {
       node->next->prev = node->prev;
@@ -314,8 +316,8 @@ private:
     node->prev = NULL;
   }
 
-  void move_node(unsigned char *dst, struct graph_node *ptr) {
-    struct graph_node *dstptr = (struct graph_node *) dst;
+  void move_node(unsigned char *dst, graph_node *ptr) {
+    graph_node *dstptr = (graph_node *) dst;
     ptr->prev->next = dstptr;
     if(ptr->next != NULL) {
       ptr->next->prev = dstptr;
