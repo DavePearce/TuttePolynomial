@@ -261,7 +261,7 @@ void build(computation &comp) {
       unsigned int cinfo = check_connectivity(nauty_graph);
 
       switch(cinfo) {
-      case CC_FOREST:
+      case CC_FOREST:	
 	// This indicates that the graph is actually a forest.
 	// Therefore, we can terminate immediately.
 	comp.frontier_terminate(i);
@@ -293,8 +293,6 @@ void build(computation &comp) {
 poly_t evaluate(computation &comp) { 
   vector<poly_t> polys(comp.size());
 
-  cout << "GOT HERE" << endl;  
-
   for(int i=(comp.size()-1);i>=0;--i) {
     tree_node *tnode = comp.get(i);
 
@@ -311,9 +309,7 @@ poly_t evaluate(computation &comp) {
       cout << "GOT TREE FACTOR" << endl;
       break;
     case TREE_SUM:
-      cout << "GOT HERE" << endl;
       polys[i] = polys[TREE_CHILD(tnode,0)] + polys[TREE_CHILD(tnode,1)];
-      cout << "NOT HERE" << endl;
       cout << "P[" << i << "] = " << "P[" << TREE_CHILD(tnode,0) << "] + P[" << TREE_CHILD(tnode,1) << "] = " << polys[i].str() << endl;
       cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
       break;

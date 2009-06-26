@@ -119,7 +119,7 @@ public:
   unsigned int frontier_split(unsigned int index, std::vector<unsigned int> const &components, std::vector<unsigned int> const &ends) { 
     unsigned int id = frontier[index];
     graph_node *gnode = gindex[id].first;
-    tree_node *tnode = tree_node_alloc(TREE_PRODUCT,components.size() + 1);
+    tree_node *tnode = tree_node_alloc(TREE_PRODUCT,ends.size() + 1);
     gindex[id].second = tnode; // update node info
 
     graph_node *gresidue = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gnode)));
@@ -166,7 +166,6 @@ public:
     if(lhs_match) {
       // this branch is now terminated.
       TREE_CHILD(tnode,0) = isoid;
-      gindex[isoid].second[1]++; // increment refcount
       graph_p -= gdel->size; // free space!
     } else {
       store(gdel); // add to isomorph cache
@@ -186,7 +185,6 @@ public:
     if(rhs_match) {
       // this branch is now terminated.
       TREE_CHILD(tnode,1) = isoid;
-      gindex[isoid].second[1]++; // inc ref count
       graph_p -= gcontract->size; // free space!
     } else {
       store(gcontract); // add to isomorph cache
