@@ -124,6 +124,11 @@ void nauty_graph_delvert(unsigned char const *input, unsigned char *output, unsi
 void nauty_graph_extract(unsigned char *graph, unsigned char *output, unsigned int const *component, unsigned int N) {
   // this loop could be optimised somewhat to avoid recalculating M
   // etc for each edge addition.
+
+  setword *op = (setword*) output;
+  op[0] = N;
+  op[1] = N;
+
   for(unsigned int i=0;i<N;++i) {
     for(unsigned int j=(i+1);j<N;++j) {
       unsigned int mi = component[i];

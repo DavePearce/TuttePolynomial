@@ -249,10 +249,7 @@ unsigned int check_connectivity(unsigned char const *graph) {
 // ------------------------------------------------------------------
 
 void build(computation &comp) { 
-  unsigned int size = 0;
-
   while(comp.frontier_size() != 0) {
-    size += comp.frontier_size();
     cout << "GRAPHS: " << comp.frontier_size() << endl;
     for(unsigned int i=0;i!=comp.frontier_size();) {
       unsigned int gindex = comp.frontier_get(i);
@@ -283,7 +280,7 @@ void build(computation &comp) {
       }
     }
   }
-  cout << "Computation Tree: " << size << endl;
+  cout << "Computation Tree: " << comp.size() << endl;
 }
 
 // ------------------------------------------------------------------

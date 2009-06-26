@@ -132,7 +132,7 @@ public:
     // Now, iterate each component in turn extracting it.
     unsigned int start = 0;
     for(unsigned int c = 0;c!=ends.size();++c) {
-      // First, create the graph node
+      // First, create the graph node      
       unsigned int C_N = ends[c] - start;
       graph_node *gsplit = graph_node_alloc(C_N);
       nauty_graph_extract(NAUTY_GRAPH(gresidue),NAUTY_GRAPH(gsplit),&components.front()+start,C_N);
