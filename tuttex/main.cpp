@@ -289,42 +289,74 @@ void build(computation &comp) {
 
 poly_t evaluate(computation &comp) { 
   vector<poly_t> polys(comp.size());
+  vector<bool> completed(comp.size(),false);
+  unsigned int ncompleted = 0;
 
-  for(int i=(comp.size()-1);i>=0;--i) {
-    tree_node *tnode = comp.get(i);
+  while(ncompleted != comp.size()) {
 
-    switch(TREE_TYPE(tnode)) {
-    case TREE_CONSTANT:
-      {	
-	unsigned int nedges = nauty_graph_numedges(comp.graph_ptr(i));	
-	cout << "P[" << i << "] = " << "x^" << nedges << endl;
-	polys[i] = X(nedges);
-	cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
-	break;
-      }
-    case TREE_FACTOR:
-      cout << "GOT TREE FACTOR" << endl;
-      break;
-    case TREE_SUM:
-      polys[i] = polys[TREE_CHILD(tnode,0)] + polys[TREE_CHILD(tnode,1)];
-      cout << "P[" << i << "] = " << "P[" << TREE_CHILD(tnode,0) << "] + P[" << TREE_CHILD(tnode,1) << "] = " << polys[i].str() << endl;
-      cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
-      break;
-    case TREE_PRODUCT:
-      cout << "P[" << i << "] = ";
-      for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
-	if(j == 0) {
-	  polys[i] = polys[TREE_CHILD(tnode,j)];
-	} else {
-	  cout << "* ";
-	  polys[i] *= polys[TREE_CHILD(tnode,j)];
+    for(int i=(comp.size()-1);i>=0;--i) {
+      if(completed[i]) { continue; }
+      tree_node *tnode = comp.get(i);
+     
+      switch(TREE_TYPE(tnode)) {
+      case TREE_CONSTANT:
+	{	
+	  unsigned int nedges = nauty_graph_numedges(comp.graph_ptr(i));	
+	  //	  cout << "P[" << i << "] = " << "x^" << nedges << endl;
+	  polys[i] = X(nedges);
+	  //	  cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
+	  completed[i] = true;
+	  ncompleted++;
+	  break;
 	}
-	cout << "P[" << TREE_CHILD(tnode,j) << "] ";
-      }
-      cout << "= " << polys[i].str()  << endl;
-      cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
-      break;
+      case TREE_FACTOR:
+	cout << "GOT TREE FACTOR" << endl;
+	break;
+      case TREE_SUM:
+	unsigned int lhs = TREE_CHILD(tnode,0);
+	unsigned int rhs = TREE_CHILD(tnode,1);
 
+	if(!completed[lhs] || !completed[rhs]) {
+	  continue;
+	}
+
+	polys[i] = polys[lhs] + polys[rhs];
+	//	cout << "P[" << i << "] = " << "P[" << lhs << "] + P[" << rhs << "] = " << polys[i].str() << endl;
+	//	cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
+	completed[i]=true;
+	ncompleted++;
+	break;
+      case TREE_PRODUCT:
+	{
+	  bool incomplete = false;
+	  for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
+	    unsigned int child = TREE_CHILD(tnode,j);
+	    if(!completed[child]) {
+	      incomplete = true;
+	      break;
+	    }
+	  }
+	  
+	  if(incomplete) { continue; }
+	  
+	  //	  cout << "P[" << i << "] = ";
+	  for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
+	    unsigned int child = TREE_CHILD(tnode,j);
+	    if(j == 0) {
+	      polys[i] = polys[child];
+	    } else {
+	      //	      cout << "* ";
+	      polys[i] *= polys[child];
+	    }
+	    //	    cout << "P[" << child << "] ";
+	  }
+	  //	  cout << "= " << polys[i].str()  << endl;
+	  //	  cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
+	  completed[i]=true;
+	  ncompleted++;
+	  break;
+	}
+      }
     }
   }
 
