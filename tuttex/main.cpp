@@ -24,6 +24,7 @@
 #include "../config.h"
 #include "file_io.hpp"
 #include "adjacency_list.hpp"
+#include "directed_adjacency_list.hpp"
 #include "nauty_graph.hpp"
 #include "computation.hpp"
 #include "factor_poly.hpp"
@@ -68,20 +69,15 @@ public:
 
 typedef factor_poly<biguint> poly_t;
 typedef adjacency_list<> graph_t;
+typedef directed_adjacency_list<> dgraph_t;
 typedef pair<unsigned int, unsigned int> edge_t;
 
 // ---------------------------------------------------------------
 // Global Variables
 // ---------------------------------------------------------------
 
-unsigned int resize_stats = 0;
-unsigned long num_steps = 0;
-unsigned long num_bicomps = 0;
-unsigned long num_cycles = 0;
-unsigned long num_disbicomps = 0;
-unsigned long num_trees = 0;
-unsigned long num_completed = 0;
-unsigned long old_num_steps = 0;
+unsigned long num_splits = 0;
+unsigned long num_leafs = 0;
 
 // Following is used to time computation, and provide timeout
 // facility.
@@ -91,35 +87,9 @@ static vector<pair<int,int> > evalpoints;
 static unsigned int ngraphs_completed=0;  
 static unsigned int cutoff_threshold=0;
 static bool quiet_flag=false;
+static bool info_flag=false;
 static bool status_flag=false;
 static bool verbose_flag=false;
-
-// ---------------------------------------------------------------
-// Signal Handlers
-// ---------------------------------------------------------------
-
-/*
- * Note, the signal handler causes problems when used in conjunction
- * with Sun's Grid Engine.  Therefore, it's recommended to use "-q"
- * for quiet mode to avoid this.
- */
-static int status_interval = 5; // in seconds
-
-void timer_handler(int signum) {
-  if(verbose_flag) { status_flag=true; }
-  alarm(status_interval);
-}
-
-void print_status() {
-  /*
-  status_flag=false;
-  double rate = (num_steps - old_num_steps);
-  double cf = (100*((double)cache.size())) / cache.capacity();
-  rate /= status_interval;
-  cerr << "Completed " << ngraphs_completed << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full." << endl;
-  old_num_steps = num_steps;  
-  */
-}
 
 // ------------------------------------------------------------------
 // Edge Selection
@@ -250,7 +220,10 @@ unsigned int check_connectivity(unsigned char const *graph) {
 
 void build(computation &comp) { 
   while(comp.frontier_size() != 0) {
-    cout << "GRAPHS: " << comp.frontier_size() << endl;
+    if(verbose_flag) {
+      cerr << "Generated " << comp.frontier_size() << " graphs." << endl;
+    }
+
     for(unsigned int i=0;i!=comp.frontier_size();) {
       unsigned int gindex = comp.frontier_get(i);
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
@@ -280,7 +253,9 @@ void build(computation &comp) {
       }
     }
   }
-  cout << "Computation Tree: " << comp.size() << endl;
+  if(verbose_flag) {
+    cerr << "Generated computation tree with " << comp.size() << " nodes." << endl;
+  }
 }
 
 // ------------------------------------------------------------------
@@ -293,61 +268,74 @@ poly_t evaluate(computation &comp) {
 
 
   // First, build the DAG.
-  graph_t dag(comp.size());
 
-  for(int i=0;i!=comp.size();i++) {
-    tree_node *tnode = comp.get(i);
-    for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
-      unsigned int child = TREE_CHILD(tnode,j);
-      dag.add_edge(i,child,1);
+  vector<unsigned int> rpo;
+  unsigned int N(comp.size());
+  {
+    // I use a seperate scope here to enable some memory reuse.
+    dgraph_t dag(N);
+    
+    for(int i=0;i!=comp.size();i++) {
+      tree_node *tnode = comp.get(i);
+      for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
+	unsigned int child = TREE_CHILD(tnode,j);
+	dag.add_edge(i,child);
+      }
+    }
+
+    if(verbose_flag) {
+      cerr << "Built computation dag." << endl;  
+    }
+ 
+    // Second, topologically sort the DAG
+    topological_sort(dag,rpo);
+
+    if(verbose_flag) {
+      cerr << "Sorted computation dag." << endl;  
     }
   }
-  
-  // Second, topologically sort the DAG
-  vector<unsigned int> rpo;
-  topological_sort(dag,rpo);
-  
-  // Third, compute the polynomials.
-  vector<poly_t> polys(comp.size());
 
-  for(int i=0;i!=rpo.size();++i) {
+  // Third, compute the polynomials.
+  vector<poly_t> polys(N);
+
+  for(int i=0;i!=N;++i) {
+    unsigned int n = rpo[i];
     tree_node *tnode = comp.get(rpo[i]);
     
     switch(TREE_TYPE(tnode)) {
     case TREE_CONSTANT:
       {	
-	unsigned int nedges = nauty_graph_numedges(comp.graph_ptr(i));	
-	//	  cout << "P[" << i << "] = " << "x^" << nedges << endl;
-	polys[i] = X(nedges);
+	unsigned int nedges = nauty_graph_numedges(comp.graph_ptr(n));	
+	//	cout << "P[" << n << "] = " << "x^" << nedges << endl;
+	polys[n] = X(nedges);
 	//	  cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
+	num_leafs++;
 	break;
-      }
-    case TREE_FACTOR:
-      cout << "GOT TREE FACTOR" << endl;
-      break;
+      }   
     case TREE_SUM:
       {
 	unsigned int lhs = TREE_CHILD(tnode,0);
 	unsigned int rhs = TREE_CHILD(tnode,1);
-	polys[i] = polys[lhs] + polys[rhs];
-	//	cout << "P[" << i << "] = " << "P[" << lhs << "] + P[" << rhs << "] = " << polys[i].str() << endl;
+	polys[n] = polys[lhs] + polys[rhs];
+	//	cout << "P[" << n << "] = " << "P[" << lhs << "] + P[" << rhs << "] = " << polys[n].str() << endl;
 	//	cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
 	break;
       }
     case TREE_PRODUCT:
       {
-	//	  cout << "P[" << i << "] = ";
+	//	cout << "P[" << n << "] = ";
+	num_splits += TREE_NCHILDREN(tnode);
 	for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
 	  unsigned int child = TREE_CHILD(tnode,j);
 	  if(j == 0) {
-	    polys[i] = polys[child];
+	    polys[n] = polys[child];
 	  } else {
-	    //	      cout << "* ";
-	    polys[i] *= polys[child];
+	    //	    cout << "* ";
+	    polys[n] *= polys[child];
 	  }
-	  //	    cout << "P[" << child << "] ";
+	  //	  cout << "P[" << child << "] ";
 	}
-	//	  cout << "= " << polys[i].str()  << endl;
+	//	cout << "= " << polys[n].str()  << endl;
 	//	  cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
 	break;
       }
@@ -379,13 +367,27 @@ void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint
   computation comp(cache_size,cache_buckets);
 
   for(unsigned int i(beg);i<end;++i) {
+    unsigned int V = graphs[i].num_vertices();
+    unsigned int E = graphs[i].num_edges();
     comp.clear();
     comp.initialise(graphs[i]);
-    reset_stats(graphs[i].num_vertices());
+    reset_stats(V);
     global_timer = my_timer(false);
     build(comp);
-    poly_t poly = evaluate(comp);
-    cout << "Polynomial: " << poly.str() << endl;
+
+    if(!quiet_flag) {
+      poly_t poly = evaluate(comp);    
+      cout << poly.str() << endl;
+    }
+
+    if(info_flag) {
+      cout << "=======" << endl;
+      cout << "V = " << V << ", E = " << E << endl;
+      cout << "Size of Computation Tree: " << comp.size() << " graphs." << endl;	
+      cout << "Number of splits: " << num_splits << endl; 
+      cout << "Number of leafs: " << num_leafs << endl;	
+      cout << "Time : " << setprecision(3) << global_timer.elapsed() << "s" << endl;
+    }    
   }
 }
 
@@ -468,7 +470,6 @@ int main(int argc, char *argv[]) {
   unsigned int beg = 0;
   unsigned int end = UINT_MAX-1;
   unsigned int v;
-  bool info_mode = false;
 
   while((v=getopt_long(argc,argv,"qic:g:s:",long_options,NULL)) != -1) {
     switch(v) {      
@@ -488,6 +489,13 @@ int main(int argc, char *argv[]) {
     case OPT_QUIET:      
       quiet_flag = true;
       break;
+    case OPT_VERBOSE:
+      verbose_flag=true;
+      break;  
+    case 'i':
+    case OPT_INFO:
+      info_flag=true;
+      break;  
     case 't':
     case OPT_TIMEOUT:
       timeout = atoi(optarg);
@@ -505,11 +513,7 @@ int main(int argc, char *argv[]) {
 	match(':',pos,s);
 	end = parse_number(pos,s);
 	break;
-      }
-    case 'i':
-    case OPT_INFO:
-      info_mode=true;
-      break;    
+      }     
     // --- CACHE OPTIONS ---
     case 'c':
     case OPT_CACHESIZE:
@@ -540,19 +544,6 @@ int main(int argc, char *argv[]) {
   // -------------------------------------------------
 
   try {
-    // -------------------------------------------------
-    // Register alarm signal for printing status updates
-    // -------------------------------------------------
-    
-    if(!quiet_flag) {
-      // Only use the timer handler in verbose mode.
-      struct sigaction sa;
-      memset(&sa,0,sizeof(sa));
-      sa.sa_handler = &timer_handler;
-      if(sigaction(SIGALRM,&sa,NULL)) { perror("sigvtalarm"); }
-      alarm(status_interval); // trigger alarm in status_interval seconds
-    }
-    
     // -----------------------------------
     // Now, begin solving the input graph!
     // -----------------------------------
@@ -561,8 +552,6 @@ int main(int argc, char *argv[]) {
     vector<graph_t> graphs = read_file<graph_t>(inputfile);
 
     run(graphs,beg,std::min(graphs.size(),end+1),cache_size,cache_buckets);
-
-    cout << "Read " << graphs.size() << " graph(s)." << endl;
   } catch(std::runtime_error &e) {
     cerr << "error: " << e.what() << endl;  
   } catch(std::bad_alloc &e) {
