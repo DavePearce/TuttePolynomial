@@ -76,8 +76,9 @@ typedef pair<unsigned int, unsigned int> edge_t;
 // Global Variables
 // ---------------------------------------------------------------
 
-unsigned long num_splits = 0;
-unsigned long num_leafs = 0;
+static unsigned long num_splits = 0;
+static unsigned long num_leafs = 0;
+static unsigned int num_isohits = 0;
 
 // Following is used to time computation, and provide timeout
 // facility.
@@ -108,6 +109,8 @@ edge_t select_edge(unsigned char const *nauty_graph) {
       }
     }
   }
+  
+  cout << "GOT: " << nauty_graph_str(nauty_graph) << endl;
   
   throw std::runtime_error("internal failure (select_edge)");
 }
@@ -231,6 +234,8 @@ void build(computation &comp) {
       unsigned int gindex = comp.frontier_get(i);
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
+      //      cout << "G[" << gindex << "] = " << nauty_graph_str(nauty_graph) << endl;
+      
       unsigned int cinfo = check_connectivity(nauty_graph);
 
       switch(cinfo) {
@@ -277,12 +282,20 @@ poly_t evaluate(computation &comp) {
   {
     // I use a seperate scope here to enable some memory reuse.
     dgraph_t dag(N);
-    
+    vector<unsigned int> indegree(N,0);
+ 
     for(int i=0;i!=comp.size();i++) {
       tree_node *tnode = comp.get(i);
       for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
 	unsigned int child = TREE_CHILD(tnode,j);
 	dag.add_edge(i,child);
+	indegree[child]++;
+      }
+    }
+
+    for(unsigned int i=0;i!=N;++i) {
+      if(indegree[i] > 1) {
+	num_isohits += indegree[i] - 1;
       }
     }
 
@@ -387,6 +400,7 @@ void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint
       cout << "=======" << endl;
       cout << "V = " << V << ", E = " << E << endl;
       cout << "Size of Computation Tree: " << comp.size() << " graphs." << endl;	
+      cout << "Number of isomorph hits: " << num_isohits << endl;	
       cout << "Number of splits: " << num_splits << endl; 
       cout << "Number of leafs: " << num_leafs << endl;	
       cout << "Time : " << setprecision(3) << global_timer.elapsed() << "s" << endl;
@@ -397,6 +411,84 @@ void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint
 // ---------------------------------------------------------------
 // Misc Helpers Functions
 // ---------------------------------------------------------------
+
+typedef enum { V_RANDOM, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DEGREE, V_MINIMISE_DEGREE,  V_MAXIMISE_DEGREE, V_NONE } vorder_t;
+
+template<class G, class OP>
+class vo_underlying {
+private:
+  G const &graph;
+  OP op;
+public:
+  vo_underlying(G const &g) : graph(g) {}
+
+  bool operator()(unsigned int v1, unsigned int v2) {
+    return op(graph.num_underlying_edges(v1),graph.num_underlying_edges(v2));
+  }
+};
+
+template<class G, class OP>
+class vo_multi {
+private:
+  G const &graph;
+  OP op;
+public:
+  vo_multi(G const &g) : graph(g) {}
+
+  bool operator()(unsigned int v1, unsigned int v2) {
+    return op(graph.num_edges(v1),graph.num_edges(v2));
+  }
+};
+
+template<class G>
+G permute_graph(G const &graph, vorder_t heuristic) {
+  vector<unsigned int> order;
+  for(unsigned int i=0;i!=graph.num_vertices();++i) {
+    order.push_back(i);
+  }
+  // obtain the new ordering
+  switch(heuristic) {
+  case V_RANDOM:
+    random_shuffle(order.begin(),order.end());
+    break;
+  case V_MINIMISE_UNDERLYING_DEGREE:
+    sort(order.begin(),order.end(),vo_underlying<G,less<unsigned int> >(graph));
+    break;
+  case V_MAXIMISE_UNDERLYING_DEGREE:
+    sort(order.begin(),order.end(),vo_underlying<G,greater<unsigned int> >(graph));
+    break;
+  case V_MINIMISE_DEGREE:
+    sort(order.begin(),order.end(),vo_multi<G,less<unsigned int> >(graph));
+    break;
+  case V_MAXIMISE_DEGREE:
+    sort(order.begin(),order.end(),vo_multi<G,greater<unsigned int> >(graph));
+    break;
+  default:
+    // do nothing
+    break;
+  }
+  // transpose ordering
+  vector<unsigned int> iorder(order.size());
+  for(unsigned int i=0;i!=graph.num_vertices();++i) {
+    iorder[order[i]] = i;
+  }
+  
+  // finally, create new permuted graph
+  G r(graph.num_vertices());
+  
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename G::edge_iterator j(graph.begin_edges(*i));
+	j!=graph.end_edges(*i);++j) {	      
+      unsigned int head(*i);
+      unsigned int tail(j->first);
+      unsigned int count(j->second);
+      if(head <= tail) {
+	r.add_edge(iorder[head],iorder[tail],count);
+      }
+    }
+  }
+  return r;
+}
 
 pair<int,int> parse_evalpoint(char *str) {
   char *endp=NULL;
@@ -468,6 +560,7 @@ int main(int argc, char *argv[]) {
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
   };
 
+  vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
   uint64_t cache_size(256 * 1024 * 1024);   
   unsigned int cache_buckets = 100000;
   unsigned int beg = 0;
@@ -554,6 +647,10 @@ int main(int argc, char *argv[]) {
     ifstream inputfile(argv[optind]);    
     vector<graph_t> graphs = read_file<graph_t>(inputfile);
 
+    for(unsigned int i=0;i!=graphs.size();++i) {
+      graphs[i] = permute_graph(graphs[i],vertex_ordering);
+    }
+    
     run(graphs,beg,std::min(graphs.size(),end+1),cache_size,cache_buckets);
   } catch(std::runtime_error &e) {
     cerr << "error: " << e.what() << endl;  

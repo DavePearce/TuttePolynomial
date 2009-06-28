@@ -106,7 +106,7 @@ void nauty_graph_delvert(unsigned char const *input, unsigned char *output, unsi
     oi++;
   }
 
-  // finally, count the number of edges which have been deleted.
+  // count the number of edges which have been deleted.
   unsigned int deledges = 0;
   for(unsigned int i=0;i!=M_IN;++i) {
     setword tmp = inbuffer[(vertex*M_IN) + i];
@@ -114,6 +114,19 @@ void nauty_graph_delvert(unsigned char const *input, unsigned char *output, unsi
       if(tmp & 1U) { deledges++; }
       tmp = tmp >> 1U;
     }
+  }
+
+  // update the ordering
+  inbuffer += (NN_IN*M_IN);
+  outbuffer += (NN_OUT*M_OUT);
+  unsigned int j=0;
+  unsigned int vertind = inbuffer[vertex];
+  for(unsigned int i=0;i!=NN_IN;++i) {
+    if(i == vertex) { continue; }
+    unsigned int idx = inbuffer[i];
+    if(idx > vertind) { idx--; }
+    outbuffer[j] = idx;
+    ++j;
   }
 
   p_out[2] = p_in[2] - deledges;
@@ -125,7 +138,12 @@ void nauty_graph_extract(unsigned char *graph, unsigned char *output, unsigned i
   // this loop could be optimised somewhat to avoid recalculating M
   // etc for each edge addition.
 
+  setword *p = (setword*) graph;
+  unsigned int pN = p[1];
+  setword pM = ((pN % WORDSIZE) > 0) ? (pN / WORDSIZE)+1 : pN / WORDSIZE;  
+
   setword *op = (setword*) output;
+  setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;  
   op[0] = N;
   op[1] = N;
 
@@ -138,6 +156,13 @@ void nauty_graph_extract(unsigned char *graph, unsigned char *output, unsigned i
 	nauty_graph_delete(graph,mi,mj);
       }
     }
+  }
+
+  p += NAUTY_HEADER_SIZE + (pN*pM);
+  op += NAUTY_HEADER_SIZE + (N*M);
+
+  for(unsigned int i=0;i<N;++i) {
+    op[i] = i;
   }
 }
 
@@ -216,7 +241,7 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
   opts.writemarkers = FALSE;
 
   // could optimise this further by making lab and ptn static
-  int *lab = (int*) op + NAUTY_HEADER_SIZE + (NN*M);
+  int lab[NN];
   int ptn[NN];    
   nvector orbits[NN]; // unused.
 
@@ -229,7 +254,7 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
   ptn[N-1] = 0;
 
    // call nauty
-  nauty((setword*) key + NAUTY_HEADER_SIZE,
+  nauty(((setword*) key) + NAUTY_HEADER_SIZE,
 	lab,
 	ptn,
 	NULL,
@@ -246,8 +271,19 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
   op[0] = N; 
   op[1] = NN;
   op[2] = E;
-}
+  
+  // now set up labelling  
+  unsigned int *omapping = (unsigned int*) (p + NAUTY_HEADER_SIZE + (NN*M));
+  unsigned int *mapping = (unsigned int*) (op + NAUTY_HEADER_SIZE + (NN*M));
 
+  for(unsigned int i=0;i!=NN;++i) {
+    ptn[lab[i]] = i;
+  }
+
+  for(unsigned int i=0;i!=NN;++i) {
+    mapping[i] = ptn[omapping[i]];
+  }
+}
 
 // The purpose of the following method is to optimise the process of
 // deleting an edge and then computing the canonical graph from it.
@@ -278,11 +314,11 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;  
 
   // allocate a clear space for graph
-  if(((NN*M)+NAUTY_HEADER_SIZE) >= nauty_graph_buf_size) {
+  if(((NN*M)+NN+NAUTY_HEADER_SIZE) >= nauty_graph_buf_size) {
     // need to increase size of temporary buffer!
     delete [] nauty_graph_buf;
-    nauty_graph_buf = new setword[(NN*M) + NAUTY_HEADER_SIZE];  
-    nauty_graph_buf_size = (NN*M) + NAUTY_HEADER_SIZE;    
+    nauty_graph_buf = new setword[(NN*M) + NN + NAUTY_HEADER_SIZE];  
+    nauty_graph_buf_size = (NN*M) + NN + NAUTY_HEADER_SIZE;    
   }
 
   // clear the temporary buffer.
@@ -322,7 +358,6 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
       }
     } 
   }
-
   // finally, compute canonical labelling
   nauty_graph_canon((unsigned char const *)nauty_graph_buf,output);
   nauty_graph_add(tgraph,from,to);
@@ -352,7 +387,20 @@ string nauty_graph_str(unsigned char const *graph) {
     }    
   }
 
-  out << "}";
+  buffer += NN*M;
+
+  out << "}[";
+
+  firstTime=true;
+  for(unsigned int i=0;i!=NN;++i) {
+    if(!firstTime) {
+      out << ", ";
+    }
+    firstTime = false;
+    out << buffer[i];
+  }
+
+  out << "]";
 
   return out.str();
 }

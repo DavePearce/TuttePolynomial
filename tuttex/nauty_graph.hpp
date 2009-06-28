@@ -103,9 +103,9 @@ unsigned char *nauty_graph_build(T const &graph) {
   setword NN = N + graph.num_multiedges();
   setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
 
-  setword *nauty_graph_buf = new setword[(NN*M) + NAUTY_HEADER_SIZE];
+  setword *nauty_graph_buf = new setword[(NN*M) + NAUTY_HEADER_SIZE + NN];
 
-  memset(nauty_graph_buf,0,((NN*M) + NAUTY_HEADER_SIZE) * sizeof(setword));
+  memset(nauty_graph_buf,0,((NN*M) + NAUTY_HEADER_SIZE + NN) * sizeof(setword));
 
   nauty_graph_buf[0] = N;
   nauty_graph_buf[1] = NN;
@@ -144,6 +144,11 @@ unsigned char *nauty_graph_build(T const &graph) {
       }   
     }
   }  
+
+  setword *mapping = nauty_graph_canong_map((unsigned char*)nauty_graph_buf);
+  for(unsigned int i=0;i!=NN;++i) {
+    mapping[i] = i;
+  }
 
   return (unsigned char *) nauty_graph_buf;
 }
