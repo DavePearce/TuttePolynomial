@@ -247,7 +247,7 @@ unsigned int check_connectivity(unsigned char const *graph) {
 void build(computation &comp) { 
   while(comp.frontier_size() != 0) {
     if(verbose_flag) {
-      cerr << "Generated " << comp.frontier_size() << " graphs." << endl;
+      cerr << "Generated " << comp.frontier_size() << " graphs, with " << num_splits << " splits, " << num_isohits << " hits and " << num_leafs << " leafs." << endl;
     }
 
     for(unsigned int i=0;i!=comp.frontier_size();) {
@@ -263,21 +263,29 @@ void build(computation &comp) {
 	// This indicates that the graph is actually a forest.
 	// Therefore, we can terminate immediately.
 	comp.frontier_terminate(i);
+	num_leafs ++;
 	break;
       case CC_CONNECTED:
 	// This indicates that the original graph was not biconnected,
 	// and that one or more biconnected components have been
 	// extracted.  Therefore, we split on this biconnected
-	// component.
+	// component.       
 	i += comp.frontier_split(i,components,component_ends);
+	num_splits += TREE_NCHILDREN(comp.get(gindex));
 	break;
       case CC_BICONNECTED:
-	// This indicates that the whole graph was biconnected.
-	// Therefore, we have no choice but to perform a
-	// delete-contract.
-	edge_t edge = select_edge(nauty_graph);
-	i += comp.frontier_delcontract(i,edge.first,edge.second);	
-	break;
+	{
+	  // This indicates that the whole graph was biconnected.
+	  // Therefore, we have no choice but to perform a
+	  // delete-contract.
+	  unsigned int fsize = comp.frontier_size();
+	  edge_t edge = select_edge(nauty_graph);
+	  i += comp.frontier_delcontract(i,edge.first,edge.second);	
+	  num_isohits += (fsize+1) - comp.frontier_size();
+	  break;
+	}
+      default:
+	throw runtime_error("shouldn't get here");
       }
     }
   }
@@ -302,20 +310,12 @@ poly_t evaluate(computation &comp) {
   {
     // I use a seperate scope here to enable some memory reuse.
     dgraph_t dag(N);
-    vector<unsigned int> indegree(N,0);
  
     for(int i=0;i!=comp.size();i++) {
       tree_node *tnode = comp.get(i);
       for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
 	unsigned int child = TREE_CHILD(tnode,j);
 	dag.add_edge(i,child);
-	indegree[child]++;
-      }
-    }
-
-    for(unsigned int i=0;i!=N;++i) {
-      if(indegree[i] > 1) {
-	num_isohits += indegree[i] - 1;
       }
     }
 
@@ -345,7 +345,6 @@ poly_t evaluate(computation &comp) {
 	//	cout << "P[" << n << "] = " << "x^" << nedges << endl;
 	polys[n] = X(nedges);
 	//	  cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
-	num_leafs++;
 	break;
       }   
     case TREE_SUM:
@@ -360,7 +359,6 @@ poly_t evaluate(computation &comp) {
     case TREE_PRODUCT:
       {
 	//	cout << "P[" << n << "] = ";
-	num_splits += TREE_NCHILDREN(tnode);
 	for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
 	  unsigned int child = TREE_CHILD(tnode,j);
 	  if(j == 0) {
