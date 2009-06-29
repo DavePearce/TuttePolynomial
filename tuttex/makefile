@@ -45,9 +45,10 @@ CONFIG_CLEAN_FILES =
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(includedir)"
 binPROGRAMS_INSTALL = $(INSTALL_PROGRAM)
 PROGRAMS = $(bin_PROGRAMS)
-am_tutte_OBJECTS = main.$(OBJEXT) file_io.$(OBJEXT) \
-	nauty_graph.$(OBJEXT) bistream.$(OBJEXT) bstreambuf.$(OBJEXT) \
-	hash.$(OBJEXT) bigint.$(OBJEXT) biguint.$(OBJEXT)
+am_tutte_OBJECTS = main.$(OBJEXT) tutte.$(OBJEXT) chromatic.$(OBJEXT) \
+	file_io.$(OBJEXT) nauty_graph.$(OBJEXT) bistream.$(OBJEXT) \
+	bstreambuf.$(OBJEXT) hash.$(OBJEXT) bigint.$(OBJEXT) \
+	biguint.$(OBJEXT)
 tutte_OBJECTS = $(am_tutte_OBJECTS)
 tutte_DEPENDENCIES = ../nauty/libnauty.a
 DEFAULT_INCLUDES = -I. -I$(top_builddir)
@@ -75,11 +76,11 @@ HEADERS = $(include_HEADERS)
 ETAGS = etags
 CTAGS = ctags
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-ACLOCAL = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run aclocal-1.10
-AMTAR = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run tar
-AUTOCONF = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run autoconf
-AUTOHEADER = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run autoheader
-AUTOMAKE = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run automake-1.10
+ACLOCAL = aclocal-1.10
+AMTAR = tar
+AUTOCONF = autoconf
+AUTOHEADER = autoheader
+AUTOMAKE = automake-1.10
 AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
@@ -89,26 +90,26 @@ CPPFLAGS =
 CXX = g++
 CXXDEPMODE = depmode=gcc3
 CXXFLAGS = -g -O2
-CYGPATH_W = echo
+CYGPATH_W = cygpath -w
 DEFS = -DHAVE_CONFIG_H
 DEPDIR = .deps
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
 EGREP = /usr/bin/grep -E
-EXEEXT = 
+EXEEXT = .exe
 GREP = /usr/bin/grep
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
 INSTALL_SCRIPT = ${INSTALL}
 INSTALL_STRIP_PROGRAM = $(install_sh) -c -s
-LDFLAGS = -L/u/staff/djp/pkg/lib
+LDFLAGS = 
 LIBOBJS = 
 LIBS = 
 LTLIBOBJS = 
-MAKEINFO = ${SHELL} /u/staff/djp/projects/tuttepoly/missing --run makeinfo
-MKDIR_P = .././install-sh -c -d
+MAKEINFO = makeinfo
+MKDIR_P = /usr/bin/mkdir -p
 OBJEXT = o
 PACKAGE = tuttepoly
 PACKAGE_BUGREPORT = david.pearce@mcs.vuw.ac.nz
@@ -119,13 +120,13 @@ PACKAGE_VERSION = v0.9.11
 PATH_SEPARATOR = :
 RANLIB = ranlib
 SET_MAKE = 
-SHELL = /bin/bash
+SHELL = /bin/sh
 STRIP = 
 VERSION = v0.9.11
-abs_builddir = /u/staff/djp/projects/tuttepoly/tuttex
-abs_srcdir = /u/staff/djp/projects/tuttepoly/tuttex
-abs_top_builddir = /u/staff/djp/projects/tuttepoly
-abs_top_srcdir = /u/staff/djp/projects/tuttepoly
+abs_builddir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly/tuttex
+abs_srcdir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly/tuttex
+abs_top_builddir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly
+abs_top_srcdir = /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly
 ac_ct_CC = gcc
 ac_ct_CXX = g++
 ac_cv_sizeof_int = 4
@@ -148,13 +149,13 @@ host_alias =
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = $(SHELL) /u/staff/djp/projects/tuttepoly/install-sh
+install_sh = $(SHELL) /cygdrive/c/Documents and Settings/djp/My Documents/projects/tuttepoly/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
 localstatedir = ${prefix}/var
 mandir = ${datarootdir}/man
-mkdir_p = $(top_builddir)/./install-sh -c -d
+mkdir_p = /usr/bin/mkdir -p
 oldincludedir = /usr/include
 pdfdir = ${docdir}
 prefix = /usr/local
@@ -169,7 +170,7 @@ top_build_prefix = ../
 top_builddir = ..
 top_srcdir = ..
 AM_CPPFLAGS = -I$(top_srcdir)/nauty
-tutte_SOURCES = main.cpp file_io.cpp nauty_graph.cpp bistream.cpp bstreambuf.cpp hash.c bigint.cpp biguint.cpp
+tutte_SOURCES = main.cpp tutte.cpp chromatic.cpp file_io.cpp nauty_graph.cpp bistream.cpp bstreambuf.cpp hash.c bigint.cpp biguint.cpp
 include_HEADERS = file_io.hpp nauty_graph.hpp bistream.hpp bstreambuf.hpp cache.hpp
 tutte_LDADD = ../nauty/libnauty.a
 all: all-am
@@ -242,10 +243,12 @@ include ./$(DEPDIR)/bigint.Po
 include ./$(DEPDIR)/biguint.Po
 include ./$(DEPDIR)/bistream.Po
 include ./$(DEPDIR)/bstreambuf.Po
+include ./$(DEPDIR)/chromatic.Po
 include ./$(DEPDIR)/file_io.Po
 include ./$(DEPDIR)/hash.Po
 include ./$(DEPDIR)/main.Po
 include ./$(DEPDIR)/nauty_graph.Po
+include ./$(DEPDIR)/tutte.Po
 
 .c.o:
 	$(COMPILE) -MT $@ -MD -MP -MF $(DEPDIR)/$*.Tpo -c -o $@ $<
