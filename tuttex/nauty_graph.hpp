@@ -47,6 +47,22 @@ inline size_t nauty_graph_numedges(unsigned char const *graph) {
   return p[2];
 }
 
+inline size_t nauty_graph_numedges(unsigned char const *graph, unsigned int v) {
+  setword *p = (setword*) graph;
+  setword NN = p[1];
+  setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;  
+  setword *buffer = p + NAUTY_HEADER_SIZE + (M*v);
+
+  unsigned int count = 0;
+  for(unsigned int i=0;i!=NN;++i) {
+    unsigned int wb = (i / WORDSIZE);      
+    unsigned int wo = i - (wb*WORDSIZE);   
+    setword mask = (((setword)1U) << (WORDSIZE-wo-1));
+    if(buffer[wb] & mask) { count++; }
+  }
+  return count;
+}
+
 inline bool nauty_graph_is_edge(unsigned char const *graph, unsigned int from, unsigned int to) {
   setword *p = (setword*) graph;  
   setword NN = p[1];

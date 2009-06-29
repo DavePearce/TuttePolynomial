@@ -100,6 +100,26 @@ edge_t select_edge(unsigned char const *nauty_graph) {
   unsigned int N = nauty_graph_numverts(nauty_graph);
   unsigned int *cmap = nauty_graph_canong_map(nauty_graph);
 
+  unsigned int mv = 0;
+  unsigned int min = UINT_MAX;
+
+  for(unsigned int i=0;i!=N;++i) {
+    unsigned int ci = cmap[i];
+    unsigned int nv = nauty_graph_numedges(nauty_graph,ci);
+    if(nv < min) {
+      min = nv;
+      mv = ci;
+    }
+  }
+
+  for(unsigned int i=0;i!=N;++i) {
+    unsigned int ci = cmap[i];
+    if(nauty_graph_is_edge(nauty_graph,mv,ci)) {
+      return edge_t(mv,ci);
+    }
+  }
+
+  /*
   for(unsigned int i=0;i!=N;++i) {
     for(unsigned int j=(i+1);j<N;++j) {
       unsigned int ci = cmap[i];
@@ -109,7 +129,8 @@ edge_t select_edge(unsigned char const *nauty_graph) {
       }
     }
   }
-  
+  */
+
   cout << "GOT: " << nauty_graph_str(nauty_graph) << endl;
   
   throw std::runtime_error("internal failure (select_edge)");
