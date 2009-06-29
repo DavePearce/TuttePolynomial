@@ -123,7 +123,7 @@ edge_t select_edge(unsigned char const *nauty_graph) {
 	mv = ci;
       }
     }
-    
+
     for(unsigned int i=0;i!=N;++i) {
       unsigned int ci = cmap[i];
       if(nauty_graph_is_edge(nauty_graph,mv,ci)) {
@@ -254,7 +254,7 @@ void build(computation &comp) {
       unsigned int gindex = comp.frontier_get(i);
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
-      //      cout << "G[" << gindex << "] = " << nauty_graph_str(nauty_graph) << endl;
+      // cout << "G[" << gindex << "] = " << nauty_graph_str(nauty_graph) << endl;
       
       unsigned int cinfo = check_connectivity(nauty_graph);
 
@@ -279,7 +279,9 @@ void build(computation &comp) {
 	  // Therefore, we have no choice but to perform a
 	  // delete-contract.
 	  unsigned int fsize = comp.frontier_size();
+	  cout << "GRAPH: " << nauty_graph_str(nauty_graph) << endl;
 	  edge_t edge = select_edge(nauty_graph);
+	  cout << "EDGE: " << edge.first << "--" << edge.second << endl;
 	  i += comp.frontier_delcontract(i,edge.first,edge.second);	
 	  num_isohits += (fsize+1) - comp.frontier_size();
 	  break;
@@ -342,9 +344,9 @@ poly_t evaluate(computation &comp) {
     case TREE_CONSTANT:
       {	
 	unsigned int nedges = nauty_graph_numedges(comp.graph_ptr(n));	
-	//	cout << "P[" << n << "] = " << "x^" << nedges << endl;
+	cout << "P[" << n << "] = " << "x^" << nedges << endl;
 	polys[n] = X(nedges);
-	//	  cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
+	cout << "G[" << n << "] = " << nauty_graph_str(comp.graph_ptr(n)) << endl;
 	break;
       }   
     case TREE_SUM:
@@ -352,25 +354,25 @@ poly_t evaluate(computation &comp) {
 	unsigned int lhs = TREE_CHILD(tnode,0);
 	unsigned int rhs = TREE_CHILD(tnode,1);
 	polys[n] = polys[lhs] + polys[rhs];
-	//	cout << "P[" << n << "] = " << "P[" << lhs << "] + P[" << rhs << "] = " << polys[n].str() << endl;
-	//	cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
+	cout << "P[" << n << "] = " << "P[" << lhs << "] + P[" << rhs << "] = " << polys[n].str() << endl;
+	cout << "G[" << n << "] = " << nauty_graph_str(comp.graph_ptr(n)) << endl;
 	break;
       }
     case TREE_PRODUCT:
       {
-	//	cout << "P[" << n << "] = ";
+	cout << "P[" << n << "] = ";
 	for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
 	  unsigned int child = TREE_CHILD(tnode,j);
 	  if(j == 0) {
 	    polys[n] = polys[child];
 	  } else {
-	    //	    cout << "* ";
+	    cout << "* ";
 	    polys[n] *= polys[child];
 	  }
-	  //	  cout << "P[" << child << "] ";
+	  cout << "P[" << child << "] ";
 	}
-	//	cout << "= " << polys[n].str()  << endl;
-	//	  cout << "G[" << i << "] = " << nauty_graph_str(comp.graph_ptr(i)) << endl;
+	cout << "= " << polys[n].str()  << endl;
+	cout << "G[" << n << "] = " << nauty_graph_str(comp.graph_ptr(n)) << endl;
 	break;
       }
     }

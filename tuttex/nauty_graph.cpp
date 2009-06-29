@@ -332,26 +332,28 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
 
   setword *inbuffer = p+NAUTY_HEADER_SIZE;
   setword *outbuffer = nauty_graph_buf+NAUTY_HEADER_SIZE;
-  if(from > to) { std::swap(from,to); }
+
+  unsigned int ofrom = from > to ? from-1 : from;
   inbuffer += to*M_IN;
   for(unsigned int i=0;i!=NN_IN;++i) {
     unsigned int wb = (i / WORDSIZE);      
     unsigned int wo = i - (wb*WORDSIZE);  
     setword mask = (((setword)1U) << (WORDSIZE-wo-1));
-    
+
     if((inbuffer[wb] & mask) && (loops || (i != to && i != from))) {
       unsigned int w = i;
-      if(i == to) { 
-	w = from;
-      } else if(i > to) { w--; }
+      if(i > to) { w--; }
+      else if(i == to) { 
+	w = from; // loop case
+      } 
       
       wb = (w / WORDSIZE);      
       wo = w - (wb*WORDSIZE);   
       mask = (((setword)1U) << (WORDSIZE-wo-1));
-      if(!(outbuffer[(from*M)+wb] & mask)) { 
-	outbuffer[(from*M)+wb] |= mask; 	  	
-	wb = (from / WORDSIZE);       
-	wo = from - (wb*WORDSIZE);  
+      if(!(outbuffer[(ofrom*M)+wb] & mask)) { 
+	outbuffer[(ofrom*M)+wb] |= mask; 	  	
+	wb = (ofrom / WORDSIZE);       
+	wo = ofrom - (wb*WORDSIZE);  
 	mask = (((setword)1U) << (WORDSIZE-wo-1));
 	outbuffer[(w*M)+wb] |= mask;	
 	nauty_graph_buf[2]++;

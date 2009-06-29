@@ -146,6 +146,8 @@ public:
       frontier.push_back(gsplitid);
     }
 
+    // FIXME: I need to canonically label the subgraphs!!!!!!!!
+
     return 1;
   }
 
