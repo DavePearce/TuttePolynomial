@@ -101,7 +101,7 @@ edge_t select_edge(unsigned char const *nauty_graph) {
   unsigned int *cmap = nauty_graph_canong_map(nauty_graph);
 
   for(unsigned int i=0;i!=N;++i) {
-    for(unsigned int j=0;j!=N;++j) {
+    for(unsigned int j=(i+1);j<N;++j) {
       unsigned int ci = cmap[i];
       unsigned int cj = cmap[j];
       if(nauty_graph_is_edge(nauty_graph,ci,cj)) {

@@ -177,6 +177,7 @@ public:
 
     // Second, compute contract graph.
     graph_node *gcontract = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gdel)));
+    
     nauty_graph_canong_contract(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gcontract),from,to,false); // ignore loops for now!
 
     //    std::cout << "GCONTRACT: " << nauty_graph_str(NAUTY_GRAPH(gcontract)) << std::endl;

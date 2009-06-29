@@ -271,7 +271,7 @@ void nauty_graph_canon(unsigned char const *key, unsigned char *output) {
   op[0] = N; 
   op[1] = NN;
   op[2] = E;
-  
+
   // now set up labelling  
   unsigned int *omapping = (unsigned int*) (p + NAUTY_HEADER_SIZE + (NN*M));
   unsigned int *mapping = (unsigned int*) (op + NAUTY_HEADER_SIZE + (NN*M));
@@ -307,7 +307,6 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
   // edge from it temporarily.  Then I add it back so it seems as
   // though nothing has changed.
   nauty_graph_delete(tgraph,from,to);
-  if(from > to) { std::swap(from,to); }
   // determine dimensions of output graph based on input graph.
   setword *p = (setword *) graph;
   setword NN = p[1] - 1U; // account for deleted vertex
@@ -326,13 +325,14 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
 
   // construct new graph with given vertex deleted.
   nauty_graph_delvert(graph,(unsigned char*)nauty_graph_buf,to);
-
   // add all edges from the deleted vertex to the remaining
   // vertex
-  setword NN_IN = NN+1;
+  setword NN_IN = NN+1U;
   setword M_IN = ((NN_IN % WORDSIZE) > 0) ? (NN_IN / WORDSIZE)+1 : NN_IN / WORDSIZE;  
+
   setword *inbuffer = p+NAUTY_HEADER_SIZE;
   setword *outbuffer = nauty_graph_buf+NAUTY_HEADER_SIZE;
+  if(from > to) { std::swap(from,to); }
   inbuffer += to*M_IN;
   for(unsigned int i=0;i!=NN_IN;++i) {
     unsigned int wb = (i / WORDSIZE);      
@@ -358,6 +358,7 @@ void nauty_graph_canong_contract(unsigned char const *graph, unsigned char *outp
       }
     } 
   }
+
   // finally, compute canonical labelling
   nauty_graph_canon((unsigned char const *)nauty_graph_buf,output);
   nauty_graph_add(tgraph,from,to);
