@@ -91,6 +91,7 @@ static bool quiet_flag=false;
 static bool info_flag=false;
 static bool status_flag=false;
 static bool verbose_flag=false;
+static bool dense_flag=false;
 
 // ------------------------------------------------------------------
 // Edge Selection
@@ -103,36 +104,34 @@ edge_t select_edge(unsigned char const *nauty_graph) {
   unsigned int mv = 0;
   unsigned int min = UINT_MAX;
 
-  for(unsigned int i=0;i!=N;++i) {
-    unsigned int ci = cmap[i];
-    unsigned int nv = nauty_graph_numedges(nauty_graph,ci);
-    if(nv < min) {
-      min = nv;
-      mv = ci;
+  if(dense_flag) {
+    for(unsigned int i=0;i!=N;++i) {
+      for(unsigned int j=(i+1);j<N;++j) {
+	unsigned int ci = cmap[i];
+	unsigned int cj = cmap[j];
+	if(nauty_graph_is_edge(nauty_graph,ci,cj)) {
+	  return edge_t(ci,cj);
+	}
+      }
     }
-  }
-
-  for(unsigned int i=0;i!=N;++i) {
-    unsigned int ci = cmap[i];
-    if(nauty_graph_is_edge(nauty_graph,mv,ci)) {
-      return edge_t(mv,ci);
-    }
-  }
-
-  /*
-  for(unsigned int i=0;i!=N;++i) {
-    for(unsigned int j=(i+1);j<N;++j) {
+  } else {
+    for(unsigned int i=0;i!=N;++i) {
       unsigned int ci = cmap[i];
-      unsigned int cj = cmap[j];
-      if(nauty_graph_is_edge(nauty_graph,ci,cj)) {
-	return edge_t(ci,cj);
+      unsigned int nv = nauty_graph_numedges(nauty_graph,ci);
+      if(nv < min) {
+	min = nv;
+	mv = ci;
+      }
+    }
+    
+    for(unsigned int i=0;i!=N;++i) {
+      unsigned int ci = cmap[i];
+      if(nauty_graph_is_edge(nauty_graph,mv,ci)) {
+	return edge_t(mv,ci);
       }
     }
   }
-  */
 
-  cout << "GOT: " << nauty_graph_str(nauty_graph) << endl;
-  
   throw std::runtime_error("internal failure (select_edge)");
 }
 
@@ -406,6 +405,14 @@ void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint
   for(unsigned int i(beg);i<end;++i) {
     unsigned int V = graphs[i].num_vertices();
     unsigned int E = graphs[i].num_edges();
+
+    double density = (2.0 * ((double) E)) / (((double) V) * ((double) V-1));
+    if(density < 0.5) {
+      dense_flag = false;
+    } else {
+      dense_flag = true;
+    }							      
+
     comp.clear();
     comp.initialise(graphs[i]);
     reset_stats(V);
