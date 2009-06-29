@@ -295,17 +295,14 @@ void build(computation &comp) {
 }
 
 // ------------------------------------------------------------------
-// Evaluate Computation Tree
+// Order Computation Tree
 // ------------------------------------------------------------------
 
-poly_t evaluate(computation &comp) { 
+void order_computation(computation &comp, std::vector<unsigned int> &order) {
   // To actually compute the polynomial, I topologically sort the
   // computation DAG and the visit in reverse post-order.
 
 
-  // First, build the DAG.
-
-  vector<unsigned int> rpo;
   unsigned int N(comp.size());
   {
     // I use a seperate scope here to enable some memory reuse.
@@ -324,19 +321,25 @@ poly_t evaluate(computation &comp) {
     }
  
     // Second, topologically sort the DAG
-    topological_sort(dag,rpo);
+    topological_sort(dag,order);
 
     if(verbose_flag) {
       cerr << "Sorted computation dag." << endl;  
     }
   }
+}
 
-  // Third, compute the polynomials.
+// ------------------------------------------------------------------
+// Chromatic Polynomial Evaluation
+// ------------------------------------------------------------------
+
+poly_t chromatic(computation &comp, vector<unsigned int> const &order) { 
+  unsigned int N(comp.size());
   vector<poly_t> polys(N);
 
   for(int i=0;i!=N;++i) {
-    unsigned int n = rpo[i];
-    tree_node *tnode = comp.get(rpo[i]);
+    unsigned int n = order[i];
+    tree_node *tnode = comp.get(order[i]);
     
     switch(TREE_TYPE(tnode)) {
     case TREE_CONSTANT:
@@ -354,6 +357,57 @@ poly_t evaluate(computation &comp) {
 	polys[n] = polys[lhs] + polys[rhs];
 	//	cout << "P[" << n << "] = " << "P[" << lhs << "] + P[" << rhs << "] = " << polys[n].str() << endl;
 	//	cout << "G[" << n << "] = " << nauty_graph_str(comp.graph_ptr(n)) << endl;
+	break;
+      }
+    case TREE_PRODUCT:
+      {
+	//	cout << "P[" << n << "] = ";
+	for(unsigned int j=0;j!=TREE_NCHILDREN(tnode);++j) {
+	  unsigned int child = TREE_CHILD(tnode,j);
+	  if(j == 0) {
+	    polys[n] = polys[child];
+	  } else {
+	    //	    cout << "* ";
+	    polys[n] *= polys[child];
+	  }
+	  //	  cout << "P[" << child << "] ";
+	}
+	//	cout << "= " << polys[n].str()  << endl;
+	//	cout << "G[" << n << "] = " << nauty_graph_str(comp.graph_ptr(n)) << endl;
+	break;
+      }
+    }
+  }
+
+  return polys[0];
+}
+
+// ------------------------------------------------------------------
+// Tutte Polynomial Evaluation
+// ------------------------------------------------------------------
+
+poly_t tutte(computation &comp, vector<unsigned int> const &order) { 
+  unsigned int N(comp.size());
+  vector<poly_t> polys(N);
+
+  for(int i=0;i!=N;++i) {
+    unsigned int n = order[i];
+    tree_node *tnode = comp.get(order[i]);
+    
+    switch(TREE_TYPE(tnode)) {
+    case TREE_CONSTANT:
+      {	
+	unsigned int nedges = nauty_graph_numedges(comp.graph_ptr(n));	
+	// need to make this more symbolic here.
+	polys[n] = X(nedges);
+	break;
+      }   
+    case TREE_SUM:
+      {
+	unsigned int lhs = TREE_CHILD(tnode,0);
+	unsigned int rhs = TREE_CHILD(tnode,1);
+	// we have to apply substitution to lhs and rhs here.
+	polys[n] = polys[lhs] + polys[rhs];
 	break;
       }
     case TREE_PRODUCT:
@@ -418,7 +472,16 @@ void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint
     build(comp);
 
     if(!quiet_flag) {
-      poly_t poly = evaluate(comp);    
+      // first, order the computation prior to evaluation.
+      vector<unsigned int> ordering;
+      order_computation(comp,ordering);
+      // second, evaluate the computation.
+      poly_t poly = NULL;
+      if(chromatic_flag) {
+	poly = chromatic(comp);    
+      } else {
+	poly = tutte(comp);    
+      }
       cout << poly.str() << endl;
     }
 
