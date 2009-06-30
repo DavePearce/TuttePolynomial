@@ -84,7 +84,7 @@ poly_t tutte(computation &comp, vector<unsigned int> const &order) {
 
   poly_t poly;
 
-
+  
 
   return polys[0];
 }

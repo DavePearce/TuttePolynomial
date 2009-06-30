@@ -415,17 +415,18 @@ P tutte(G &graph, unsigned int mid) {
     key = graph_key(graph); 
     unsigned int match_id;
     P r;
+
     if(cache.lookup(key,r,match_id)) { 
       if(write_tree) { write_tree_match(mid,match_id,graph,cout); }
       delete [] key; // free space used by key
       cache_hit_sizes[graph.num_vertices()]++;
       return r * RF;
     } else {
-      //cout << "*** FAILED MATCHING GRAPH OF SIZE " << graph.num_vertices() << endl;
+      cout << "*** FAILED MATCHING GRAPH OF SIZE " << graph.num_vertices() << endl;
     }
   }
 
-  //  cout << "*** COMPUTING TUTTE FOR GRAPH OF SIZE " << graph.num_vertices() << endl;
+  cout << "*** COMPUTING TUTTE FOR GRAPH OF SIZE " << graph.num_vertices() << endl;
   
   P poly;
 
@@ -480,9 +481,11 @@ P tutte(G &graph, unsigned int mid) {
 
     // recursively compute the polynomial, starting with delete       
     if(edge.third > 1) { 
-      poly = tutte<G,P>(graph, lid) + (tutte<G,P>(g2, rid) * Y(0,edge.third-1));
+      poly = tutte<G,P>(graph, lid);
+      poly += (tutte<G,P>(g2, rid) * Y(0,edge.third-1));
     } else {
-      poly = tutte<G,P>(graph, lid) + tutte<G,P>(g2, rid);
+      poly = tutte<G,P>(graph, lid);
+      poly += tutte<G,P>(g2, rid);
     }
   }
 
@@ -518,7 +521,7 @@ void tutteSearch(G &graph, vector<G> &graphs) {
       return;
     }
   }
-  
+
   // === 3. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
 
   if(reduce_multicycles && graph.is_multicycle()) {
@@ -1373,7 +1376,7 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
     unsigned int E(start_graph.num_edges());
     unsigned int EP(start_graph.num_underlying_edges());
     unsigned int C(start_graph.num_components());    
-    cache_hit_sizes.resize(V,0);
+    cache_hit_sizes.resize(V+1,0);
 
     // now determine edge density for auto_heuristic_mode
     if(auto_heuristic) {
@@ -1447,7 +1450,7 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
 	cout << search_replace("x","(1-x)",tuttePoly.str()) << " ) :" << endl;
 	TP = "CP";
       }
-      
+
       for(vector<pair<int,int> >::iterator i(evalpoints.begin());i!=evalpoints.end();++i) {
 	cout << TP << "[" << (ngraphs_completed+1) << "](" << i->first << "," << i->second << ") = " << tuttePoly.substitute(i->first,i->second) << endl;
       }
