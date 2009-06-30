@@ -1,22 +1,44 @@
 #include <iostream>
+#include <sstream>
 #include <vector>
+#include <algorithm>
 
 #include "biguint.hpp"
 #include "computation.hpp"
 #include "factor_poly.hpp"
-// #include "symbolic_poly.hpp"
+#include "symbolic_poly.hpp"
 
 using namespace std;
 
 typedef factor_poly<biguint> poly_t;
+typedef symbolic_poly spoly_t;
+
+// ------------------------------------------------------------------
+// Determine symbolic polynomial for a tree
+// ------------------------------------------------------------------
+spoly_t tutte_tree_poly(unsigned char *nauty_graph) {
+  spoly_t poly;
+  unsigned int N(nauty_graph_numverts(nauty_graph));
+  
+  for(unsigned int i=0;i!=N;++i) {
+    for(unsigned int j=i+1;j<N;++j) {
+      if(nauty_graph_is_edge(nauty_graph,i,j)) {
+	spoly_t tmp(spoly_t::X(1));
+	tmp += spoly_t::Y(1,make_pair(i,j));
+	poly *= tmp; 
+      }
+    }
+  }
+
+  return poly;
+}
 
 // ------------------------------------------------------------------
 // Tutte Polynomial Evaluation
 // ------------------------------------------------------------------
-
 poly_t tutte(computation &comp, vector<unsigned int> const &order) { 
   unsigned int N(comp.size());
-  vector<poly_t> polys(N);
+  vector<spoly_t> polys(N);
 
   for(int i=0;i!=N;++i) {
     unsigned int n = order[i];
@@ -25,9 +47,7 @@ poly_t tutte(computation &comp, vector<unsigned int> const &order) {
     switch(TREE_TYPE(tnode)) {
     case TREE_CONSTANT:
       {	
-	unsigned int nedges = nauty_graph_numedges(comp.graph_ptr(n));	
-	// need to make this more symbolic here.
-	polys[n] = X(nedges);
+	polys[n] = tutte_tree_poly(comp.graph_ptr(n));
 	break;
       }   
     case TREE_SUM:
@@ -35,7 +55,8 @@ poly_t tutte(computation &comp, vector<unsigned int> const &order) {
 	unsigned int lhs = TREE_CHILD(tnode,0);
 	unsigned int rhs = TREE_CHILD(tnode,1);
 	// we have to apply substitution to lhs and rhs here.
-	polys[n] = polys[lhs] + polys[rhs];
+	polys[n] += polys[lhs];
+	polys[n] += polys[rhs];
 	break;
       }
     case TREE_PRODUCT:
@@ -57,6 +78,13 @@ poly_t tutte(computation &comp, vector<unsigned int> const &order) {
       }
     }
   }
+
+  // Now, we need to build the real polynomial.  I'm going to assume
+  // the input graph has no multi-edges for now.
+
+  poly_t poly;
+
+
 
   return polys[0];
 }
