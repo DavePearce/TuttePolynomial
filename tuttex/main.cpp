@@ -91,7 +91,11 @@ static bool quiet_flag=false;
 static bool info_flag=false;
 static bool status_flag=false;
 static bool verbose_flag=false;
-static bool dense_flag=false;
+#define EDGESEL_AUTO 0
+#define EDGESEL_DENSE 1
+#define EDGESEL_SPARSE 2
+static unsigned int edgesel_mode = EDGESEL_AUTO;
+static bool dense_flag = false;
 static bool chromatic_flag=false;
 
 // ------------------------------------------------------------------
@@ -140,7 +144,8 @@ edge_t select_edge(unsigned char const *nauty_graph) {
     }
   }
 
-  throw std::runtime_error("internal failure (select_edge)");
+  return edge_t(UINT_MAX,UINT_MAX);
+  //  throw std::runtime_error("internal failure (select_edge)");
 }
 
 // ------------------------------------------------------------------
@@ -249,28 +254,10 @@ unsigned int check_connectivity(unsigned char const *graph) {
 }
 
 // ------------------------------------------------------------------
-// Find triangles
-// ------------------------------------------------------------------
-void find_triangles(unsigned char const *nauty_graph, vector<unsigned int> &triangles, edge_t edge) {
-  triangles.clear();
-
-  unsigned int N = nauty_graph_numverts(nauty_graph);
-  unsigned int ntriangles = 0;
-
-  for(unsigned int i=0;i!=N;++i) {
-    if(nauty_graph_is_edge(nauty_graph,edge.first,i) && nauty_graph_is_edge(nauty_graph,edge.second,i)) {
-      triangles.push_back(i);
-    }
-  }
-}
-
-// ------------------------------------------------------------------
 // Build Computation Tree
 // ------------------------------------------------------------------
 
 void build(computation &comp) { 
-  std::vector<unsigned int> tmp;
-
   while(comp.frontier_size() != 0) {
     if(verbose_flag) {
       cerr << "Generated " << comp.frontier_size() << " graphs, with " << num_splits << " splits, " << num_isohits << " hits and " << num_leafs << " leafs." << endl;
@@ -307,14 +294,9 @@ void build(computation &comp) {
 	  unsigned int fsize = comp.frontier_size();
 	  edge_t edge = select_edge(nauty_graph);
 
-	  find_triangles(nauty_graph,tmp,edge);
-
-	  if(tmp.size() == 0) {
-	    i += comp.frontier_delcontract(i,edge.first,edge.second);	
-	  } else {
-	    i += comp.frontier_deltriangle(i,edge.first,edge.second,tmp);	
-	  }
+	  i += comp.frontier_delcontract(i,edge.first,edge.second);	
 	  num_isohits += (fsize+1) - comp.frontier_size();
+
 	  break;
 	}
       default:
@@ -387,13 +369,19 @@ void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint
     unsigned int V = graphs[i].num_vertices();
     unsigned int E = graphs[i].num_edges();
 
-    double density = (2.0 * ((double) E)) / (((double) V) * ((double) V-1));
-    if(density < 0.5) {
+    if(edgesel_mode == EDGESEL_AUTO) {
+      double density = (2.0 * ((double) E)) / (((double) V) * ((double) V-1));
+      if(density < 0.5) {
+	dense_flag = false;
+      } else {
+	dense_flag = true;
+      }		
+    } else if(edgesel_mode == EDGESEL_SPARSE) {
       dense_flag = false;
     } else {
       dense_flag = true;
-    }							      
-
+    }	      
+    
     comp.clear();
     comp.initialise(graphs[i]);
     reset_stats(V);
@@ -553,6 +541,9 @@ int main(int argc, char *argv[]) {
 #define OPT_CACHESIZE 10
 #define OPT_CACHEBUCKETS 11  
 #define OPT_CHROMATIC 12 
+#define OPT_AUTOSEL 20
+#define OPT_DENSE 21
+#define OPT_SPARSE 22
 
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
@@ -564,6 +555,8 @@ int main(int argc, char *argv[]) {
     {"chromatic",no_argument,NULL,OPT_CHROMATIC},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
+    {"dense",no_argument,NULL,OPT_DENSE},
+    {"sparse",no_argument,NULL,OPT_SPARSE},
     NULL
   };
   
@@ -633,8 +626,14 @@ int main(int argc, char *argv[]) {
 	beg = parse_number(pos,s);
 	match(':',pos,s);
 	end = parse_number(pos,s);
-	break;
+	break;	
       }     
+    case OPT_DENSE:
+      edgesel_mode = EDGESEL_DENSE;
+      break;
+    case OPT_SPARSE:
+      edgesel_mode = EDGESEL_SPARSE;
+      break;
     // --- CACHE OPTIONS ---
     case 'c':
     case OPT_CACHESIZE:

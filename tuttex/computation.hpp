@@ -224,57 +224,6 @@ public:
     return 1;
   }
 
-  unsigned int frontier_deltriangle(unsigned int index, unsigned int from, unsigned int to, std::vector<unsigned int> const &triangles) {
-    unsigned int id = frontier[index];
-    graph_node *gnode = gindex[id].first;
-    tree_node *tnode = tree_node_alloc(TREE_TRIANGLE,ends.size() + 1);
-    gindex[id].second = tnode; // update node info
-
-
-    // First, compute delete graph.
-    graph_node *gdel = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gnode)));
-    nauty_graph_canong_delete(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gdel),from,to);
-    
-    //    std::cout << "GDEL: " << nauty_graph_str(NAUTY_GRAPH(gdel)) << std::endl;
-    
-    unsigned int isoid;
-    unsigned int nextidx = index;
-    if(lookup(NAUTY_GRAPH(gdel),isoid)) {
-      // this branch is now terminated.
-      TREE_CHILD(tnode,0) = isoid;
-      graph_p -= gdel->size; // free space!
-    } else {
-      store(gdel); // add to isomorph cache
-      unsigned int gdelid = gindex.size();
-      gdel->gindex = gdelid;
-      TREE_CHILD(tnode,0) = gdelid;
-      gindex.push_back(std::make_pair<graph_node*,tree_node*>(gdel,NULL));
-      frontier[index] = gdelid;
-      unsigned int nextidx = frontier.size();
-    }
-
-    // Now, iterate each triangle in turn extracting it.
-    while(triangles.size() > 0) {
-      unsigned int point = triangles.back();
-      triangles.pop_back();
-
-      // here's we do our thing somehow.
-      
-      unsigned int gsplitid = gindex.size();
-      gsplit->gindex = gsplitid;      
-      gindex.push_back(std::make_pair<graph_node*,tree_node*>(gsplit,NULL));
-      TREE_CHILD(tnode,c+1) = gsplitid;
-      if(nextidx == index) {
-	frontier[index] = gsplitid;
-	index = frontier.size();
-      } else {
-	frontier.push_back(gsplitid);
-      }
-    }
-
-    return 0;
-  }
-
 private:
   inline graph_node *graph_node_alloc(unsigned int NN) {
     setword M = ((NN % WORDSIZE) > 0) ? (NN / WORDSIZE)+1 : NN / WORDSIZE;
