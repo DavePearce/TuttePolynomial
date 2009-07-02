@@ -6,39 +6,17 @@
 #include "biguint.hpp"
 #include "computation.hpp"
 #include "factor_poly.hpp"
-#include "symbolic_poly.hpp"
 
 using namespace std;
 
 typedef factor_poly<biguint> poly_t;
-typedef symbolic_poly spoly_t;
-
-// ------------------------------------------------------------------
-// Determine symbolic polynomial for a tree
-// ------------------------------------------------------------------
-spoly_t tutte_tree_poly(unsigned char *nauty_graph) {
-  spoly_t poly;
-  unsigned int N(nauty_graph_numverts(nauty_graph));
-  
-  for(unsigned int i=0;i!=N;++i) {
-    for(unsigned int j=i+1;j<N;++j) {
-      if(nauty_graph_is_edge(nauty_graph,i,j)) {
-	spoly_t tmp(spoly_t::X(1));
-	tmp += spoly_t::Y(1,make_pair(i,j));
-	poly *= tmp; 
-      }
-    }
-  }
-
-  return poly;
-}
 
 // ------------------------------------------------------------------
 // Tutte Polynomial Evaluation
 // ------------------------------------------------------------------
 poly_t tutte(computation &comp, vector<unsigned int> const &order) { 
   unsigned int N(comp.size());
-  vector<spoly_t> polys(N);
+  vector<poly_t> polys(N);
 
   for(int i=0;i!=N;++i) {
     unsigned int n = order[i];
@@ -47,7 +25,8 @@ poly_t tutte(computation &comp, vector<unsigned int> const &order) {
     switch(TREE_TYPE(tnode)) {
     case TREE_CONSTANT:
       {	
-	polys[n] = tutte_tree_poly(comp.graph_ptr(n));
+	unsigned int nedges = nauty_graph_numedges(comp.graph_ptr(n));	
+	polys[n] = X(nedges);
 	break;
       }   
     case TREE_SUM:
@@ -78,13 +57,6 @@ poly_t tutte(computation &comp, vector<unsigned int> const &order) {
       }
     }
   }
-
-  // Now, we need to build the real polynomial.  I'm going to assume
-  // the input graph has no multi-edges for now.
-
-  poly_t poly;
-
-  
 
   return polys[0];
 }

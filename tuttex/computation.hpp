@@ -113,44 +113,6 @@ public:
     return frontier[index];
   }
 
-  // This method splits the frontier node on a biconnected component.
-  // That is, it splits out the biconnected component and all edges it
-  // contains into a separate graph, leaving what's left as is.
-  unsigned int frontier_split(unsigned int index, std::vector<unsigned int> const &components, std::vector<unsigned int> const &ends) { 
-    unsigned int id = frontier[index];
-    graph_node *gnode = gindex[id].first;
-    tree_node *tnode = tree_node_alloc(TREE_PRODUCT,ends.size() + 1);
-    gindex[id].second = tnode; // update node info
-
-    graph_node *gresidue = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gnode)));
-    nauty_graph_clone(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gresidue));
-    unsigned int gresidueid = gindex.size();
-    gindex.push_back(std::make_pair<graph_node*,tree_node*>(gresidue,NULL));
-    frontier[index] = gresidueid;
-    TREE_CHILD(tnode,0) = gresidueid;
-
-    // Now, iterate each component in turn extracting it.
-    unsigned int start = 0;
-    for(unsigned int c = 0;c!=ends.size();++c) {
-      // First, create the graph node      
-      unsigned int C_N = ends[c] - start;
-      graph_node *gsplit = graph_node_alloc(C_N);
-      nauty_graph_extract(NAUTY_GRAPH(gresidue),NAUTY_GRAPH(gsplit),&components.front()+start,C_N);
-      start = ends[c];
-      // Second, create the tree node
-      unsigned int gsplitid = gindex.size();
-      gsplit->gindex = gsplitid;      
-      gindex.push_back(std::make_pair<graph_node*,tree_node*>(gsplit,NULL));
-      TREE_CHILD(tnode,c+1) = gsplitid;
-      // hmmm, what about the existing frontier node ?
-      frontier.push_back(gsplitid);
-    }
-
-    // FIXME: I need to canonically label the subgraphs!!!!!!!!
-
-    return 1;
-  }
-
   unsigned int frontier_delcontract(unsigned int index, unsigned int from, unsigned int to) {
     unsigned int id = frontier[index];
     graph_node *gnode = gindex[id].first;
@@ -223,6 +185,95 @@ public:
     tree_node *tnode = tree_node_alloc(TREE_CONSTANT,0);
     gindex[id].second = tnode;
   }  
+
+  // This method splits the frontier node on a biconnected component.
+  // That is, it splits out the biconnected component and all edges it
+  // contains into a separate graph, leaving what's left as is.
+  unsigned int frontier_split(unsigned int index, std::vector<unsigned int> const &components, std::vector<unsigned int> const &ends) { 
+    unsigned int id = frontier[index];
+    graph_node *gnode = gindex[id].first;
+    tree_node *tnode = tree_node_alloc(TREE_PRODUCT,ends.size() + 1);
+    gindex[id].second = tnode; // update node info
+
+    graph_node *gresidue = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gnode)));
+    nauty_graph_clone(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gresidue));
+    unsigned int gresidueid = gindex.size();
+    gindex.push_back(std::make_pair<graph_node*,tree_node*>(gresidue,NULL));
+    frontier[index] = gresidueid;
+    TREE_CHILD(tnode,0) = gresidueid;
+
+    // Now, iterate each component in turn extracting it.
+    unsigned int start = 0;
+    for(unsigned int c = 0;c!=ends.size();++c) {
+      // First, create the graph node      
+      unsigned int C_N = ends[c] - start;
+      graph_node *gsplit = graph_node_alloc(C_N);
+      nauty_graph_extract(NAUTY_GRAPH(gresidue),NAUTY_GRAPH(gsplit),&components.front()+start,C_N);
+      start = ends[c];
+      // Second, create the tree node
+      unsigned int gsplitid = gindex.size();
+      gsplit->gindex = gsplitid;      
+      gindex.push_back(std::make_pair<graph_node*,tree_node*>(gsplit,NULL));
+      TREE_CHILD(tnode,c+1) = gsplitid;
+      // hmmm, what about the existing frontier node ?
+      frontier.push_back(gsplitid);
+    }
+
+    // FIXME: I need to canonically label the subgraphs!!!!!!!!
+
+    return 1;
+  }
+
+  unsigned int frontier_deltriangle(unsigned int index, unsigned int from, unsigned int to, std::vector<unsigned int> const &triangles) {
+    unsigned int id = frontier[index];
+    graph_node *gnode = gindex[id].first;
+    tree_node *tnode = tree_node_alloc(TREE_TRIANGLE,ends.size() + 1);
+    gindex[id].second = tnode; // update node info
+
+
+    // First, compute delete graph.
+    graph_node *gdel = graph_node_alloc(nauty_graph_numverts(NAUTY_GRAPH(gnode)));
+    nauty_graph_canong_delete(NAUTY_GRAPH(gnode),NAUTY_GRAPH(gdel),from,to);
+    
+    //    std::cout << "GDEL: " << nauty_graph_str(NAUTY_GRAPH(gdel)) << std::endl;
+    
+    unsigned int isoid;
+    unsigned int nextidx = index;
+    if(lookup(NAUTY_GRAPH(gdel),isoid)) {
+      // this branch is now terminated.
+      TREE_CHILD(tnode,0) = isoid;
+      graph_p -= gdel->size; // free space!
+    } else {
+      store(gdel); // add to isomorph cache
+      unsigned int gdelid = gindex.size();
+      gdel->gindex = gdelid;
+      TREE_CHILD(tnode,0) = gdelid;
+      gindex.push_back(std::make_pair<graph_node*,tree_node*>(gdel,NULL));
+      frontier[index] = gdelid;
+      unsigned int nextidx = frontier.size();
+    }
+
+    // Now, iterate each triangle in turn extracting it.
+    while(triangles.size() > 0) {
+      unsigned int point = triangles.back();
+      triangles.pop_back();
+
+      // here's we do our thing somehow.
+      
+      unsigned int gsplitid = gindex.size();
+      gsplit->gindex = gsplitid;      
+      gindex.push_back(std::make_pair<graph_node*,tree_node*>(gsplit,NULL));
+      TREE_CHILD(tnode,c+1) = gsplitid;
+      if(nextidx == index) {
+	frontier[index] = gsplitid;
+	index = frontier.size();
+      } else {
+	frontier.push_back(gsplitid);
+      }
+    }
+
+    return 0;
+  }
 
 private:
   inline graph_node *graph_node_alloc(unsigned int NN) {

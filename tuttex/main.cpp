@@ -249,10 +249,28 @@ unsigned int check_connectivity(unsigned char const *graph) {
 }
 
 // ------------------------------------------------------------------
+// Find triangles
+// ------------------------------------------------------------------
+void find_triangles(unsigned char const *nauty_graph, vector<unsigned int> &triangles, edge_t edge) {
+  triangles.clear();
+
+  unsigned int N = nauty_graph_numverts(nauty_graph);
+  unsigned int ntriangles = 0;
+
+  for(unsigned int i=0;i!=N;++i) {
+    if(nauty_graph_is_edge(nauty_graph,edge.first,i) && nauty_graph_is_edge(nauty_graph,edge.second,i)) {
+      triangles.push_back(i);
+    }
+  }
+}
+
+// ------------------------------------------------------------------
 // Build Computation Tree
 // ------------------------------------------------------------------
 
 void build(computation &comp) { 
+  std::vector<unsigned int> tmp;
+
   while(comp.frontier_size() != 0) {
     if(verbose_flag) {
       cerr << "Generated " << comp.frontier_size() << " graphs, with " << num_splits << " splits, " << num_isohits << " hits and " << num_leafs << " leafs." << endl;
@@ -288,7 +306,14 @@ void build(computation &comp) {
 	  // delete-contract.
 	  unsigned int fsize = comp.frontier_size();
 	  edge_t edge = select_edge(nauty_graph);
-	  i += comp.frontier_delcontract(i,edge.first,edge.second);	
+
+	  find_triangles(nauty_graph,tmp,edge);
+
+	  if(tmp.size() == 0) {
+	    i += comp.frontier_delcontract(i,edge.first,edge.second);	
+	  } else {
+	    i += comp.frontier_deltriangle(i,edge.first,edge.second,tmp);	
+	  }
 	  num_isohits += (fsize+1) - comp.frontier_size();
 	  break;
 	}
