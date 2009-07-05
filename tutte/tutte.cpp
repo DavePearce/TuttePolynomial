@@ -421,12 +421,8 @@ P tutte(G &graph, unsigned int mid) {
       delete [] key; // free space used by key
       cache_hit_sizes[graph.num_vertices()]++;
       return r * RF;
-    } else {
-      cout << "*** FAILED MATCHING GRAPH OF SIZE " << graph.num_vertices() << endl;
-    }
+    } 
   }
-
-  cout << "*** COMPUTING TUTTE FOR GRAPH OF SIZE " << graph.num_vertices() << endl;
   
   P poly;
 
