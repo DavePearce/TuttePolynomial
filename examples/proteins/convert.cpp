@@ -68,7 +68,7 @@ int main(char* argv[], int argc) {
 
   for(unsigned int i=0;i!=edges.size();++i) {
     if(i != 0) {
-      cout << ", ";
+      cout << ",";
     }
     cout << edges[i].first << "--" << edges[i].second;
   }
