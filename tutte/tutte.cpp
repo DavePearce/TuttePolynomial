@@ -1382,7 +1382,6 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
   unsigned int lineno = 0;
   ngraphs_completed = 0;
   bool auto_heuristic = edge_selection_heuristic == AUTO;
-  bool cache_auto_replace_size = cache.replace_size() == UINT_MAX;
 
   while(!input.eof() && index < graphs_end) {
     string line = read_line(input);
@@ -1447,12 +1446,6 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
 
     global_timer = my_timer(false);
     if(write_tree) { write_tree_start(ngraphs_completed); }    
-
-    // now set the cache replacment size
-    if(cache_auto_replace_size) {
-      unsigned int size = (unsigned int) (((float)V)*0.75);
-      cache.set_replace_size(size);
-    }
 
     P tuttePoly;
 
