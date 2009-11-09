@@ -78,7 +78,7 @@ public:
 // Global Variables
 // ---------------------------------------------------------------
 
-typedef enum { AUTO, RANDOM, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MAXIMISE_SDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER } edgesel_t;
+typedef enum { AUTO, RANDOM, CUT, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MAXIMISE_SDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER } edgesel_t;
 typedef enum { V_RANDOM, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DEGREE, V_MINIMISE_DEGREE,  V_MAXIMISE_DEGREE, V_NONE } vorder_t;
 
 unsigned int resize_stats = 0;
@@ -252,11 +252,52 @@ typename G::edge_t select_edge(G const &graph) {
   unsigned int V(graph.num_vertices());
   unsigned int rcount(0);
   unsigned int rtarget(0);
+  edgesel_t heuristic = edge_selection_heuristic;
   typename G::edge_t r(-1,-1,-1);
-  
+
   if(edge_selection_heuristic == RANDOM) {
     unsigned int nedges = graph.num_edges();
     rtarget = (unsigned int) (((double) nedges*rand()) / (1.0+RAND_MAX));
+  } else if(edge_selection_heuristic == CUT) {
+    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+      unsigned int head = *i;
+      unsigned int headc(graph.num_underlying_edges(head));
+      
+      for(typename G::edge_iterator j(graph.begin_edges(*i));
+	  j!=graph.end_edges(*i);++j) {	
+	unsigned int tail = j->first;
+	unsigned int tailc(graph.num_underlying_edges(tail));
+	unsigned int count = j->second;
+	unsigned int cost = UINT_MAX;
+
+	if(head < tail) { // to avoid duplicates
+	  // er, yes this is a tad ott.
+	  G g(graph);
+	  g.remove_all_edges(head,tail);
+	  if(!g.is_biconnected()) {
+	    unsigned int start = 0;
+	    
+	    vector<G> biconnects;
+	    g.extract_biconnected_components(biconnects);
+	    g.remove_graphs(biconnects);
+	    
+	    // now, actually do the computation
+	    cost = g.num_vertices();
+	    for(typename vector<G>::iterator k(biconnects.begin());k!=biconnects.end();++k){
+	      cost = std::min<unsigned int>(cost,k->num_vertices());	
+	    }
+	  }
+	  if(cost > 10 && cost > best && cost < UINT_MAX) {	    	    
+	    r = typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
+	    best = cost;
+	  }     
+	}
+      }
+    }    
+    if(best != 0) { 
+      cout << "BEST = " << best << endl;
+      return r; }
+    heuristic = VERTEX_ORDER;
   }
 
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
@@ -271,7 +312,7 @@ typename G::edge_t select_edge(G const &graph) {
 
       if(head < tail) { // to avoid duplicates
 	unsigned int cost;
-	switch(edge_selection_heuristic) {
+	switch(heuristic) {
 	case MAXIMISE_SDEGREE:
 	  cost = std::max(headc,tailc);
 	  break;
@@ -298,7 +339,25 @@ typename G::edge_t select_edge(G const &graph) {
 	    return typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
 	  }
 	  rcount += count;	    
-	}
+	  break;
+	case CUT:
+	  // er, yes this is a tad ott.
+	  G g(graph);
+	  g.remove_all_edges(head,tail);
+	  if(!g.is_biconnected()) {
+	    unsigned int start = 0;
+	    
+	    vector<G> biconnects;
+	    g.extract_biconnected_components(biconnects);
+	    g.remove_graphs(biconnects);
+	    unsigned int m = g.num_edges();
+	    
+	    // now, actually do the computation
+	    for(typename vector<G>::iterator k(biconnects.begin());k!=biconnects.end();++k){
+	      cost = std::max<unsigned int>(cost,k->num_edges());	
+	    }
+	  }
+	}    
 	if(cost > best) {	    
 	  r = typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
 	  best = cost;
@@ -1538,6 +1597,7 @@ int main(int argc, char *argv[]) {
   #define OPT_MINSDEGREE 54
   #define OPT_VERTEXORDER 55
   #define OPT_RANDOM 56
+  #define OPT_CUT 57
   #define OPT_RANDOM_ORDERING 60
   #define OPT_MINDEG_ORDERING 61
   #define OPT_MAXDEG_ORDERING 62
@@ -1577,6 +1637,7 @@ int main(int argc, char *argv[]) {
     {"minudeg-ordering",no_argument,NULL,OPT_MINUDEG_ORDERING},
     {"maxudeg-ordering",no_argument,NULL,OPT_MAXUDEG_ORDERING},
     {"random", no_argument,NULL,OPT_RANDOM},
+    {"cut", no_argument,NULL,OPT_CUT},
     {"small-graphs",required_argument,NULL,OPT_SMALLGRAPHS},
     {"simple-poly",no_argument,NULL,OPT_SIMPLE_POLY},
     {"tree",no_argument,NULL,OPT_TREE_OUT},
@@ -1614,8 +1675,8 @@ int main(int argc, char *argv[]) {
     "        --cache-replacement=<amount> set ratio (between 0 .. 1) of cache to displace when full",
     "        --cache-replace-size=<number> graphs of the given number of vertices will never be displaced from cache",
     "        --cache-stats[=<file>]    print cache stats summary, or write detailed stats to file.",
+    "        --cache-reset             reset the cache between graphs in a batch",
     "        --no-caching              disable caching",
-    "        --no-reset                prevent the cache from being reset between graphs in a batch",
     " \nedge selection heuristics:",
     "        --sparse                  use best heuristic for \"sparse\" graphs.",
     "        --dense                   use best heuristic for \"dense\" graphs.",
@@ -1775,6 +1836,10 @@ int main(int argc, char *argv[]) {
     case OPT_RANDOM:
       edge_selection_heuristic = RANDOM;
       edge_addition_heuristic = RANDOM;
+      break;
+    case OPT_CUT:
+      edge_selection_heuristic = CUT;
+      edge_addition_heuristic = CUT;
       break;
     case OPT_RANDOM_ORDERING:
       vertex_ordering = V_RANDOM;
