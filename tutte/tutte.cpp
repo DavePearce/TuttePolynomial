@@ -1673,7 +1673,7 @@ int main(int argc, char *argv[]) {
     "        --cache-buckets=<amount>  set number of buckets to use in cache, e.g. 10000",
     "        --cache-random            set random replacement policy",
     "        --cache-replacement=<amount> set ratio (between 0 .. 1) of cache to displace when full",
-    "        --cache-replace-size=<number> graphs of the given number of vertices will never be displaced from cache",
+    "        --cache-replace-size=<number> graphs with at least the given number of vertices will never be displaced from cache",
     "        --cache-stats[=<file>]    print cache stats summary, or write detailed stats to file.",
     "        --cache-reset             reset the cache between graphs in a batch",
     "        --no-caching              disable caching",
