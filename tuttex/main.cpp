@@ -148,6 +148,29 @@ edge_t select_edge(unsigned char const *nauty_graph) {
   //  throw std::runtime_error("internal failure (select_edge)");
 }
 
+edge_t select_edge(unsigned char const *nauty_graph, vector<edge_t> const &edgelist) {
+  unsigned int N = nauty_graph_numverts(nauty_graph);
+  unsigned int *cmap = nauty_graph_canong_map(nauty_graph);
+
+  cout << "GOT HERE" << endl;
+
+  for(vector<edge_t>::const_iterator i(edgelist.begin());i!=edgelist.end();++i) {
+    cout << "STAGE 1" << endl;
+    unsigned int ci = cmap[i->first];
+    unsigned int cj = cmap[i->second];
+    cout << "STAGE 2: " << i->first << "--" << i->second << " ===> " << ci << "--" << cj << endl << nauty_graph_str(nauty_graph) << endl;    
+    if(nauty_graph_is_edge(nauty_graph,ci,cj)) {
+      cout << "STAGE 3" << endl;
+      return edge_t(ci,cj);
+    }
+    cout << "STAGE 4" << endl;
+  }
+
+  return edge_t(UINT_MAX,UINT_MAX);
+  //  throw std::runtime_error("internal failure (select_edge)");
+}
+
+
 // ------------------------------------------------------------------
 // Connectivity Test
 // ------------------------------------------------------------------
@@ -257,7 +280,7 @@ unsigned int check_connectivity(unsigned char const *graph) {
 // Build Computation Tree
 // ------------------------------------------------------------------
 
-void build(computation &comp) { 
+void build(computation &comp, vector<edge_t> const &edgelist) { 
   while(comp.frontier_size() != 0) {
     if(verbose_flag) {
       cerr << "Generated " << comp.frontier_size() << " graphs, with " << num_splits << " splits, " << num_isohits << " hits and " << num_leafs << " leafs." << endl;
@@ -268,13 +291,16 @@ void build(computation &comp) {
       unsigned char *nauty_graph = comp.graph_ptr(gindex);
 
       // cout << "G[" << gindex << "] = " << nauty_graph_str(nauty_graph) << endl;
-      
+
+      cout << "CHECKING CONNECTIVITY" << endl;
       unsigned int cinfo = check_connectivity(nauty_graph);
+      cout << "DONE CHECKING CONNECTIVITY" << endl;
 
       switch(cinfo) {
       case CC_FOREST:	
 	// This indicates that the graph is actually a forest.
 	// Therefore, we can terminate immediately.
+	cout << "TERMINATE LEAF" << endl;
 	comp.frontier_terminate(i);
 	num_leafs ++;
 	break;
@@ -283,6 +309,7 @@ void build(computation &comp) {
 	// and that one or more biconnected components have been
 	// extracted.  Therefore, we split on this biconnected
 	// component.       
+	cout << "SPLITTING NODE" << endl;
 	i += comp.frontier_split(i,components,component_ends);
 	num_splits += TREE_NCHILDREN(comp.get(gindex));
 	break;
@@ -291,11 +318,20 @@ void build(computation &comp) {
 	  // This indicates that the whole graph was biconnected.
 	  // Therefore, we have no choice but to perform a
 	  // delete-contract.
+	  cout << "SELECTING EDGE" << endl;
 	  unsigned int fsize = comp.frontier_size();
-	  edge_t edge = select_edge(nauty_graph);
+	  edge_t edge = select_edge(nauty_graph,edgelist);
 
-	  i += comp.frontier_delcontract(i,edge.first,edge.second);	
-	  num_isohits += (fsize+1) - comp.frontier_size();
+	  cout << "DONE" << endl;
+
+	  if(edge.first != UINT_MAX) {
+	    cout << "DELETING " << edge.first << "--" << edge.second << endl;
+	    i += comp.frontier_delcontract(i,edge.first,edge.second);	
+	    num_isohits += (fsize+1) - comp.frontier_size();
+	    cout << "DONE" << endl;
+	  } else {
+	    comp.frontier_terminate(i);
+	  }
 
 	  break;
 	}
@@ -304,6 +340,7 @@ void build(computation &comp) {
       }
     }
   }
+
   if(verbose_flag) {
     cerr << "Generated computation tree with " << comp.size() << " nodes." << endl;
   }
@@ -342,6 +379,47 @@ void order_computation(computation &comp, std::vector<unsigned int> &order) {
       cerr << "Sorted computation dag." << endl;  
     }
   }
+}
+
+// ---------------------------------------------------------------
+// Enumerate Edge Choices
+// ---------------------------------------------------------------
+vector<vector<edge_t> > enumerate_edges_helper(vector<edge_t> edges, int count) {
+  vector<vector<edge_t> > enums;
+  if(count == 1) {
+    enums.push_back(edges);
+  } else {
+    for(unsigned int i=0;i!=edges.size();++i) {
+      edge_t edge = edges[i];
+      vector<edge_t> nedges = edges;
+      nedges.erase(nedges.begin()+i);
+      vector<vector<edge_t> > tmpenums = enumerate_edges_helper(nedges,count-1);
+      for(int j=0;j!=tmpenums.size();++j) {
+	vector<edge_t> &en = tmpenums[j];
+	en.push_back(edge);
+	enums.push_back(en);
+      }
+    } 
+  }
+  return enums;
+}
+
+vector<vector<edge_t> > enumerate_edges(graph_t const &graph, int count) {
+  vector<edge_t> edges;
+
+  // now, consider edges 
+  for(graph_t::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    unsigned int v = *i;
+    for(graph_t::edge_iterator j(graph.begin_edges(v));j!=graph.end_edges(v);++j) {       
+      unsigned int w = j->first;
+
+      // now add this edge(s) to nauty graph
+      if(v <= w) {
+	edges.push_back(edge_t(v,w));
+      }
+    }
+  }
+  return enumerate_edges_helper(edges,count);
 }
 
 // ---------------------------------------------------------------
@@ -386,7 +464,18 @@ void run(vector<graph_t> const &graphs, unsigned int beg, unsigned int end, uint
     comp.initialise(graphs[i]);
     reset_stats(V);
     global_timer = my_timer(false);
-    build(comp);
+
+    cout << "ENUMERATING EDGES" << endl;
+    vector<vector<edge_t> > enums = enumerate_edges(graphs[i],3);
+    cout << "DONE" << endl;
+
+    for(unsigned int j=0;j!=enums.size();++j) {
+      vector<edge_t> const &en = enums[j];
+      computation comp2(cache_size,cache_buckets);
+      comp2.initialise(graphs[i]);
+      build(comp2,enums[j]);
+      cout << "FRONTIER SIZE: " << comp2.frontier_size() << endl;
+    }
 
     if(!quiet_flag) {
       // first, order the computation prior to evaluation.
