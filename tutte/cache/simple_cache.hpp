@@ -80,6 +80,7 @@ private:
   unsigned int hits;
   unsigned int misses;
   unsigned int collisions;
+  unsigned int ncycles;          // number of flush cycles
   uint64_t numentries; 
   struct cache_node* buckets;    // start of bucket array
   unsigned int nbuckets;         // number of buckets
@@ -97,6 +98,7 @@ public:
     collisions = 0;
     bufsize = max_size;
     nbuckets = nbs;
+    ncycles = 0;
     buckets = create_bucket_array(nbs);
     start_p = new unsigned char[max_size];
     next_p = start_p;
@@ -115,6 +117,7 @@ public:
   int num_entries() { return numentries; }
   int num_collisions() { return collisions; }
   int num_buckets() { return nbuckets; }
+  int num_cycles() { return ncycles; }
 
   // get space used by cache in bytes
   uint64_t size() {  return next_p - start_p; }
@@ -337,6 +340,7 @@ private:
       } else {
 	remove_unused_nodes(replacement);
       }
+      ncycles++;
       pack_buffer();
     }
     unsigned char *r = next_p;

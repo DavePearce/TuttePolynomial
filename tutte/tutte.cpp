@@ -112,6 +112,8 @@ static bool xml_flag=false;
 static unsigned int tree_id = 2;
 static bool write_tree=false;
 static bool write_full_tree=false;
+static ostream *stats_out = &cout; // output stream for profiling data
+static bool cache_full_stats = false;
 
 #define MODE_TUTTE 0
 #define MODE_CHROMATIC 1
@@ -1263,10 +1265,10 @@ uint64_t parse_amount(char *str) {
 // ---------------------------------------------------------------
 
 void write_bucket_lengths(ostream &out) {
-  out << "############################" << endl;
-  out << "# CACHE BUCKET LENGTH DATA #" << endl;
-  out << "############################" << endl;
-  out << "# Length\tCount" << endl;
+  out << endl;
+  out << "CACHE BUCKET LENGTH DATA" << endl;
+  out << "========================" << endl;
+  out << "Length\tCount" << endl;
   vector<int> counts;
   // first, count the lengths
   for(int i=0;i!=cache.num_buckets();++i) {
@@ -1287,10 +1289,9 @@ void write_bucket_lengths(ostream &out) {
 
 void write_graph_sizes(ostream &out) {
   out << endl << endl;
-  out << "#########################" << endl;
-  out << "# CACHE GRAPH SIZE DATA #" << endl;
-  out << "#########################" << endl;
-  out << "# V\t#Graphs (%)\t#MultiGraphs (%)" << endl;
+  out << "CACHE GRAPH SIZE DATA" << endl;
+  out << "=====================" << endl;
+  out << "V\t#Graphs (%)\t#MultiGraphs (%)" << endl;
   vector<int> counts;
   vector<int> mcounts;
   int nmgraphs=0;
@@ -1325,14 +1326,36 @@ void write_graph_sizes(ostream &out) {
 
 void write_hit_counts(ostream &out) {
   out << endl << endl;
-  out << "##############################" << endl;
-  out << "# CACHE GRAPH HIT COUNT DATA #" << endl;
-  out << "##############################" << endl;
-  out << "# V\tHit Count" << endl;
+  out << "CACHE GRAPH HIT COUNT DATA" << endl;
+  out << "==========================" << endl;
+  out << "V\tHit Count" << endl;
 
   for(int i=0;i!=cache_hit_sizes.size();++i) {
     out << i << "\t" << cache_hit_sizes[i] << endl;
   }  
+}
+
+void write_summary_stats(ostream &out) {
+  out << endl << "CACHE SUMMARY STATS" << endl;
+  out         << "===================" << endl;
+  out << "Size: " << (cache.size()/(1024*1024)) << "MB" << endl;
+  out << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
+  out << "Entries: " << cache.num_entries() << endl;
+  out << "Cache cycles: " << cache.num_cycles() << endl;
+  out << "Cache Hits: " << cache.num_hits() << endl;
+  out << "Cache Misses: " << cache.num_misses() << endl;
+  out << "Cache Collisions: " << cache.num_collisions() << endl;
+  out << "Min Bucket Length: " << cache.min_bucket_size() << endl;
+  out << "Max Bucket Length: " << cache.max_bucket_size() << endl;
+}
+
+void write_full_stats(ostream &out) {
+  out << endl;
+  out << "#################################################################" << endl;
+  write_summary_stats(out);
+  write_bucket_lengths(out);
+  write_graph_sizes(out);
+  write_hit_counts(out);
 }
 
 // ---------------------------------------------------------------
@@ -1356,7 +1379,14 @@ void print_status() {
   double rate = (num_steps - old_num_steps);
   double cf = (100*((double)cache.size())) / cache.capacity();
   rate /= status_interval;
-  cerr << "Completed " << ngraphs_completed << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full." << endl;
+  cerr << "Completed " << ngraphs_completed << " graphs at rate of " << ((int) rate) << "/s, cache is " << setprecision(3) << cf << "% full (" << cache.num_cycles() << " cycles)" << endl;
+  if(cache_full_stats) {
+    write_full_stats(*stats_out);
+    int size = cache_hit_sizes.size();
+    cache_hit_sizes.clear();
+    cache_hit_sizes.resize(size,0);
+    cache.reset_stats();
+  }
   old_num_steps = num_steps;  
 }
 
@@ -1567,6 +1597,7 @@ int main(int argc, char *argv[]) {
   #define OPT_CACHEREPLACEMENT 12
   #define OPT_CACHERANDOM 13
   #define OPT_CACHESTATS 14
+  #define OPT_CACHEFULLSTATS 18
   #define OPT_NOCACHE 15
   #define OPT_CACHERESET 16
   #define OPT_CACHEREPLACESIZE 17
@@ -1601,7 +1632,7 @@ int main(int argc, char *argv[]) {
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
     {"version",no_argument,NULL,OPT_VERSION},
-    {"info",no_argument,NULL,OPT_INFO},
+    {"info",optional_argument,NULL,OPT_INFO},
     {"quiet",no_argument,NULL,OPT_QUIET},
     {"timeout",required_argument,NULL,OPT_TIMEOUT},
     {"split",required_argument,NULL,OPT_SPLIT},
@@ -1613,7 +1644,8 @@ int main(int argc, char *argv[]) {
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
     {"cache-random",no_argument,NULL,OPT_CACHERANDOM}, 
-    {"cache-stats",optional_argument,NULL,OPT_CACHESTATS},   
+    {"cache-summary",no_argument,NULL,OPT_CACHESTATS},   
+    {"cache-stats",optional_argument,NULL,OPT_CACHEFULLSTATS},   
     {"cache-reset",no_argument,NULL,OPT_CACHERESET},
     {"cache-replace-size",required_argument,NULL,OPT_CACHEREPLACESIZE},
     {"no-caching",no_argument,NULL,OPT_NOCACHE},
@@ -1647,7 +1679,7 @@ int main(int argc, char *argv[]) {
   char const *descriptions[]={
     "        --help                    display this information",
     "        --version                 display the version number of this program",
-    " -i     --info                    output summary information regarding computation",
+    " -i<x>  --info=<x>                output summary information regarding computation every x seconds",
     " -q     --quiet                   output info summary as single line only (useful for generating data)",
     " -t     --timeout=<x>             timeout after x seconds",
     " -s<x>  --split=<x>               split the input graph(s) into a number of smaller graphs with no more than x vertices",
@@ -1667,7 +1699,8 @@ int main(int argc, char *argv[]) {
     "        --cache-random            set random replacement policy",
     "        --cache-replacement=<amount> set ratio (between 0 .. 1) of cache to displace when full",
     "        --cache-replace-size=<number> graphs with at least the given number of vertices will never be displaced from cache",
-    "        --cache-stats[=<file>]    print cache stats summary, or write detailed stats to file.",
+    "        --cache-summary           print cache stats summary.",
+    "        --cache-stats[=<file>]    print detailed cache statistics, or write them to a file.",
     "        --cache-reset             reset the cache between graphs in a batch",
     "        --no-caching              disable caching",
     " \nedge selection heuristics:",
@@ -1690,8 +1723,8 @@ int main(int argc, char *argv[]) {
   bool info_mode=false;
   bool reset_mode=false;
   bool cache_stats=false;
+  string cache_stats_file = "";
   vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
-  string cache_stats_file("");
 
   while((v=getopt_long(argc,argv,"qic:n:t:T:",long_options,NULL)) != -1) {
     switch(v) {      
@@ -1749,6 +1782,9 @@ int main(int argc, char *argv[]) {
     case 'i':
     case OPT_INFO:
       info_mode=true;
+      if(optarg != NULL) {
+	status_interval = parse_amount(optarg);
+      }
       break;
     case OPT_FULLTREE_OUT:
       write_tree=true;
@@ -1781,9 +1817,11 @@ int main(int argc, char *argv[]) {
       cache.set_random_replacement();
       break;
     case OPT_CACHESTATS:
-      if(optarg == NULL) {
-	cache_stats=true;
-      } else {
+      cache_stats=true;
+      break;
+    case OPT_CACHEFULLSTATS:
+      cache_full_stats=true;
+      if(optarg != NULL) {
 	cache_stats_file = string(optarg);
       }
       break;
@@ -1879,6 +1917,11 @@ int main(int argc, char *argv[]) {
     exit(1);
   }
 
+  // setupt stats output
+  if(cache_stats_file != "") {
+    stats_out = new fstream(cache_stats_file.c_str(),fstream::out);
+  }
+
   // -------------------------------------------------
   // Initialise Cache 
   // -------------------------------------------------
@@ -1913,23 +1956,11 @@ int main(int argc, char *argv[]) {
     }    
 
     if(cache_stats) {
-      cout << endl << "###############" << "# CACHE STATS #" << endl << "###############" << endl;
-      cout << "Size: " << (cache_size/(1024*1024)) << "MB" << endl;
-      cout << "Density: " << (cache.density()*1024*1024) << " graphs/MB" << endl;
-      cout << "# Entries: " << cache.num_entries() << endl;
-      cout << "# Cache Hits: " << cache.num_hits() << endl;
-      cout << "# Cache Misses: " << cache.num_misses() << endl;
-      cout << "# Cache Collisions: " << cache.num_collisions() << endl;
-      cout << "Min Bucket Length: " << cache.min_bucket_size() << endl;
-      cout << "Max Bucket Length: " << cache.max_bucket_size() << endl;
-      write_hit_counts(cout);
+      write_summary_stats(*stats_out);
     }
 
-    if(cache_stats_file != "") {
-      fstream stats_out(cache_stats_file.c_str(),fstream::out);
-      write_bucket_lengths(stats_out);
-      write_graph_sizes(stats_out);
-      write_hit_counts(stats_out);
+    if(cache_full_stats) {
+      write_full_stats(*stats_out);
     }
   } catch(std::runtime_error &e) {
     cerr << "error: " << e.what() << endl;  
