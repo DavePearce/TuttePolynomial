@@ -1,4 +1,4 @@
-SUBDIRS = nauty tutte tuttex tutteviz
+SUBDIRS = nauty tutte tutteviz
 examplesdir = examples/
 dist_examples_DATA = examples/edge10 \
                      examples/edge10.solution \
