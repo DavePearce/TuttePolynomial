@@ -207,7 +207,7 @@ T graph_from_key(unsigned char *key) {
   setword REAL_N = p[1];
   setword M = ((N % WORDSIZE) > 0) ? (N / WORDSIZE)+1 : N / WORDSIZE;
   p=p+NAUTY_HEADER_SIZE;
-  
+
   T graph(REAL_N); // should make real N
   
   // first, deal with normal edges
@@ -228,8 +228,8 @@ T graph_from_key(unsigned char *key) {
     for(int j=0;j!=REAL_N;++j) {
       unsigned int wb = (i / WORDSIZE);      
       unsigned int wo = i - (wb*WORDSIZE); 
-      
-      setword mask = (1U << (WORDSIZE-wo-1));
+
+      setword mask = (((setword)1U) << (WORDSIZE-wo-1));      
       if(p[(j*M)+wb] & mask) { y=x; x=j; }
     }
     graph.add_edge(x,y);

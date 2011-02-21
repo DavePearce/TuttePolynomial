@@ -34,7 +34,7 @@ struct cache_node {
 };
 
 class simple_cache_iterator {
-private:
+public:
   struct cache_node *ptr;
 public:
   simple_cache_iterator(struct cache_node *p) : ptr(p) {}

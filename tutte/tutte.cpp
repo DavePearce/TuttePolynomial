@@ -1918,8 +1918,10 @@ int main(int argc, char *argv[]) {
   }
 
   // setupt stats output
+  fstream fstats_out;
   if(cache_stats_file != "") {
-    stats_out = new fstream(cache_stats_file.c_str(),fstream::out);
+    fstats_out.open(cache_stats_file.c_str(),fstream::out);
+    stats_out = &fstats_out;
   }
 
   // -------------------------------------------------

@@ -6,6 +6,7 @@
 //
 // Email: david.pearce@mcs.vuw.ac.nz
 
+#include <stdint.h>
 #include "algorithms.hpp"
 
 setword *nauty_graph_buf = NULL;
