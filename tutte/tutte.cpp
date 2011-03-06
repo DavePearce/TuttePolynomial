@@ -1292,8 +1292,8 @@ void write_graph_sizes(ostream &out) {
   out << "CACHE GRAPH SIZE DATA" << endl;
   out << "=====================" << endl;
   out << "V\t#Graphs (%)\t#MultiGraphs (%)" << endl;
-  vector<int> counts;
-  vector<int> mcounts;
+  vector<long> counts;
+  vector<long> mcounts;
   int nmgraphs=0;
   int ngraphs=0;
   // first, count the lengths
