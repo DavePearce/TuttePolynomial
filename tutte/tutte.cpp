@@ -1302,15 +1302,12 @@ void write_graph_sizes(ostream &out) {
     if(counts.size() < (g.num_vertices()+1)) {
       // need to increase size of count array
       counts.resize(g.num_vertices()+1,0);
+      mcounts.resize(g.num_vertices()+1,0);
     }
     ++ngraphs;
     counts[g.num_vertices()]++;
     if(g.is_multi_graph()) {
       nmgraphs++;
-      if(mcounts.size() < (g.num_vertices()+1)) {
-	// need to increase size of count array
-	mcounts.resize(g.num_vertices()+1,0);
-      }
       mcounts[g.num_vertices()]++;      
     }
   }
