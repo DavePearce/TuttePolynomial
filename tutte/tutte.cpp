@@ -1470,7 +1470,8 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
     G start_graph = compact_graph<G>(read_graph<G>(line));
     G perm_graph;
     if(mode == MODE_CHROMATIC) { 
-      perm_graph = permute_graph<G>(simplify_graph<G>(start_graph),vertex_ordering);
+      G simple_graph = simplify_graph<G>(start_graph);
+      perm_graph = permute_graph<G>(simple_graph,vertex_ordering);
     } else {
       perm_graph = permute_graph<G>(start_graph,vertex_ordering);
     }
