@@ -1238,6 +1238,32 @@ G permute_graph(G const &graph, vorder_t heuristic) {
   return r;
 }
 
+/**
+ * The following method ensures that the resulting graph is simple.
+ * It does this reducing any multi-edges to single edges.  This is
+ * necessary for the chromatic which don't consider multi-edges or
+ * loops.
+ */
+template<class G>
+G simplify_graph(G const &graph) {
+  // finally, create new permuted graph
+  G r(graph.num_vertices());
+  
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename G::edge_iterator j(graph.begin_edges(*i));
+	j!=graph.end_edges(*i);++j) {	      
+      unsigned int head(*i);
+      unsigned int tail(j->first);
+      unsigned int count(j->second);
+      if(head < tail && count == 0) {
+	r.add_edge(iorder[head],iorder[tail],count);
+      }
+    }
+  }
+  
+  return r;  
+}
+
 pair<int,int> parse_evalpoint(char *str) {
   char *endp=NULL;
   int a = strtol(str,&endp,10);
@@ -1477,7 +1503,7 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
     P tuttePoly;
 
     if(mode == MODE_CHROMATIC) {
-      tuttePoly = chromatic<G,P>(perm_graph,1);        
+      tuttePoly = chromatic<G,P>(simplify_graph(perm_graph),1);        
     } else if(mode == MODE_FLOW) {
       tuttePoly = flow<G,P>(perm_graph,1);        
     } else if(mode == MODE_TUTTE) {
