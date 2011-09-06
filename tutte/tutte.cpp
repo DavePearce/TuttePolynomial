@@ -1468,11 +1468,11 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
     // Create graph and then permute it according to 
     // vertex ordering strategy
     G start_graph = compact_graph<G>(read_graph<G>(line));
-    G simple_graph = start_graph;
+    G actual_graph = start_graph;
     if(mode == MODE_CHROMATIC) { 
-      simple_graph = simplify_graph<G>(start_graph);
+      actual_graph = simplify_graph<G>(start_graph);
     } 
-    G perm_graph = permute_graph<G>(start_graph,vertex_ordering);
+    G perm_graph = permute_graph<G>(actual_graph,vertex_ordering);
     // now reset all stats information
     if(reset_mode) { cache.clear(); }
     cache.reset_stats();
