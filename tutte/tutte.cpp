@@ -1504,6 +1504,7 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
     P tuttePoly;
 
     if(mode == MODE_CHROMATIC) {
+      cout << input_graph_str(start_graph) << endl;
       tuttePoly = chromatic<G,P>(perm_graph,1);        
     } else if(mode == MODE_FLOW) {
       tuttePoly = flow<G,P>(perm_graph,1);        
