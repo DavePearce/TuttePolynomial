@@ -1255,8 +1255,8 @@ G simplify_graph(G const &graph) {
       unsigned int head(*i);
       unsigned int tail(j->first);
       unsigned int count(j->second);
-      if(head < tail && count == 0) {
-	r.add_edge(head,tail,count);
+      if(head < tail) {
+	r.add_edge(head,tail,1);
       }
     }
   }
@@ -1504,7 +1504,6 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
     P tuttePoly;
 
     if(mode == MODE_CHROMATIC) {
-      cout << input_graph_str(start_graph) << endl;
       tuttePoly = chromatic<G,P>(perm_graph,1);        
     } else if(mode == MODE_FLOW) {
       tuttePoly = flow<G,P>(perm_graph,1);        
