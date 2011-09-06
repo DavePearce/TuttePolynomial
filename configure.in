@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([tuttepoly], [v0.9.14], [david.pearce@ecs.victoria.ac.nz])
+AC_INIT([tuttepoly], [v0.9.15], [david.pearce@ecs.victoria.ac.nz])
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_SRCDIR([tutte/tutte.cpp])
@@ -52,6 +52,5 @@ AC_CHECK_FUNCS([alarm gettimeofday memmove memset pow sqrt strtol])
 
 AC_CONFIG_FILES([makefile
                  nauty/makefile
-		 tutte/makefile
-		 tutteviz/makefile])
+		 tutte/makefile])
 AC_OUTPUT
