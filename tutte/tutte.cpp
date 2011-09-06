@@ -1256,7 +1256,7 @@ G simplify_graph(G const &graph) {
       unsigned int tail(j->first);
       unsigned int count(j->second);
       if(head < tail && count == 0) {
-	r.add_edge(iorder[head],iorder[tail],count);
+	r.add_edge(head,tail,count);
       }
     }
   }
