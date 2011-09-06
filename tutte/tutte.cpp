@@ -1255,13 +1255,28 @@ G simplify_graph(G const &graph) {
       unsigned int head(*i);
       unsigned int tail(j->first);
       unsigned int count(j->second);
-      if(head < tail) {
+      if(head <= tail) {
 	r.add_edge(head,tail,1);
       }
     }
   }
   
   return r;  
+}
+
+template<class G>
+bool has_loop(G const &graph) {
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename G::edge_iterator j(graph.begin_edges(*i));
+	j!=graph.end_edges(*i);++j) {	      
+      unsigned int head(*i);
+      unsigned int tail(j->first);
+      if(head == tail) {
+	return true;
+      }
+    }
+  }
+  return false;
 }
 
 pair<int,int> parse_evalpoint(char *str) {
@@ -1471,6 +1486,12 @@ void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vord
     G actual_graph = start_graph;
     if(mode == MODE_CHROMATIC) { 
       actual_graph = simplify_graph<G>(start_graph);
+      if(has_loop<G>(actual_graph)) {
+	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
+  	cout << "CP[" << (ngraphs_completed+1) << "] := 0" << endl;
+	cerr << "WARNING: G[" << (ngraphs_completed+1) << "] contains loop (hence, chromatic polynomial is zero)" << endl;
+	continue;
+      }
     } 
     G perm_graph = permute_graph<G>(actual_graph,vertex_ordering);
     // now reset all stats information
