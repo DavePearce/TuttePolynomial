@@ -1443,7 +1443,7 @@ string search_replace(string from, string to, string text) {
 }
 
 template<class G, class P>
-void run(ifstream &input, unsigned int graphs_beg, unsigned int graphs_end, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode) {
+void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode) {
   // if auto heuristic is enabled, then we calculate graph density and
   // select best heuristc based on that.
   unsigned int index = 0;
@@ -1638,6 +1638,7 @@ int main(int argc, char *argv[]) {
   #define OPT_VERSION 4
   #define OPT_SMALLGRAPHS 5
   #define OPT_NGRAPHS 6
+  #define OPT_STDIN 24
   #define OPT_GRAPHS 19
   #define OPT_TIMEOUT 7
   #define OPT_EVALPOINT 8
@@ -1684,6 +1685,7 @@ int main(int argc, char *argv[]) {
     {"version",no_argument,NULL,OPT_VERSION},
     {"info",optional_argument,NULL,OPT_INFO},
     {"quiet",no_argument,NULL,OPT_QUIET},
+    {"stding",optional_argument,NULL,OPT_STDIN},
     {"timeout",required_argument,NULL,OPT_TIMEOUT},
     {"split",required_argument,NULL,OPT_SPLIT},
     {"eval",required_argument,NULL,OPT_EVALPOINT},
@@ -1729,6 +1731,7 @@ int main(int argc, char *argv[]) {
   char const *descriptions[]={
     "        --help                    display this information",
     "        --version                 display the version number of this program",
+    "        --stdin                   read graphs from stdin, rather than a file",
     " -i<x>  --info=<x>                output summary information regarding computation every x seconds",
     " -q     --quiet                   output info summary as single line only (useful for generating data)",
     " -t     --timeout=<x>             timeout after x seconds",
@@ -1773,6 +1776,7 @@ int main(int argc, char *argv[]) {
   bool info_mode=false;
   bool reset_mode=false;
   bool cache_stats=false;
+  bool stdin=false;
   string cache_stats_file = "";
   vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
 
@@ -1797,6 +1801,9 @@ int main(int argc, char *argv[]) {
     case 't':
     case OPT_TIMEOUT:
       timeout = atoi(optarg);
+      break;
+    case OPT_STDIN:
+      stdin=true;
       break;
     case 's':
     case OPT_SPLIT:
@@ -1958,7 +1965,7 @@ int main(int argc, char *argv[]) {
 
   // Quick sanity check
 
-  if(optind >= argc) {
+  if(!stdin && optind >= argc) {
     cout << "usage: " << argv[0] << " [options] <input graph file>" << endl;
     cout << "options:" << endl;
     for(char const **ptr=descriptions;*ptr != NULL; ptr++) {
@@ -2000,9 +2007,16 @@ int main(int argc, char *argv[]) {
     
     srand(time(NULL));
         
-    ifstream input(argv[optind]);    
+    istream *input;
+    
+    if(stdin) {
+      input = &cin;
+    } else {
+      input = new ifstream(argv[optind]);    
+    }
+
     if(poly_rep == OPT_FACTOR_POLY) {
-      run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(input,graphs_beg,graphs_end,vertex_ordering,info_mode,reset_mode);
+      run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(*input,graphs_beg,graphs_end,vertex_ordering,info_mode,reset_mode);
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering);
     }    
