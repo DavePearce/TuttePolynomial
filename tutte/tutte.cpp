@@ -1780,7 +1780,7 @@ int main(int argc, char *argv[]) {
   string cache_stats_file = "";
   vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
 
-  while((v=getopt_long(argc,argv,"qi::c:n:t:T:",long_options,NULL)) != -1) {
+  while((v=getopt_long(argc,argv,"qi::c:n:s:t:T:",long_options,NULL)) != -1) {
     switch(v) {      
     case OPT_HELP:
       cout << "usage: " << argv[0] << " [options] <input graph file>" << endl;
