@@ -78,7 +78,7 @@ public:
 // Global Variables
 // ---------------------------------------------------------------
 
-typedef enum { AUTO, RANDOM, CUT, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MAXIMISE_SDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER } edgesel_t;
+typedef enum { AUTO, RANDOM, CUT, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MAXIMISE_SDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER_PULL, VERTEX_ORDER_PUSH } edgesel_t;
 typedef enum { V_RANDOM, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DEGREE, V_MINIMISE_DEGREE,  V_MAXIMISE_DEGREE, V_NONE } vorder_t;
 
 unsigned int resize_stats = 0;
@@ -299,7 +299,7 @@ typename G::edge_t select_edge(G const &graph) {
     if(best != 0) { 
       cout << "BEST = " << best << endl;
       return r; }
-    heuristic = VERTEX_ORDER;
+    heuristic = VERTEX_ORDER_PULL;
   }
 
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
@@ -333,8 +333,11 @@ typename G::edge_t select_edge(G const &graph) {
 	case MINIMISE_MDEGREE:
 	  cost = V*V - (headc * tailc);
 	  break;
-	case VERTEX_ORDER:	    
+	case VERTEX_ORDER_PULL:	    
 	  return typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
+	  break;
+	case VERTEX_ORDER_PUSH:	    
+	  return typename G::edge_t(tail,head,reduce_multiedges ? count : 1);
 	  break;
 	case RANDOM:
 	  if(rcount == rtarget) {
@@ -422,8 +425,11 @@ typename G::edge_t select_missing_edge(G const &graph) {
 	    case MINIMISE_MDEGREE:
 	      cost = V*V - (headc * tailc);
 	      break;
-	    case VERTEX_ORDER:	    
+	    case VERTEX_ORDER_PULL:	    
 	      return typename G::edge_t(head,tail,1);
+	      break;
+	    case VERTEX_ORDER_PUSH:	    
+	      return typename G::edge_t(tail,head,1);
 	      break;
 	    case RANDOM:
 	      if(rcount == rtarget) {
@@ -1517,8 +1523,8 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
 	edge_selection_heuristic = MINIMISE_SDEGREE;
 	edge_addition_heuristic = MINIMISE_SDEGREE;
       } else {
-	edge_selection_heuristic = VERTEX_ORDER;
-	edge_addition_heuristic = VERTEX_ORDER;
+	edge_selection_heuristic = VERTEX_ORDER_PULL;
+	edge_addition_heuristic = VERTEX_ORDER_PULL;
       }							      
     }
 
@@ -1670,9 +1676,10 @@ int main(int argc, char *argv[]) {
   #define OPT_MINDEGREE 52
   #define OPT_MINMDEGREE 53
   #define OPT_MINSDEGREE 54
-  #define OPT_VERTEXORDER 55
-  #define OPT_RANDOM 56
-  #define OPT_CUT 57
+  #define OPT_VERTEXORDER_PULL 55
+  #define OPT_VERTEXORDER_PUSH 56
+  #define OPT_RANDOM 57
+  #define OPT_CUT 58
   #define OPT_RANDOM_ORDERING 60
   #define OPT_MINDEG_ORDERING 61
   #define OPT_MAXDEG_ORDERING 62
@@ -1704,7 +1711,9 @@ int main(int argc, char *argv[]) {
     {"minimise-degree", no_argument,NULL,OPT_MINDEGREE},
     {"minimise-mdegree", no_argument,NULL,OPT_MINMDEGREE},
     {"sparse", no_argument,NULL,OPT_MINSDEGREE},
-    {"dense", no_argument,NULL,OPT_VERTEXORDER},
+    {"dense", no_argument,NULL,OPT_VERTEXORDER_PULL},
+    {"vorder-push", no_argument,NULL,OPT_VERTEXORDER_PUSH},
+    {"vorder-pull", no_argument,NULL,OPT_VERTEXORDER_PULL},
     {"maximise-degree", no_argument,NULL,OPT_MAXDEGREE},
     {"maximise-mdegree", no_argument,NULL,OPT_MAXMDEGREE},
     {"maximise-sdegree", no_argument,NULL,OPT_MAXSDEGREE},
@@ -1917,9 +1926,13 @@ int main(int argc, char *argv[]) {
       edge_selection_heuristic = MAXIMISE_SDEGREE;
       edge_addition_heuristic = MAXIMISE_SDEGREE;
       break;
-    case OPT_VERTEXORDER:
-      edge_selection_heuristic = VERTEX_ORDER;
-      edge_addition_heuristic = VERTEX_ORDER;
+    case OPT_VERTEXORDER_PULL:
+      edge_selection_heuristic = VERTEX_ORDER_PULL;
+      edge_addition_heuristic = VERTEX_ORDER_PULL;
+      break;
+    case OPT_VERTEXORDER_PUSH:
+      edge_selection_heuristic = VERTEX_ORDER_PUSH;
+      edge_addition_heuristic = VERTEX_ORDER_PUSH;
       break;
     case OPT_RANDOM:
       edge_selection_heuristic = RANDOM;
