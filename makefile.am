@@ -27,7 +27,7 @@ dist_examples_DATA = examples/edge10 \
                      examples/edge29 \
                      examples/edge30 \
                      examples/edge31 \
-                     examples/edge31 \
+                     examples/edge32 \
                      examples/k10 \
                      examples/k10.solution \
                      examples/k11 \
