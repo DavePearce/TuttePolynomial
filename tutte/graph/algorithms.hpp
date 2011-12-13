@@ -14,6 +14,8 @@
 #include <stdexcept>
 #include <sstream>
 #include <cstring>
+#include <vector>
+#include <deque>
 
 template<class T>
 std::string graph_str(T const &graph) {
@@ -59,6 +61,58 @@ std::string input_graph_str(T const &graph) {
   }
   return out.str();
 }
+
+template<class T>
+void depth_first_search(T const &graph, std::vector<unsigned int> &order) {
+    // reset visited information
+  std::vector<bool> visited(graph.domain_size(),false);
+  // dfs search to identify component roots
+  for(typename T::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    if(!visited[*i]) { 
+      visit(*i,graph,visited,order);
+    }
+  }
+}  
+
+template<class T>
+void visit(unsigned int v, T const &graph, std::vector<bool> &visited, std::vector<unsigned int> &order) {
+  visited[v] = true;
+  // now, consider edges
+  for(typename T::edge_iterator i(graph.begin_edges(v));
+      i!=graph.end_edges(v);++i) {
+    int w = i->first;
+    if(!visited[w]) { 
+      visit(w,graph,visited,order); 
+    }
+  }
+  order.push_back(v);
+}
+
+template<class T>
+void breadth_first_search(T const &graph, std::vector<unsigned int> &order) {
+    // reset visited information
+  std::vector<bool> visited(graph.domain_size(),false);
+  std::deque<int> stack;
+
+  stack.push_back(0); // root
+  order.push_back(0);
+
+  while(stack.size() != 0) {
+    int v = stack.front();
+    stack.pop_front();
+    // dfs search to identify component roots
+    for(typename T::edge_iterator i(graph.begin_edges(v));
+	i!=graph.end_edges(v);++i) {
+      int w = i->first;
+      if(!visited[w]) { 
+	stack.push_back(w);
+	visited[w] = true;
+	order.push_back(w);
+      }
+    }
+  }
+}  
+
 
 
 // ----------------------------------

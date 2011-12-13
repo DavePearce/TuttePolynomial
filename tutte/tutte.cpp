@@ -79,7 +79,7 @@ public:
 // ---------------------------------------------------------------
 
 typedef enum { AUTO, RANDOM, CUT, MAXIMISE_DEGREE, MINIMISE_DEGREE, MAXIMISE_MDEGREE, MINIMISE_MDEGREE, MAXIMISE_SDEGREE, MINIMISE_SDEGREE, VERTEX_ORDER_PULL, VERTEX_ORDER_PUSH } edgesel_t;
-typedef enum { V_RANDOM, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DEGREE, V_MINIMISE_DEGREE,  V_MAXIMISE_DEGREE, V_NONE } vorder_t;
+typedef enum { V_RANDOM, V_DFS, V_BFS, V_MINIMISE_UNDERLYING_DEGREE,  V_MAXIMISE_UNDERLYING_DEGREE, V_MINIMISE_DEGREE,  V_MAXIMISE_DEGREE, V_NONE } vorder_t;
 
 unsigned int resize_stats = 0;
 unsigned long num_steps = 0;
@@ -191,7 +191,6 @@ void write_xml_leaf(unsigned int my_id, G const &graph, ostream &out) {
 
 /* Non-XML output methods
  */
-
 template<class G>
 void write_tree_match(unsigned int my_id, unsigned int match_id, G const &graph, ostream &out) {
   if(xml_flag) { write_xml_match(my_id,match_id,graph,out); }
@@ -295,10 +294,8 @@ typename G::edge_t select_edge(G const &graph) {
 	  }     
 	}
       }
-    }    
-    if(best != 0) { 
-      cout << "BEST = " << best << endl;
-      return r; }
+    }
+    if(best != 0) { return r; }
     heuristic = VERTEX_ORDER_PULL;
   }
 
@@ -1197,29 +1194,37 @@ G compact_graph(G const &graph) {
 template<class G>
 G permute_graph(G const &graph, vorder_t heuristic) {
   vector<unsigned int> order;
-  for(unsigned int i=0;i!=graph.num_vertices();++i) {
-    order.push_back(i);
-  }
-  // obtain the new ordering
-  switch(heuristic) {
-  case V_RANDOM:
-    random_shuffle(order.begin(),order.end());
-    break;
-  case V_MINIMISE_UNDERLYING_DEGREE:
-    sort(order.begin(),order.end(),vo_underlying<G,less<unsigned int> >(graph));
-    break;
-  case V_MAXIMISE_UNDERLYING_DEGREE:
-    sort(order.begin(),order.end(),vo_underlying<G,greater<unsigned int> >(graph));
-    break;
-  case V_MINIMISE_DEGREE:
-    sort(order.begin(),order.end(),vo_multi<G,less<unsigned int> >(graph));
-    break;
-  case V_MAXIMISE_DEGREE:
-    sort(order.begin(),order.end(),vo_multi<G,greater<unsigned int> >(graph));
-    break;
-  default:
-    // do nothing
-    break;
+  if(heuristic == V_DFS) {
+    depth_first_search(graph,order);
+    // should reverse?
+  } else if(heuristic == V_BFS) {
+    breadth_first_search(graph,order);
+    // should reverse?
+  } else {
+    for(unsigned int i=0;i!=graph.num_vertices();++i) {
+      order.push_back(i);
+    }
+    // obtain the new ordering
+    switch(heuristic) {
+    case V_RANDOM:
+      random_shuffle(order.begin(),order.end());
+      break;
+    case V_MINIMISE_UNDERLYING_DEGREE:
+      sort(order.begin(),order.end(),vo_underlying<G,less<unsigned int> >(graph));
+      break;
+    case V_MAXIMISE_UNDERLYING_DEGREE:
+      sort(order.begin(),order.end(),vo_underlying<G,greater<unsigned int> >(graph));
+      break;
+    case V_MINIMISE_DEGREE:
+      sort(order.begin(),order.end(),vo_multi<G,less<unsigned int> >(graph));
+      break;
+    case V_MAXIMISE_DEGREE:
+      sort(order.begin(),order.end(),vo_multi<G,greater<unsigned int> >(graph));
+      break;
+    default:
+      // do nothing
+      break;
+    }
   }
   // transpose ordering
   vector<unsigned int> iorder(order.size());
@@ -1520,8 +1525,8 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
     if(auto_heuristic) {
       double density = (2.0 * ((double) E)) / (((double) V) * ((double) V-1));
       if(density < 0.5) {
-	edge_selection_heuristic = MINIMISE_SDEGREE;
-	edge_addition_heuristic = MINIMISE_SDEGREE;
+	edge_selection_heuristic = VERTEX_ORDER_PUSH;
+	edge_addition_heuristic = VERTEX_ORDER_PUSH;
       } else {
 	edge_selection_heuristic = VERTEX_ORDER_PULL;
 	edge_addition_heuristic = VERTEX_ORDER_PULL;
@@ -1685,6 +1690,8 @@ int main(int argc, char *argv[]) {
   #define OPT_MAXDEG_ORDERING 62
   #define OPT_MINUDEG_ORDERING 63
   #define OPT_MAXUDEG_ORDERING 64
+  #define OPT_DFS_ORDERING 65
+  #define OPT_BFS_ORDERING 66
   #define OPT_USEADDCONTRACT 70
   
   struct option long_options[]={
@@ -1718,6 +1725,8 @@ int main(int argc, char *argv[]) {
     {"maximise-mdegree", no_argument,NULL,OPT_MAXMDEGREE},
     {"maximise-sdegree", no_argument,NULL,OPT_MAXSDEGREE},
     {"random-ordering",no_argument,NULL,OPT_RANDOM_ORDERING},
+    {"dfs-ordering",no_argument,NULL,OPT_DFS_ORDERING},
+    {"bfs-ordering",no_argument,NULL,OPT_BFS_ORDERING},
     {"mindeg-ordering",no_argument,NULL,OPT_MINDEG_ORDERING},
     {"maxdeg-ordering",no_argument,NULL,OPT_MAXDEG_ORDERING},
     {"minudeg-ordering",no_argument,NULL,OPT_MINUDEG_ORDERING},
@@ -1768,11 +1777,23 @@ int main(int argc, char *argv[]) {
     " \nedge selection heuristics:",
     "        --sparse                  use best heuristic for \"sparse\" graphs.",
     "        --dense                   use best heuristic for \"dense\" graphs.",
+    "        --vorder-pull             use vertex ordering \"pull\" heuristic.",
+    "        --vorder-push             use vertex ordering \"push\" heuristic.",
+    "        --minimise-degree         use minimise single degree heuristic",
+    "        --maximise-degree         use maxaximise single degree heuristic",
     "        --random                  use random heuristic",
+    " \nvertex ordering heuristics:",
+    "        --dfs-ordering            order based on depth-first search",
+    "        --bfs-ordering            order based on breadth-first search",
+    "        --maxdeg-ordering         order by max degree",
+    "        --mindeg-ordering         order by min degree",
+    "        --maxudeg-ordering        order by max underlying degree",
+    "        --minudeg-ordering        order by min underlying degree",
+    "        --random                  order randomly",
     " \nother options:",
     "        --no-multiedges           do not reduce multiedges in one go",
     "        --no-multicycles          do not reduce multicycles in one go",
-    "        --add-contract            perform add/contract (currently only for chromatic)",
+    "        --add-contract            perform add/contract (currently only for chromatic)",    
     NULL
   };
 
@@ -1787,7 +1808,7 @@ int main(int argc, char *argv[]) {
   bool cache_stats=false;
   bool stdin=false;
   string cache_stats_file = "";
-  vorder_t vertex_ordering(V_MAXIMISE_UNDERLYING_DEGREE);
+  vorder_t vertex_ordering(V_DFS);
 
   while((v=getopt_long(argc,argv,"qi::c:n:s:t:T:",long_options,NULL)) != -1) {
     switch(v) {      
@@ -1941,6 +1962,12 @@ int main(int argc, char *argv[]) {
     case OPT_CUT:
       edge_selection_heuristic = CUT;
       edge_addition_heuristic = CUT;
+      break;
+    case OPT_DFS_ORDERING:
+      vertex_ordering = V_DFS;
+      break;
+    case OPT_BFS_ORDERING:
+      vertex_ordering = V_BFS;
       break;
     case OPT_RANDOM_ORDERING:
       vertex_ordering = V_RANDOM;
