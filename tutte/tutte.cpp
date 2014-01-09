@@ -119,7 +119,8 @@ static bool cache_full_stats = false;
 #define MODE_CHROMATIC 1
 #define MODE_FLOW 2
 #define MODE_TUTTE_SPLIT 3
-#define MODE_TUTTEX 4
+#define MODE_FLOW_SPLIT 4
+#define MODE_TUTTEX 5
 static int mode = MODE_TUTTE;
 
 void print_status();
@@ -727,7 +728,7 @@ P flow(G &graph, unsigned int mid) {
     unsigned int rid = tree_id+1;
     tree_id = tree_id + 2; // allocate id's now so I know them!
     if(write_tree) { write_tree_nonleaf(mid,lid,2,graph,cout); }
-    
+
     // === 4. PERFORM DELETE / CONTRACT ===
     
     G g2(graph); 
@@ -754,6 +755,109 @@ P flow(G &graph, unsigned int mid) {
   }    
 
   return poly * RF;
+}
+
+/* This is the core algorithm for the flow polynomial computation it
+ * reduces a graph to two smaller graphs using a delete operation for
+ * one, and a contract operation for the other.
+ *
+ * The algorithm also uses a number of tricks to prune the computation
+ * space.  These include: eliminating small graphs using optimised, 
+ * hand-coded decision procedures; storing previously seen graphs
+ * in a cache; and, dynamically monitoring the "treeness" of the graph.
+ */
+template<class G, class P>
+void flowSearch(G &graph, vector<G> &graphs) { 
+  if(status_flag) { print_status(); }
+
+  // === 1. APPLY SIMPLIFICATIONS ===
+
+  P RF = Y(reduce_loops(graph));
+
+  // === 2. CHECK IN CACHE ===
+
+  unsigned char *key = NULL;
+  if(graph.num_vertices() >= small_graph_threshold && !graph.is_multitree()) {      
+    key = graph_key(graph); 
+    unsigned int match_id;
+    P r;
+    if(cache.lookup(key,r,match_id)) { 
+      delete [] key; // free space used by key
+      return;
+    }
+  }
+
+  P poly;
+
+  // === 3. CHECK FOR ARTICULATIONS, DISCONNECTS AND/OR TREES ===
+
+  if(reduce_multicycles && graph.is_multicycle()) {
+    // do nothing?
+  } else if(!graph.is_biconnected()) {
+    vector<G> biconnects;
+    graph.extract_biconnected_components(biconnects);
+    graph.remove_graphs(biconnects);
+
+    // this is a little ugly
+    for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+      for(typename G::edge_iterator j(graph.begin_edges(*i));j!=graph.end_edges(*i);++j) {
+	if(j->second == 1) {
+	  // in the flow polynomial, if there's a single
+	  // non-multi-edge then you throw away the whole graph.
+
+	  // Don't forget ... save computed polynomial!
+	  if(key != NULL) {
+	    // there is, strictly speaking, a bug with using mid
+	    // here, since the graph being stored is not the same as that
+	    // at the beginning.
+	    unsigned int tmp; 
+	    cache.store(key,poly,tmp);
+	    delete [] key;  // free space used by key
+	  }    
+	  return;
+	}
+      }
+    } 
+
+    if(graph.is_multitree()) { num_trees++; }
+    if(biconnects.size() > 1) { num_disbicomps++; }
+    poly = reduce_tree<G,P>(P(),graph);
+
+    for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
+      if(!i->is_multicycle()) {
+	flowSearch<G,P>(*i,graphs);      
+      }
+    }
+  } else {
+
+    if(graph.num_vertices() < split_threshold) {
+      graphs.push_back(graph);
+      return;
+    }
+
+    // === 4. PERFORM DELETE / CONTRACT ===
+    
+    G g2(graph); 
+    edge_t edge = select_edge(graph);
+
+    // now, delete/contract on the line's endpoints
+    graph.remove_edge(edge);
+    g2.contract_edge(edge);
+
+    // recursively compute the polynomial   
+    flowSearch<G,P>(graph,graphs);
+    flowSearch<G,P>(g2,graphs);
+  }
+
+  // Finally, save computed polynomial
+  if(key != NULL) {
+    // there is, strictly speaking, a bug with using mid
+    // here, since the graph being stored is not the same as that
+    // at the beginning.
+    unsigned int tmp;
+    cache.store(key,P(),tmp);
+    delete [] key;  // free space used by key
+  }    
 }
 
 // ------------------------------------------------------------------
@@ -1546,9 +1650,16 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
       tuttePoly = tutte<G,P>(perm_graph,1);        
     } else if(mode == MODE_TUTTEX) {
       tuttePoly = tuttex<G,P>(perm_graph);        
-    } else { // MODE_TUTTE_SPLIT
+    } else if(mode == MODE_TUTTE_SPLIT) { 
       vector<G> graphs;
       tutteSearch<G,P>(perm_graph,graphs);        
+      for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {      	
+	cout << input_graph_str(*i) << endl;
+      }
+      continue;
+    } else { // MODE_FLOW_SPLIT
+      vector<G> graphs;
+      flowSearch<G,P>(perm_graph,graphs);        
       for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {      	
 	cout << input_graph_str(*i) << endl;
       }
@@ -1838,7 +1949,14 @@ int main(int argc, char *argv[]) {
     case 's':
     case OPT_SPLIT:
       split_threshold = atoi(optarg);
-      mode = MODE_TUTTE_SPLIT;
+      if(mode == MODE_TUTTE) {
+         mode = MODE_TUTTE_SPLIT;
+      } else if(mode == MODE_FLOW){
+         mode = MODE_FLOW_SPLIT;
+      } else {
+         cout << "Cannot use split mode to compute chromatic polynomials (at the moment)" << endl;
+         exit(1);
+      }
       break;
     case OPT_TUTTEX:
       mode = MODE_TUTTEX;
