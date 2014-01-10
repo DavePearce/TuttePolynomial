@@ -1,5 +1,0 @@
-bin_PROGRAMS = tutteviz
-
-AM_CPPFLAGS = -I$(top_srcdir)/tutte
-
-tutteviz_SOURCES = tutteviz.cpp 

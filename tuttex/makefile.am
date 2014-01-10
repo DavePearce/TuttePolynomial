@@ -1,8 +1,0 @@
-bin_PROGRAMS = tutte
-
-AM_CPPFLAGS = -I$(top_srcdir)/nauty
-
-tutte_SOURCES = main.cpp tutte.cpp chromatic.cpp file_io.cpp nauty_graph.cpp bistream.cpp bstreambuf.cpp hash.c bigint.cpp biguint.cpp
-include_HEADERS = file_io.hpp nauty_graph.hpp bistream.hpp bstreambuf.hpp cache.hpp
-
-tutte_LDADD = ../nauty/libnauty.a
