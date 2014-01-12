@@ -1691,8 +1691,9 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
 	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
       } else if(mode == MODE_FLOW) {
 	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
-	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),(E-V)+C) << " * ( ";
-	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
+	// cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),(E-V)+C) << " * ( ";
+	// cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
+	cout << "FP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
 	TP = "FP";
       } else if(mode == MODE_CHROMATIC) {
 	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
