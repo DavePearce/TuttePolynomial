@@ -739,9 +739,11 @@ P flow(G &graph, unsigned int mid) {
     g2.contract_edge(edge);
     // recursively compute the polynomial   
     if(edge.third > 1) { 
-      poly = flow<G,P>(graph, lid) + (flow<G,P>(g2, rid) * Y(0,edge.third-1));
+      poly = flow<G,P>(graph, lid);
+      poly += flow<G,P>(g2, rid) * Y(0,edge.third-1);
     } else {
-      poly = flow<G,P>(graph, lid) + flow<G,P>(g2, rid);
+      poly = flow<G,P>(graph, lid);
+      poly += flow<G,P>(g2, rid);
     }    
   }
 
