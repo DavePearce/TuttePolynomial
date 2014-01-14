@@ -577,7 +577,8 @@ public:
   }
 
   std::string str() const {
-    std::string r="";
+    // If there are no xterms, then we have zero
+    std::string r = "";
     bool first_time=true;
     for(unsigned int i=0;i<nxterms;++i) {    
       if(!xterms[i].is_empty()) {
@@ -594,6 +595,10 @@ public:
 	  r += utos(xterms[i][j]) + xs + ys;
 	}
       }
+    }
+    if(first_time && r == "") {
+      // In this case, we haven't actually encountered anything --- meaning that the result should be zero.
+      r = "0";
     }
     return r;
   }
