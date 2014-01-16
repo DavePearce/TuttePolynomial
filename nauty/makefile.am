@@ -1,4 +1,4 @@
 noinst_LIBRARIES = libnauty.a
 
 libnauty_a_SOURCES = naugraph.c  nautaux.c  nautil.c  nautinv.c  naututil.c  nauty.c  naurng.c schreier.c
-include_HEADERS = gtools.h  naugroup.h  naurng.h  nausparse.h  nautaux.h  nautinv.h  naututil.h  nauty.h  rng.h  schreier.h
+include_HEADERS = gtools.h  naugroup.h  naurng.h  nausparse.h  nautaux.h  nautinv.h  naututil.h  nauty.h  rng.h  schreier.h sorttemplates.c
