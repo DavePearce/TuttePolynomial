@@ -102,7 +102,8 @@ static simple_cache cache(1024*1024,100);
 static vector<pair<int,int> > evalpoints;
 static vector<unsigned int> cache_hit_sizes;
 static unsigned int ngraphs_completed=0;  
-static unsigned int split_threshold=0;
+static unsigned int split_vertices_threshold=0;
+static unsigned int split_edges_threshold=0;
 static bool status_flag=false;
 static bool verbose=true;
 static bool reduce_multicycles=true;
@@ -600,10 +601,10 @@ void tutteSearch(G &graph, vector<G> &graphs) {
     }
   } else {
 
-    if(graph.num_vertices() < split_threshold) {
+    if(graph.num_vertices() < split_vertices_threshold || graph.num_edges() < split_edges_threshold) {
       graphs.push_back(graph);
       return;
-    }
+    } 
 
     G g2(graph); 
     edge_t edge = select_edge(graph);
@@ -832,7 +833,7 @@ void flowSearch(G &graph, vector<G> &graphs) {
     }
   } else {
 
-    if(graph.num_vertices() < split_threshold) {
+    if(graph.num_vertices() < split_vertices_threshold || graph.num_edges() < split_edges_threshold) {
       graphs.push_back(graph);
       return;
     }
@@ -1760,27 +1761,28 @@ int main(int argc, char *argv[]) {
   #define OPT_HELP 0
   #define OPT_QUIET 1  
   #define OPT_INFO 2
-  #define OPT_VERSION 4
-  #define OPT_SMALLGRAPHS 5
-  #define OPT_NGRAPHS 6
-  #define OPT_STDIN 24
-  #define OPT_GRAPHS 19
-  #define OPT_TIMEOUT 7
-  #define OPT_EVALPOINT 8
-  #define OPT_SPLIT 9
-  #define OPT_CACHESIZE 10
-  #define OPT_CACHEBUCKETS 11  
-  #define OPT_CACHEREPLACEMENT 12
-  #define OPT_CACHERANDOM 13
-  #define OPT_CACHESTATS 14
-  #define OPT_CACHEFULLSTATS 18
-  #define OPT_NOCACHE 15
-  #define OPT_CACHERESET 16
-  #define OPT_CACHEREPLACESIZE 17
-  #define OPT_GMP 20
-  #define OPT_CHROMATIC 21
-  #define OPT_FLOW 22
-  #define OPT_TUTTEX 23
+  #define OPT_VERSION 3
+  #define OPT_SMALLGRAPHS 4
+  #define OPT_NGRAPHS 5
+  #define OPT_STDIN 6
+  #define OPT_GRAPHS 7
+  #define OPT_TIMEOUT 8
+  #define OPT_EVALPOINT 9
+  #define OPT_SPLIT_VERTICES 10
+  #define OPT_SPLIT_EDGES 11
+  #define OPT_CACHESIZE 12
+  #define OPT_CACHEBUCKETS 13
+  #define OPT_CACHEREPLACEMENT 14
+  #define OPT_CACHERANDOM 15
+  #define OPT_CACHESTATS 16
+  #define OPT_CACHEFULLSTATS 17
+  #define OPT_NOCACHE 18
+  #define OPT_CACHERESET 19
+  #define OPT_CACHEREPLACESIZE 20
+  #define OPT_GMP 21
+  #define OPT_CHROMATIC 22
+  #define OPT_FLOW 23
+  #define OPT_TUTTEX 24
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
   #define OPT_XML_OUT 32
@@ -1815,7 +1817,8 @@ int main(int argc, char *argv[]) {
     {"quiet",no_argument,NULL,OPT_QUIET},
     {"stding",optional_argument,NULL,OPT_STDIN},
     {"timeout",required_argument,NULL,OPT_TIMEOUT},
-    {"split",required_argument,NULL,OPT_SPLIT},
+    {"split",required_argument,NULL,OPT_SPLIT_VERTICES},
+    {"split-edges",required_argument,NULL,OPT_SPLIT_EDGES},    
     {"eval",required_argument,NULL,OPT_EVALPOINT},
     {"chromatic",no_argument,NULL,OPT_CHROMATIC},
     {"flow",no_argument,NULL,OPT_FLOW},
@@ -1868,6 +1871,7 @@ int main(int argc, char *argv[]) {
     " -q     --quiet                   output info summary as single line only (useful for generating data)",
     " -t     --timeout=<x>             timeout after x seconds",
     " -s<x>  --split=<x>               split the input graph(s) into a number of smaller graphs with no more than x vertices",
+    "        --split-edges=<x>         split the input graph(s) into a number of smaller graphs with no more than x edges",    
     " -Tx,y  --eval=x,y                evaluate the computed polynomial at x,y",
     "        --small-graphs=size       set threshold for small graphs.  Default is 5.",
     " -n<x>  --ngraphs=<number>        number of graphs to process from input file",
@@ -1950,8 +1954,19 @@ int main(int argc, char *argv[]) {
       stdin=true;
       break;
     case 's':
-    case OPT_SPLIT:
-      split_threshold = atoi(optarg);
+    case OPT_SPLIT_VERTICES:
+      split_vertices_threshold = atoi(optarg);
+      if(mode == MODE_TUTTE) {
+         mode = MODE_TUTTE_SPLIT;
+      } else if(mode == MODE_FLOW){
+         mode = MODE_FLOW_SPLIT;
+      } else {
+         cout << "Cannot use split mode to compute chromatic polynomials (at the moment)" << endl;
+         exit(1);
+      }
+      break;
+    case OPT_SPLIT_EDGES:
+      split_edges_threshold = atoi(optarg);
       if(mode == MODE_TUTTE) {
          mode = MODE_TUTTE_SPLIT;
       } else if(mode == MODE_FLOW){
