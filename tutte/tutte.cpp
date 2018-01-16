@@ -20,7 +20,7 @@
 #include <getopt.h>
 #include <sys/time.h>
 #include <sys/resource.h>
-#include <ext/hash_map>
+#include <unordered_map>
 
 #include "graph/adjacency_list.hpp"
 #include "graph/spanning_graph.hpp"
@@ -344,7 +344,7 @@ typename G::edge_t select_edge(G const &graph) {
 	  }
 	  rcount += count;	    
 	  break;
-	case CUT:
+	case CUT: {
 	  // er, yes this is a tad ott.
 	  G g(graph);
 	  g.remove_all_edges(head,tail);
@@ -361,6 +361,10 @@ typename G::edge_t select_edge(G const &graph) {
 	      cost = std::max<unsigned int>(cost,k->num_edges());	
 	    }
 	  }
+	  break;
+	}
+	case AUTO:
+	  throw std::runtime_error("internal failure (unreachable code reached)");
 	}    
 	if(cost > best) {	    
 	  r = typename G::edge_t(head,tail,reduce_multiedges ? count : 1);
@@ -434,13 +438,18 @@ typename G::edge_t select_missing_edge(G const &graph) {
 	      if(rcount == rtarget) {
 		return typename G::edge_t(head,tail,1);
 	      }
-	      rcount ++;	    
+	      rcount ++;
+	      break;
+	    case CUT:
+	    case AUTO:
+	      throw std::runtime_error("internal failure (unreachable code reached)");
+	      
 	    }
 	    if(cost > best) {	    
 	      r = typename G::edge_t(head,tail,1);
 	      best = cost;
-	    }     	    
-	  }	
+	    }
+	  }
 	}
       }
     }
@@ -1564,6 +1573,7 @@ template<class G, class P>
 void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode) {
   // if auto heuristic is enabled, then we calculate graph density and
   // select best heuristc based on that.
+
   unsigned int index = 0;
   unsigned int lineno = 0;
   ngraphs_completed = 0;
@@ -1610,7 +1620,8 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
 	cerr << "WARNING: G[" << (ngraphs_completed+1) << "] contains loop (hence, chromatic polynomial is zero)" << endl;
 	continue;
       }
-    } 
+    }
+
     G perm_graph = permute_graph<G>(actual_graph,vertex_ordering);
     // now reset all stats information
     if(reset_mode) { cache.clear(); }
@@ -2167,7 +2178,7 @@ int main(int argc, char *argv[]) {
   // -------------------------------------------------
   // Register alarm signal for printing status updates
   // -------------------------------------------------
-    
+
     if(verbose) {
       // Only use the timer handler in verbose mode.
       struct sigaction sa;
@@ -2196,7 +2207,7 @@ int main(int argc, char *argv[]) {
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering);
     }    
-
+    
     if(cache_stats) {
       write_summary_stats(*stats_out);
     }

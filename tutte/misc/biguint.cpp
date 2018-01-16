@@ -738,6 +738,7 @@ bstreambuf &operator<<(bstreambuf &bout, biguint const &src) {
   } else {
     bout << 1U << (uint32_t) src.ptr;
   }
+  return bout;
 }
 
 bistream &operator>>(bistream &bin, biguint &src) {  

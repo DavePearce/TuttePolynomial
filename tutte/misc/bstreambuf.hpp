@@ -55,6 +55,7 @@ public:
       write_ptr = start + src.size();
       memcpy(start,src.start,src.size());      
     }
+    return *this;
   }
 
   void reset() { write_ptr = start; }

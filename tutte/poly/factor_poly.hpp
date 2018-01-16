@@ -360,6 +360,8 @@ bstreambuf &operator<<(bstreambuf &bout, yterms<T> const &yt) {
   bout << yt.ymin << yt.ymax;
 
   for(unsigned int i=yt.ymin;i<=yt.ymax;++i) { bout << yt[i]; }
+
+  return bout;
 }
 
 template<class T> 
@@ -377,6 +379,7 @@ bistream &operator>>(bistream &bin, yterms<T> &yt) {
     // assignment
     yt.swap(tmp);
   }
+  return bin;
 }
 
 template<class T>

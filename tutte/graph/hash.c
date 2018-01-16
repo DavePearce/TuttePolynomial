@@ -735,7 +735,7 @@ void driver1()
     h = hashlittle(&buf[0],1,h);
   }
   time(&z);
-  if (z-a > 0) printf("time %d %.8x\n", z-a, h);
+  if (z-a > 0) printf("time %ld %.8x\n", z-a, h);
 }
 
 /* check that every input bit changes every output bit half the time */
@@ -900,7 +900,7 @@ void driver3()
   for (i=0, h=0; i<8; ++i)
   {
     h = hashlittle(buf, 0, h);
-    printf("%2ld  0-byte strings, hash is  %.8x\n", i, h);
+    printf("%2ld  0-byte strings, hash is  %.8x\n", (long) i, h);
   }
 }
 

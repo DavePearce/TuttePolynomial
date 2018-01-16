@@ -13,7 +13,7 @@
 #include "../misc/bstreambuf.hpp"
 #include "../misc/bistream.hpp"
 #include <stdexcept>
-#include <ext/hash_map>
+#include <unordered_map>
 #include <cstdlib>
 #include <climits>
 

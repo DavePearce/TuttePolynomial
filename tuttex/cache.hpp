@@ -13,7 +13,7 @@
 #include "bistream.hpp"
 #include "nauty_graph.hpp"
 #include <stdexcept>
-#include <ext/hash_map>
+#include <unordered_map>
 #include <cstdlib>
 #include <climits>
 
