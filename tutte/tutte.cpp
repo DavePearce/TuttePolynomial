@@ -1918,7 +1918,7 @@ int main(int argc, char *argv[]) {
     "        --mindeg-ordering         order by min degree",
     "        --maxudeg-ordering        order by max underlying degree",
     "        --minudeg-ordering        order by min underlying degree",
-    "        --random                  order randomly",
+    "        --random-ordering         order randomly",
     " \nother options:",
     "        --no-multiedges           do not reduce multiedges in one go",
     "        --no-multicycles          do not reduce multicycles in one go",
