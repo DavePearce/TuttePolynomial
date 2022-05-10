@@ -121,7 +121,8 @@ static bool cache_full_stats = false;
 #define MODE_FLOW 2
 #define MODE_TUTTE_SPLIT 3
 #define MODE_FLOW_SPLIT 4
-#define MODE_TUTTEX 5
+#define MODE_CHROMATIC_SPLIT 5
+#define MODE_TUTTEX 6
 static int mode = MODE_TUTTE;
 
 void print_status();
@@ -985,6 +986,59 @@ P chromatic(G &graph, unsigned int mid) {
   return poly;
 }
 
+template<class G, class P>
+void chromaticSearch(G &graph, vector<G> &graphs) { 
+
+  // === 1. CHECK IN CACHE ===
+
+  unsigned char *key = NULL;
+  if(graph.num_vertices() >= small_graph_threshold) {      
+    key = graph_key(graph); 
+    unsigned int match_id;
+    P r;
+    if(cache.lookup(key,r,match_id)) {      
+      delete [] key; // free space used by key
+      return;
+    }
+  }
+
+  unsigned int V_Vm1 = graph.num_vertices()*(graph.num_vertices()-1);
+
+  if(!graph.is_biconnected()) {
+    vector<G> biconnects;
+    graph.extract_biconnected_components(biconnects);
+    graph.remove_graphs(biconnects);
+    // now, actually do the computation
+    for(typename vector<G>::iterator i(biconnects.begin());i!=biconnects.end();++i){
+      chromaticSearch<G,P>(*i,graphs);      
+    } 
+  } else if((2*graph.num_edges()) == V_Vm1) {
+    return;
+  } else {
+    if(graph.num_vertices() < split_vertices_threshold || graph.num_edges() < split_edges_threshold) {
+      graphs.push_back(graph);
+      return;
+    }
+    // Now, delete/contract
+    G g2(graph); 
+    edge_t edge = select_edge(graph);
+    graph.remove_edge(edge);
+    g2.simple_contract_edge(edge);  
+    chromaticSearch<G,P>(graph,graphs);
+    chromaticSearch<G,P>(g2,graphs);    
+  } 
+  
+  // Finally, save computed polynomial
+  if(key != NULL) {
+    // there is, strictly speaking, a bug with using mid
+    // here, since the graph being stored is not the same as that
+    // at the beginning.
+    unsigned int tmp;
+    cache.store(key,P(),tmp);
+    delete [] key;  // free space used by key
+  }
+}
+
 // ------------------------------------------------------------------
 // Experimental Tutte Polynomial
 // ------------------------------------------------------------------
@@ -1671,14 +1725,21 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
 	cout << input_graph_str(*i) << endl;
       }
       continue;
-    } else { // MODE_FLOW_SPLIT
+    } else if(mode == MODE_FLOW_SPLIT) {
       vector<G> graphs;
       flowSearch<G,P>(perm_graph,graphs);        
       for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {      	
 	cout << input_graph_str(*i) << endl;
       }
       continue;
-    } 
+    } else { // MODE_CHROMATIC_SPLIT
+      vector<G> graphs;
+      chromaticSearch<G,P>(perm_graph,graphs);        
+      for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {      	
+	cout << input_graph_str(*i) << endl;
+      }
+      continue;
+    }
 
     if(write_tree) { write_tree_end(ngraphs_completed); }
 
@@ -1972,8 +2033,7 @@ int main(int argc, char *argv[]) {
       } else if(mode == MODE_FLOW){
          mode = MODE_FLOW_SPLIT;
       } else {
-         cout << "Cannot use split mode to compute chromatic polynomials (at the moment)" << endl;
-         exit(1);
+         mode = MODE_CHROMATIC_SPLIT;	
       }
       break;
     case OPT_SPLIT_EDGES:
