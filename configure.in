@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_PREREQ(2.61)
-AC_INIT([tuttepoly], [v0.9.18], [david.pearce@ecs.victoria.ac.nz])
+AC_INIT([tuttepoly], [v0.9.19], [david.pearce@ecs.victoria.ac.nz])
 AM_INIT_AUTOMAKE
 
 AC_CONFIG_SRCDIR([tutte/tutte.cpp])
