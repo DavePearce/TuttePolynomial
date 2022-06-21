@@ -1254,7 +1254,13 @@ P read_polynomial(string in) {
   unsigned int pos = 0;
   P poly;
 
-  match('T',pos,in);
+  if(in[pos] == 'F') {
+    match('F',pos,in);
+  } else if(in[pos] == 'C') {
+    match('C',pos,in);
+  } else {
+    match('T',pos,in);
+  }
   match('P',pos,in);
   match('[',pos,in);
   unsigned int id = parse_number(pos,in);
@@ -1761,22 +1767,15 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
       if(global_timer.elapsed() >= timeout) {
 	// catch timeout case to avoid confusion.
 	cerr << "Timeout!!" << endl;
-      } else if(mode == MODE_TUTTE) {	
+      } else {	
 	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
-	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
-      } else if(mode == MODE_FLOW) {
-	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
-	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),(E-V)+C) << " * ( ";
-	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
-	// cout << "FP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
-	TP = "FP";
-      } else if(mode == MODE_CHROMATIC) {
-	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
-  	cout << "CP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),V-C) << " * x * ( ";
-	cout << search_replace("x","(1-x)",tuttePoly.str()) << " ) :" << endl;
-	TP = "CP";
-      }
-
+        if(mode == MODE_FLOW) {
+          TP = "FP";          
+        } else if(mode == MODE_CHROMATIC) {
+          TP = "CP";          
+        }
+	cout << TP << "[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
+      } 
       for(vector<pair<int,int> >::iterator i(evalpoints.begin());i!=evalpoints.end();++i) {
 	cout << TP << "[" << (ngraphs_completed+1) << "](" << i->first << "," << i->second << ") = " << tuttePoly.substitute(i->first,i->second) << endl;
       }

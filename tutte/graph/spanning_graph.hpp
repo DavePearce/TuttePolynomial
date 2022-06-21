@@ -66,7 +66,7 @@ public:
   bool is_multitree() const { return graph.num_underlying_edges() < graph.num_vertices(); }
   bool is_multicycle() const { return nartics == 1 && graph.num_underlying_edges() == graph.num_vertices(); }
   
-  bool clear(int v) { 
+  void clear(int v) { 
     check_biconnectivity();
     graph.clear(v); 
   }
