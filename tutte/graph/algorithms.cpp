@@ -18,6 +18,17 @@ extern "C" {
 uint32_t hashlittle( const void *key, size_t length, uint32_t initval);
 }
 
+std::string input_edgelist_str(std::vector<std::pair<unsigned int, unsigned int>> const &edgelist) {
+  std::ostringstream out;
+  bool first=true;  
+  for(std::pair<unsigned int, unsigned int> e : edgelist) {
+    if(!first) { out << ","; }
+    first = false;
+    out << e.first << "--" << e.second;
+  }
+  return out.str();
+}
+
 void resize_nauty_workspace(int newsize) {
   nauty_workspace = new setword[newsize];
   _nauty_workspace_size = newsize;

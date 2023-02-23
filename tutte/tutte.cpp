@@ -1174,11 +1174,10 @@ void skip(unsigned int &pos, string const &in) {
   } 
 }
 
-template<class G>
-G read_graph(string in) {
+vector<pair<unsigned int, unsigned int>> read_edgelist(string in) {
   vector<pair<unsigned int, unsigned int> > edgelist;
   unsigned int V = 0, pos = 0;
-    
+  
   bool firstTime=true;
 
   while(pos < in.length()) {
@@ -1190,9 +1189,21 @@ G read_graph(string in) {
     unsigned int head = parse_number(pos,in);
     V = max(V,max(head,tail));
     edgelist.push_back(std::make_pair(tail,head));
-  }  
+  }
+  
+  return edgelist;
+}
 
-  if(V == 0) { return G(0); }
+template<class G>
+G make_graph(vector<pair<unsigned int, unsigned int> > edgelist) {
+  unsigned int V = 0;
+
+  for(pair<unsigned int, unsigned int> e : edgelist) {
+    V = std::max(V, e.first);
+    V = std::max(V, e.second);    
+  }
+  
+  if(edgelist.size() == 0) { return G(0); }
 
   G r(V+1);
 
@@ -1334,6 +1345,31 @@ public:
   }
 };
 
+template<class G>
+G apply_permutation(G const &graph, vector<unsigned int> permutation) {
+  // Determine largest possible vertex index
+  unsigned int g_max = graph.num_vertices();
+  for(unsigned int n : permutation) {
+    g_max = std::max(g_max,n+1);
+  }
+  // Create graph with enough space for all vertices
+  G r(g_max);
+  // finally, create new permuted graph  
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename G::edge_iterator j(graph.begin_edges(*i));
+	j!=graph.end_edges(*i);++j) {	      
+      unsigned int head(*i);
+      unsigned int tail(j->first);
+      unsigned int count(j->second);
+      if(head <= tail) {
+	r.add_edge(permutation[head],permutation[tail],count);
+      }
+    }
+  }
+  
+  return r;
+}
+
 /* This method just compacts the vertex space used by the graph so
  * that it is numbered contiguously from 0.  This is done by
  * eliminating any vertices which have no edges.  Furthermore, it
@@ -1352,53 +1388,15 @@ pair<G,vector<unsigned int>> compact_graph(G const &graph) {
       permutation[counter] = *i;
       counter = counter + 1;
     }
-  }
- 
+  } 
   // now, create new permuted graph
-  G r(counter);
-  
-  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-    for(typename G::edge_iterator j(graph.begin_edges(*i));
-	j!=graph.end_edges(*i);++j) {	      
-      unsigned int head(*i);
-      unsigned int tail(j->first);
-      unsigned int count(j->second);
-      if(head <= tail) {
-	r.add_edge(labels[head],labels[tail],count);
-      }
-    }
-  }
-  
+  G r = apply_permutation<G>(graph,labels);
+  //
   return pair(r,permutation);  
 }
 
 template<class G>
-G apply_permutation(G const &graph, vector<unsigned int> permutation) {
-  // 
-  unsigned int g_max = graph.num_vertices();
-  for(unsigned int n : permutation) {
-    g_max = std::max(g_max,n+1);
-  }
-  
-  G r(g_max);
-  // finally, create new permuted graph  
-  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-    for(typename G::edge_iterator j(graph.begin_edges(*i));
-	j!=graph.end_edges(*i);++j) {	      
-      unsigned int head(*i);
-      unsigned int tail(j->first);
-      unsigned int count(j->second);
-      if(head <= tail) {
-	r.add_edge(permutation[head],permutation[tail],count);
-      }
-    }
-  }
-  
-  return r;
-}
-
-template<class G>
-G permute_graph(G const &graph, vorder_t heuristic) {
+pair<G,vector<unsigned int>> permute_graph(G const &graph, vorder_t heuristic) {
   vector<unsigned int> order;
   if(heuristic == V_DFS) {
     depth_first_search(graph,order);
@@ -1439,7 +1437,18 @@ G permute_graph(G const &graph, vorder_t heuristic) {
   }
   
   // finally, create new permuted graph
-  return apply_permutation<G>(graph,iorder);
+  return pair(apply_permutation<G>(graph,iorder),order);
+}
+
+template<class G>
+void check_permutation(G const &g1, vector<unsigned int> p, G const &g2) {
+  // g1 o p == g2
+  G gop = apply_permutation(g1,p);
+  //
+  if(gop.to_edgelist() != g2.to_edgelist()) {
+    std::cerr << "internal failure --- invalid permutation" << endl;
+    exit(1);
+  } 
 }
 
 /**
@@ -1647,7 +1656,7 @@ string search_replace(string from, string to, string text) {
 }
 
 template<class G, class P>
-void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode, boolean split_subgraph) {
+void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode, boolean split_subgraph, boolean clean_mode) {
   // if auto heuristic is enabled, then we calculate graph density and
   // select best heuristc based on that.
 
@@ -1687,9 +1696,12 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
 
     // Create graph and then permute it according to 
     // vertex ordering strategy;
-    G origin_graph = read_graph<G>(line);
-    auto [start_graph, permutation] = compact_graph<G>(origin_graph);
-    G actual_graph = start_graph;
+    vector<pair<unsigned int,unsigned int>> edgelist = read_edgelist(line);
+    G origin_graph = make_graph<G>(edgelist);
+    auto [start_graph, c_permutation] = compact_graph<G>(origin_graph);
+    // sanity check
+    check_permutation(start_graph,c_permutation,origin_graph);
+    G actual_graph = start_graph;    
     if(mode == MODE_CHROMATIC) { 
       actual_graph = simplify_graph<G>(start_graph);
       if(has_loop<G>(actual_graph)) {
@@ -1700,7 +1712,9 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
       }
     }
 
-    G perm_graph = permute_graph<G>(actual_graph,vertex_ordering);
+    auto [perm_graph,p_permutation] = permute_graph<G>(actual_graph,vertex_ordering);
+    // sanity check    
+    check_permutation(perm_graph,p_permutation,start_graph);    
     // now reset all stats information
     if(reset_mode) { cache.clear(); }
     cache.reset_stats();
@@ -1745,22 +1759,28 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
     } else if(mode == MODE_TUTTE_SPLIT) { 
       vector<G> graphs;
       tutteSearch<G,P>(perm_graph,graphs);        
-      for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {      	
-	cout << input_graph_str(apply_permutation<G>(*i,permutation)) << endl;
+      for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {
+        G ith = apply_permutation<G>(*i,p_permutation);
+        ith = apply_permutation<G>(ith,c_permutation);
+	cout << input_graph_str(ith) << endl;
       }
       continue;
     } else if(mode == MODE_FLOW_SPLIT) {
       vector<G> graphs;
       flowSearch<G,P>(perm_graph,graphs);        
-      for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {      	
-	cout << input_graph_str(*i) << endl;
+      for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {
+        G ith = apply_permutation<G>(*i,p_permutation);
+        ith = apply_permutation<G>(ith,c_permutation);
+	cout << input_graph_str(ith) << endl;        
       }
       continue;
     } else { // MODE_CHROMATIC_SPLIT
       vector<G> graphs;
       chromaticSearch<G,P>(perm_graph,graphs);        
-      for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {      	
-	cout << input_graph_str(*i) << endl;
+      for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {
+        G ith = apply_permutation<G>(*i,p_permutation);
+        ith = apply_permutation<G>(ith,c_permutation);
+	cout << input_graph_str(ith) << endl;                
       }
       continue;
     }
@@ -1785,17 +1805,29 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
       if(global_timer.elapsed() >= timeout) {
 	// catch timeout case to avoid confusion.
 	cerr << "Timeout!!" << endl;
-      } else if(mode == MODE_TUTTE || split_subgraph) {	
-	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(origin_graph) << "}" << endl;
+      } else if(mode == MODE_TUTTE || split_subgraph) {
+        if(clean_mode) {
+          cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(origin_graph) << "}" << endl;
+        } else {
+          cout << "G[" << (ngraphs_completed+1) << "] := {" << input_edgelist_str(edgelist) << "}" << endl;
+        }
 	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
       } else if(mode == MODE_FLOW) {
-	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(origin_graph) << "}" << endl;
+        if(clean_mode) {
+          cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(origin_graph) << "}" << endl;
+        } else {
+          cout << "G[" << (ngraphs_completed+1) << "] := {" << input_edgelist_str(edgelist) << "}" << endl;
+        }        
 	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),(E-V)+C) << " * ( ";
 	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
 	// cout << "FP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
 	TP = "FP";
       } else if(mode == MODE_CHROMATIC) {
-	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(origin_graph) << "}" << endl;
+        if(clean_mode) {
+          cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(origin_graph) << "}" << endl;
+        } else {
+          cout << "G[" << (ngraphs_completed+1) << "] := {" << input_edgelist_str(edgelist) << "}" << endl;
+        }        
   	cout << "CP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),V-C) << " * x * ( ";
 	cout << search_replace("x","(1-x)",tuttePoly.str()) << " ) :" << endl;
 	TP = "CP";
@@ -1898,6 +1930,7 @@ int main(int argc, char *argv[]) {
   #define OPT_VERTEXORDER_PUSH 56
   #define OPT_RANDOM 57
   #define OPT_CUT 58
+  #define OPT_CLEAN 59  
   #define OPT_RANDOM_ORDERING 60
   #define OPT_MINDEG_ORDERING 61
   #define OPT_MAXDEG_ORDERING 62
@@ -1905,7 +1938,7 @@ int main(int argc, char *argv[]) {
   #define OPT_MAXUDEG_ORDERING 64
   #define OPT_DFS_ORDERING 65
   #define OPT_BFS_ORDERING 66
-  #define OPT_USEADDCONTRACT 70
+  #define OPT_USEADDCONTRACT 70  
   
   struct option long_options[]={
     {"help",no_argument,NULL,OPT_HELP},
@@ -1921,6 +1954,7 @@ int main(int argc, char *argv[]) {
     {"chromatic",no_argument,NULL,OPT_CHROMATIC},
     {"flow",no_argument,NULL,OPT_FLOW},
     {"tuttex",no_argument,NULL,OPT_TUTTEX},
+    {"clean",no_argument,NULL,OPT_CLEAN},
     {"cache-size",required_argument,NULL,OPT_CACHESIZE},
     {"cache-buckets",required_argument,NULL,OPT_CACHEBUCKETS},
     {"cache-replacement",required_argument,NULL,OPT_CACHEREPLACEMENT},
@@ -2008,6 +2042,7 @@ int main(int argc, char *argv[]) {
     "        --minudeg-ordering        order by min underlying degree",
     "        --random-ordering         order randomly",
     " \nother options:",
+    "        --clean                   output graph in vertex sorted order",
     "        --no-multiedges           do not reduce multiedges in one go",
     "        --no-multicycles          do not reduce multicycles in one go",
     "        --add-contract            perform add/contract (currently only for chromatic)",    
@@ -2022,7 +2057,8 @@ int main(int argc, char *argv[]) {
   unsigned int graphs_end(UINT_MAX); // default is to do every graph in input file
   bool info_mode=false;
   bool reset_mode=false;
-  bool split_subgraph=false;  
+  bool split_subgraph=false;
+  bool clean_mode = false;
   bool cache_stats=false;
   bool stdin=false;
   string cache_stats_file = "";
@@ -2223,6 +2259,9 @@ int main(int argc, char *argv[]) {
       vertex_ordering = V_MAXIMISE_UNDERLYING_DEGREE;
       break;
     // --- OTHER OPTIONS ---
+    case OPT_CLEAN:
+      clean_mode = true;      
+      break;            
     case OPT_SMALLGRAPHS:
       small_graph_threshold = parse_amount(optarg);      
       break;      
@@ -2294,7 +2333,7 @@ int main(int argc, char *argv[]) {
     }
 
     if(poly_rep == OPT_FACTOR_POLY) {
-      run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(*input,graphs_beg,graphs_end,vertex_ordering,info_mode,reset_mode,split_subgraph);
+      run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(*input,graphs_beg,graphs_end,vertex_ordering,info_mode,reset_mode,split_subgraph,clean_mode);
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering);
     }    

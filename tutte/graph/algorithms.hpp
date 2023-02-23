@@ -140,6 +140,7 @@ bool nauty_add_edge(int from, int to, int M);
 // methods for manipulating workspace
 size_t nauty_workspace_size();
 void resize_nauty_workspace(int newsize);
+std::string input_edgelist_str(std::vector<std::pair<unsigned int, unsigned int>> const &edgelist);
 
 template<class T>
 unsigned char *graph_key(T const &graph) {
