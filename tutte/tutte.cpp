@@ -1630,7 +1630,7 @@ string search_replace(string from, string to, string text) {
 }
 
 template<class G, class P>
-void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode) {
+void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorder_t vertex_ordering, boolean info_mode, boolean reset_mode, boolean split_subgraph) {
   // if auto heuristic is enabled, then we calculate graph density and
   // select best heuristc based on that.
 
@@ -1767,16 +1767,23 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
       if(global_timer.elapsed() >= timeout) {
 	// catch timeout case to avoid confusion.
 	cerr << "Timeout!!" << endl;
-      } else {	
+      } else if(mode == MODE_TUTTE || split_subgraph) {	
 	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
-        if(mode == MODE_FLOW) {
-          TP = "FP";          
-        } else if(mode == MODE_CHROMATIC) {
-          TP = "CP";          
-        }
-	cout << TP << "[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
-      } 
-      for(vector<pair<int,int> >::iterator i(evalpoints.begin());i!=evalpoints.end();++i) {
+	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
+      } else if(mode == MODE_FLOW) {
+	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
+	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),(E-V)+C) << " * ( ";
+	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
+	// cout << "FP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
+	TP = "FP";
+      } else if(mode == MODE_CHROMATIC) {
+	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
+  	cout << "CP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),V-C) << " * x * ( ";
+	cout << search_replace("x","(1-x)",tuttePoly.str()) << " ) :" << endl;
+	TP = "CP";
+      }
+
+    for(vector<pair<int,int> >::iterator i(evalpoints.begin());i!=evalpoints.end();++i) {
 	cout << TP << "[" << (ngraphs_completed+1) << "](" << i->first << "," << i->second << ") = " << tuttePoly.substitute(i->first,i->second) << endl;
       }
 
@@ -1841,19 +1848,20 @@ int main(int argc, char *argv[]) {
   #define OPT_EVALPOINT 9
   #define OPT_SPLIT_VERTICES 10
   #define OPT_SPLIT_EDGES 11
-  #define OPT_CACHESIZE 12
-  #define OPT_CACHEBUCKETS 13
-  #define OPT_CACHEREPLACEMENT 14
-  #define OPT_CACHERANDOM 15
-  #define OPT_CACHESTATS 16
-  #define OPT_CACHEFULLSTATS 17
-  #define OPT_NOCACHE 18
-  #define OPT_CACHERESET 19
-  #define OPT_CACHEREPLACESIZE 20
-  #define OPT_GMP 21
-  #define OPT_CHROMATIC 22
-  #define OPT_FLOW 23
-  #define OPT_TUTTEX 24
+  #define OPT_SPLIT_SUBGRAPH 12
+  #define OPT_CACHESIZE 13
+  #define OPT_CACHEBUCKETS 14
+  #define OPT_CACHEREPLACEMENT 15
+  #define OPT_CACHERANDOM 16
+  #define OPT_CACHESTATS 17
+  #define OPT_CACHEFULLSTATS 18
+  #define OPT_NOCACHE 19
+  #define OPT_CACHERESET 20
+  #define OPT_CACHEREPLACESIZE 21
+  #define OPT_GMP 22
+  #define OPT_CHROMATIC 23
+  #define OPT_FLOW 24
+  #define OPT_TUTTEX 25
   #define OPT_SIMPLE_POLY 30
   #define OPT_FACTOR_POLY 31
   #define OPT_XML_OUT 32
@@ -1886,10 +1894,11 @@ int main(int argc, char *argv[]) {
     {"version",no_argument,NULL,OPT_VERSION},
     {"info",optional_argument,NULL,OPT_INFO},
     {"quiet",no_argument,NULL,OPT_QUIET},
-    {"stding",optional_argument,NULL,OPT_STDIN},
+    {"stdin",optional_argument,NULL,OPT_STDIN},
     {"timeout",required_argument,NULL,OPT_TIMEOUT},
     {"split",required_argument,NULL,OPT_SPLIT_VERTICES},
-    {"split-edges",required_argument,NULL,OPT_SPLIT_EDGES},    
+    {"split-edges",required_argument,NULL,OPT_SPLIT_EDGES},
+    {"split-subgraph",no_argument,NULL,OPT_SPLIT_SUBGRAPH},        
     {"eval",required_argument,NULL,OPT_EVALPOINT},
     {"chromatic",no_argument,NULL,OPT_CHROMATIC},
     {"flow",no_argument,NULL,OPT_FLOW},
@@ -1942,7 +1951,8 @@ int main(int argc, char *argv[]) {
     " -q     --quiet                   output info summary as single line only (useful for generating data)",
     " -t     --timeout=<x>             timeout after x seconds",
     " -s<x>  --split=<x>               split the input graph(s) into a number of smaller graphs with no more than x vertices",
-    "        --split-edges=<x>         split the input graph(s) into a number of smaller graphs with no more than x edges",    
+    "        --split-edges=<x>         split the input graph(s) into a number of smaller graphs with no more than x edges",
+    "        --split-subgraph          indicates this we are computing the result of a subgraph arising from a split (this ensures the output of all subgraphs can be easily recombined to form the final result)",
     " -Tx,y  --eval=x,y                evaluate the computed polynomial at x,y",
     "        --small-graphs=size       set threshold for small graphs.  Default is 5.",
     " -n<x>  --ngraphs=<number>        number of graphs to process from input file",
@@ -1994,6 +2004,7 @@ int main(int argc, char *argv[]) {
   unsigned int graphs_end(UINT_MAX); // default is to do every graph in input file
   bool info_mode=false;
   bool reset_mode=false;
+  bool split_subgraph=false;  
   bool cache_stats=false;
   bool stdin=false;
   string cache_stats_file = "";
@@ -2045,6 +2056,9 @@ int main(int argc, char *argv[]) {
          cout << "Cannot use split mode to compute chromatic polynomials (at the moment)" << endl;
          exit(1);
       }
+      break;
+    case OPT_SPLIT_SUBGRAPH:
+      split_subgraph=true;
       break;
     case OPT_TUTTEX:
       mode = MODE_TUTTEX;
@@ -2262,7 +2276,7 @@ int main(int argc, char *argv[]) {
     }
 
     if(poly_rep == OPT_FACTOR_POLY) {
-      run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(*input,graphs_beg,graphs_end,vertex_ordering,info_mode,reset_mode);
+      run<spanning_graph<adjacency_list<> >,factor_poly<biguint> >(*input,graphs_beg,graphs_end,vertex_ordering,info_mode,reset_mode,split_subgraph);
     } else {
       //      run<spanning_graph<adjacency_list<> >,simple_poly<> >(input,ngraphs,vertex_ordering);
     }    
