@@ -1336,16 +1336,21 @@ public:
 
 /* This method just compacts the vertex space used by the graph so
  * that it is numbered contiguously from 0.  This is done by
- * eliminating any vertices which have no edges.
+ * eliminating any vertices which have no edges.  Furthermore, it
+ * returns the permuation such that we can reconstruct the original
+ * graph.
  */
 template<class G>
-G compact_graph(G const &graph) {
+pair<G,vector<unsigned int>> compact_graph(G const &graph) {
   vector<unsigned int> labels(graph.num_vertices(),0);
+  vector<unsigned int> permutation(graph.num_vertices(),0);  
   int counter = 0;
 
   for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
     if(graph.num_edges(*i) > 0) {
-      labels[*i] = counter++;
+      labels[*i] = counter;
+      permutation[counter] = *i;
+      counter = counter + 1;
     }
   }
  
@@ -1364,7 +1369,32 @@ G compact_graph(G const &graph) {
     }
   }
   
-  return r;  
+  return pair(r,permutation);  
+}
+
+template<class G>
+G apply_permutation(G const &graph, vector<unsigned int> permutation) {
+  // 
+  unsigned int g_max = graph.num_vertices();
+  for(unsigned int n : permutation) {
+    g_max = std::max(g_max,n+1);
+  }
+  
+  G r(g_max);
+  // finally, create new permuted graph  
+  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
+    for(typename G::edge_iterator j(graph.begin_edges(*i));
+	j!=graph.end_edges(*i);++j) {	      
+      unsigned int head(*i);
+      unsigned int tail(j->first);
+      unsigned int count(j->second);
+      if(head <= tail) {
+	r.add_edge(permutation[head],permutation[tail],count);
+      }
+    }
+  }
+  
+  return r;
 }
 
 template<class G>
@@ -1409,20 +1439,7 @@ G permute_graph(G const &graph, vorder_t heuristic) {
   }
   
   // finally, create new permuted graph
-  G r(graph.num_vertices());
-  
-  for(typename G::vertex_iterator i(graph.begin_verts());i!=graph.end_verts();++i) {
-    for(typename G::edge_iterator j(graph.begin_edges(*i));
-	j!=graph.end_edges(*i);++j) {	      
-      unsigned int head(*i);
-      unsigned int tail(j->first);
-      unsigned int count(j->second);
-      if(head <= tail) {
-	r.add_edge(iorder[head],iorder[tail],count);
-      }
-    }
-  }
-  return r;
+  return apply_permutation<G>(graph,iorder);
 }
 
 /**
@@ -1649,7 +1666,7 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
 
     if(line[0] =='G') {
       // this is an initialisation graph
-      G init_graph = compact_graph<G>(read_init_graph<G>(line));
+      G init_graph = compact_graph<G>(read_init_graph<G>(line)).first;
       P poly = read_polynomial<P>(read_line(input));
       P p2;
       unsigned char *key = graph_key(init_graph); 
@@ -1669,13 +1686,14 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
     } 
 
     // Create graph and then permute it according to 
-    // vertex ordering strategy
-    G start_graph = compact_graph<G>(read_graph<G>(line));
+    // vertex ordering strategy;
+    G origin_graph = read_graph<G>(line);
+    auto [start_graph, permutation] = compact_graph<G>(origin_graph);
     G actual_graph = start_graph;
     if(mode == MODE_CHROMATIC) { 
       actual_graph = simplify_graph<G>(start_graph);
       if(has_loop<G>(actual_graph)) {
-	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
+	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(origin_graph) << "}" << endl;
   	cout << "CP[" << (ngraphs_completed+1) << "] := 0" << endl;
 	cerr << "WARNING: G[" << (ngraphs_completed+1) << "] contains loop (hence, chromatic polynomial is zero)" << endl;
 	continue;
@@ -1728,7 +1746,7 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
       vector<G> graphs;
       tutteSearch<G,P>(perm_graph,graphs);        
       for(typename vector<G>::const_iterator i(graphs.begin());i!=graphs.end();++i) {      	
-	cout << input_graph_str(*i) << endl;
+	cout << input_graph_str(apply_permutation<G>(*i,permutation)) << endl;
       }
       continue;
     } else if(mode == MODE_FLOW_SPLIT) {
@@ -1768,16 +1786,16 @@ void run(istream &input, unsigned int graphs_beg, unsigned int graphs_end, vorde
 	// catch timeout case to avoid confusion.
 	cerr << "Timeout!!" << endl;
       } else if(mode == MODE_TUTTE || split_subgraph) {	
-	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
+	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(origin_graph) << "}" << endl;
 	cout << "TP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
       } else if(mode == MODE_FLOW) {
-	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
+	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(origin_graph) << "}" << endl;
 	cout << "FP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),(E-V)+C) << " * ( ";
 	cout << search_replace("y","(1-x)",tuttePoly.str()) << " ) :" << endl;
 	// cout << "FP[" << (ngraphs_completed+1) << "] := " << tuttePoly.str() << " :" << endl;
 	TP = "FP";
       } else if(mode == MODE_CHROMATIC) {
-	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(start_graph) << "}" << endl;
+	cout << "G[" << (ngraphs_completed+1) << "] := {" << input_graph_str(origin_graph) << "}" << endl;
   	cout << "CP[" << (ngraphs_completed+1) << "] := " << pow(bigint(INT32_C(-1)),V-C) << " * x * ( ";
 	cout << search_replace("x","(1-x)",tuttePoly.str()) << " ) :" << endl;
 	TP = "CP";
