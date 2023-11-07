@@ -76,6 +76,10 @@ public:
     check_biconnectivity();
   }
 
+  std::vector<edge_t> to_edgelist() const {
+    return graph.to_edgelist();
+  }
+  
   void add_edge(int from, int to) { add_edge(from,to,1); }
 
   void add_edge(int from, int to, int count) { 

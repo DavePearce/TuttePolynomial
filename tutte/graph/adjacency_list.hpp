@@ -15,6 +15,8 @@
 #include <algorithm>
 #include <stdexcept>
 
+#include "misc/triple.hpp"
+
 // This graph type is simply the most basic implementation
 // you could think of.
 
@@ -26,6 +28,7 @@ public:
   typedef std::list<unsigned int>::const_iterator vertex_iterator;
   typedef typename T::iterator int_edge_iterator;
   typedef typename T::const_iterator edge_iterator;
+  typedef triple<unsigned int, unsigned int, unsigned int> edge_t;  
 private:
   int numedges; // useful cache
   std::list<unsigned int> vertices;
@@ -69,6 +72,18 @@ public:
 
   unsigned int num_multiedges() const { return nummultiedges; }
   bool is_multi_graph() const { return nummultiedges > 0; }
+
+  std::vector<edge_t> to_edgelist() const {
+    std::vector<edge_t> vec;
+    for(vertex_iterator i(begin_verts());i!=end_verts();++i) {
+      for(edge_iterator j(begin_edges(*i));j!=end_edges(*i);++j) {
+        if(*i <= j->first) {
+          vec.push_back(edge_t(*i,j->first,j->second));
+        }
+      }
+    }
+    return vec;
+  }
   
   // there is no add vertex!
   void clear(unsigned int v) { 
